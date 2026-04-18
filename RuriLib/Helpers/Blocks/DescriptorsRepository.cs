@@ -1,4 +1,10 @@
-﻿using RuriLib.Extensions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using RuriLib.Extensions;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Parameters;
@@ -6,12 +12,6 @@ using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Bots;
 using RuriLib.Models.Trees;
 using RuriLib.Models.Variables;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
 namespace RuriLib.Helpers.Blocks;
 
@@ -22,24 +22,24 @@ public class DescriptorsRepository
 {
     private static readonly Dictionary<Type, VariableType?> _variableTypes = new()
     {
-        [ typeof(void) ] = null,
-        [ typeof(string) ] = VariableType.String,
-        [ typeof(int) ] = VariableType.Int,
-        [ typeof(float) ] = VariableType.Float,
-        [ typeof(bool) ] = VariableType.Bool,
-        [ typeof(List<string>) ] = VariableType.ListOfStrings,
-        [ typeof(Dictionary<string, string>) ] = VariableType.DictionaryOfStrings,
-        [ typeof(byte[]) ] = VariableType.ByteArray,
-        [ typeof(Task) ] = null,
-        [ typeof(Task<string>) ] = VariableType.String,
-        [ typeof(Task<int>) ] = VariableType.Int,
-        [ typeof(Task<float>) ] = VariableType.Float,
-        [ typeof(Task<bool>) ] = VariableType.Bool,
-        [ typeof(Task<List<string>>) ] = VariableType.ListOfStrings,
-        [ typeof(Task<Dictionary<string, string>>) ] = VariableType.DictionaryOfStrings,
-        [ typeof(Task<byte[]>) ] = VariableType.ByteArray
+        [typeof(void)] = null,
+        [typeof(string)] = VariableType.String,
+        [typeof(int)] = VariableType.Int,
+        [typeof(float)] = VariableType.Float,
+        [typeof(bool)] = VariableType.Bool,
+        [typeof(List<string>)] = VariableType.ListOfStrings,
+        [typeof(Dictionary<string, string>)] = VariableType.DictionaryOfStrings,
+        [typeof(byte[])] = VariableType.ByteArray,
+        [typeof(Task)] = null,
+        [typeof(Task<string>)] = VariableType.String,
+        [typeof(Task<int>)] = VariableType.Int,
+        [typeof(Task<float>)] = VariableType.Float,
+        [typeof(Task<bool>)] = VariableType.Bool,
+        [typeof(Task<List<string>>)] = VariableType.ListOfStrings,
+        [typeof(Task<Dictionary<string, string>>)] = VariableType.DictionaryOfStrings,
+        [typeof(Task<byte[]>)] = VariableType.ByteArray
     };
-    
+
     /// <summary>
     /// The descriptors keyed by their unique id.
     /// </summary>
@@ -53,14 +53,13 @@ public class DescriptorsRepository
         Recreate();
     }
 
-        /// <summary>
-        /// Recreates the repository with only the descriptors in the executing assembly (no plugins).
-        /// </summary>
+    /// <summary>
+    /// Recreates the repository with only the descriptors in the executing assembly (no plugins).
+    /// </summary>
     public void Recreate()
     {
         Descriptors.Clear();
 
-        // Add custom block descriptors
         Descriptors["Keycheck"] = new KeycheckBlockDescriptor();
         Descriptors["HttpRequest"] = new HttpRequestBlockDescriptor();
         Descriptors["Parse"] = new ParseBlockDescriptor();
@@ -69,10 +68,10 @@ public class DescriptorsRepository
         AddFromExposedMethods(Assembly.GetExecutingAssembly());
     }
 
-        /// <summary>
-        /// Gets a <see cref="BlockDescriptor"/> by its unique <paramref name="id"/>
-        /// and automatically casts it to the type <typeparamref name="T"/>.
-        /// </summary>
+    /// <summary>
+    /// Gets a <see cref="BlockDescriptor"/> by its unique <paramref name="id"/>
+    /// and automatically casts it to the type <typeparamref name="T"/>.
+    /// </summary>
     public T GetAs<T>(string id) where T : BlockDescriptor
     {
         if (!Descriptors.TryGetValue(id, out var descriptor))
@@ -84,40 +83,32 @@ public class DescriptorsRepository
         {
             return typedDescriptor;
         }
-        
-        throw new InvalidCastException(
-            $"Descriptor {id} cannot be cast to {typeof(T).Name}");
+
+        throw new InvalidCastException($"Descriptor {id} cannot be cast to {typeof(T).Name}");
     }
 
-        /// <summary>
-        /// Adds descriptors to the repository by finding exposed methods in the given
-        /// <paramref name="assembly"/>.
-        /// </summary>
+    /// <summary>
+    /// Adds descriptors to the repository by finding exposed methods in the given
+    /// <paramref name="assembly"/>.
+    /// </summary>
     public void AddFromExposedMethods(Assembly assembly)
     {
-        // Get all types of the assembly
-        var types = assembly.GetTypes();
-        foreach (var type in types)
+        foreach (var type in assembly.GetTypes())
         {
-            // Check if the type has a BlockCategory attribute
             var category = type.GetCustomAttribute<Attributes.BlockCategory>();
-            if (category == null)
+            if (category is null)
             {
                 continue;
             }
 
-            // Get the methods in the type
-            var methods = type.GetMethods();
-            foreach (var method in methods)
+            foreach (var method in type.GetMethods())
             {
-                // Check if the methods has a Block attribute
                 var attribute = method.GetCustomAttribute<Attributes.Block>();
-                if (attribute == null)
+                if (attribute is null)
                 {
                     continue;
                 }
 
-                // Check if the descriptor already exists
                 if (Descriptors.ContainsKey(method.Name))
                 {
                     throw new Exception($"Duplicate descriptor id: {method.Name}");
@@ -125,29 +116,21 @@ public class DescriptorsRepository
 
                 var typeNamespace = type.Namespace ?? throw new InvalidOperationException(
                     $"Type {type.FullName} has no namespace");
-                
-                // Add the descriptor
+
                 Descriptors[method.Name] = new AutoBlockDescriptor
                 {
                     Id = method.Name,
                     Async = method.CustomAttributes.Any(a => a.AttributeType == typeof(AsyncStateMachineAttribute)),
-                    // If the name specified in the attribute is null, use the readable method's name
                     Name = attribute.name ?? method.Name.ToReadableName(),
                     Description = attribute.description ?? string.Empty,
                     ExtraInfo = attribute.extraInfo ?? string.Empty,
                     AssemblyFullName = assembly.FullName ?? assembly.GetName().Name ?? string.Empty,
-                    Parameters = method.GetParameters().Where(p => p.ParameterType != typeof(BotData))
-                        .Select(BuildBlockParameter).ToDictionary(p => p.Name, p => p),
+                    Parameters = method.GetParameters()
+                        .Where(p => p.ParameterType != typeof(BotData))
+                        .Select(BuildBlockParameter)
+                        .ToDictionary(p => p.Name, p => p),
                     ReturnType = ToVariableType(method.ReturnType),
-                    Category = new BlockCategory
-                    {
-                        Name = category.name ?? typeNamespace.Split('.')[2],
-                        Path = typeNamespace,
-                        Namespace = $"{typeNamespace}.{type.Name}",
-                        Description = category.description,
-                        ForegroundColor = category.foregroundColor,
-                        BackgroundColor = category.backgroundColor
-                    },
+                    Category = CreateBlockCategory(type, typeNamespace, category),
                     Images = method.GetCustomAttributes<Attributes.BlockImage>()
                         .ToDictionary(a => a.id, a => new BlockImageInfo
                         {
@@ -164,31 +147,21 @@ public class DescriptorsRepository
 
     private void AddBlockActions(Assembly assembly)
     {
-        // Get all types of the assembly
-        var types = assembly.GetTypes();
-        foreach (var type in types)
+        foreach (var type in assembly.GetTypes())
         {
-            // Get the methods in the type
-            var methods = type.GetMethods();
-            foreach (var method in methods)
+            foreach (var method in type.GetMethods())
             {
-                // Check if the methods has a BlockAction attribute
                 var attribute = method.GetCustomAttribute<Attributes.BlockAction>();
-                if (attribute == null)
+                if (attribute is null)
                 {
                     continue;
                 }
 
-                var id = attribute.parentBlockId;
-
-                // Check if a descriptor with the given id exists
-                if (!Descriptors.ContainsKey(id))
+                if (!Descriptors.TryGetValue(attribute.parentBlockId, out var descriptor))
                 {
-                    throw new Exception($"Invalid descriptor id: {id}");
+                    throw new Exception($"Invalid descriptor id: {attribute.parentBlockId}");
                 }
 
-                // Add the action to the block descriptor
-                var descriptor = Descriptors[id];
                 descriptor.Actions.Add(new BlockActionInfo
                 {
                     Name = attribute.name ?? method.Name.ToReadableName(),
@@ -199,18 +172,36 @@ public class DescriptorsRepository
         }
     }
 
+    private static BlockCategory CreateBlockCategory(
+        Type type,
+        string typeNamespace,
+        Attributes.BlockCategory category)
+    {
+        var splitNamespace = typeNamespace.Split('.');
+
+        return new BlockCategory
+        {
+            Name = category.name ?? splitNamespace[^1],
+            Path = typeNamespace,
+            Namespace = $"{typeNamespace}.{type.Name}",
+            Description = category.description,
+            ForegroundColor = category.foregroundColor,
+            BackgroundColor = category.backgroundColor
+        };
+    }
+
     private static BlockParameter BuildBlockParameter(ParameterInfo info)
     {
         var parameter = ToBlockParameter(info);
         var variableParam = info.GetCustomAttribute<Attributes.Variable>();
         var interpParam = info.GetCustomAttribute<Attributes.Interpolated>();
 
-        if (variableParam != null)
+        if (variableParam is not null)
         {
             parameter.InputMode = SettingInputMode.Variable;
             parameter.DefaultVariableName = variableParam.defaultVariableName ?? string.Empty;
         }
-        else if (interpParam != null)
+        else if (interpParam is not null)
         {
             parameter.InputMode = SettingInputMode.Interpolated;
         }
@@ -218,175 +209,176 @@ public class DescriptorsRepository
         return parameter;
     }
 
-        /// <summary>
-        /// Converts the return <paramref name="type"/> of a method to a <see cref="VariableType"/>.
-        /// Returns null if the method returns void or Task.
-        /// </summary>
-        public static VariableType? ToVariableType(Type type)
+    /// <summary>
+    /// Converts the return <paramref name="type"/> of a method to a <see cref="VariableType"/>.
+    /// Returns null if the method returns void or Task.
+    /// </summary>
+    public static VariableType? ToVariableType(Type type)
+    {
+        if (_variableTypes.TryGetValue(type, out var value))
         {
-            if (_variableTypes.TryGetValue(type, out var value))
-            {
-                return value;
-            }
-            
-            throw new InvalidCastException(
-                $"The type {type} could not be casted to VariableType");
+            return value;
         }
 
-        /// <summary>
-        /// Casts a C# variable with a given <paramref name="name"/>, <paramref name="type"/>
-        /// and <paramref name="value"/> to a custom <see cref="Variable"/> object.
-        /// </summary>
-        public static Variable ToVariable(string name, Type type, dynamic value)
+        throw new InvalidCastException($"The type {type} could not be casted to VariableType");
+    }
+
+    /// <summary>
+    /// Casts a C# variable with a given <paramref name="name"/>, <paramref name="type"/>
+    /// and <paramref name="value"/> to a custom <see cref="Variable"/> object.
+    /// </summary>
+    public static Variable ToVariable(string name, Type type, dynamic value)
+    {
+        var t = ToVariableType(type);
+
+        if (!t.HasValue)
         {
-            var t = ToVariableType(type);
-
-            if (!t.HasValue)
-            {
-                throw new InvalidCastException(
-                    $"Cannot cast type {type} to a variable");
-            }
-
-            Variable variable = t switch
-            {
-                VariableType.String => new StringVariable(value),
-                VariableType.Bool => new BoolVariable(value),
-                VariableType.ByteArray => new ByteArrayVariable(value),
-                VariableType.DictionaryOfStrings => new DictionaryOfStringsVariable(value),
-                VariableType.Float => new FloatVariable(value),
-                VariableType.Int => new IntVariable(value),
-                VariableType.ListOfStrings => new ListOfStringsVariable(value),
-                _ => throw new NotImplementedException(),
-            };
-
-            variable.Name = name;
-            variable.Type = t.Value;
-            return variable;
+            throw new InvalidCastException($"Cannot cast type {type} to a variable");
         }
 
-        private static BlockParameter ToBlockParameter(ParameterInfo parameter)
+        Variable variable = t switch
         {
-            var creators = new Dictionary<Type, Func<BlockParameter>>
+            VariableType.String => new StringVariable(value),
+            VariableType.Bool => new BoolVariable(value),
+            VariableType.ByteArray => new ByteArrayVariable(value),
+            VariableType.DictionaryOfStrings => new DictionaryOfStringsVariable(value),
+            VariableType.Float => new FloatVariable(value),
+            VariableType.Int => new IntVariable(value),
+            VariableType.ListOfStrings => new ListOfStringsVariable(value),
+            _ => throw new NotImplementedException()
+        };
+
+        variable.Name = name;
+        variable.Type = t.Value;
+        return variable;
+    }
+
+    private static BlockParameter ToBlockParameter(ParameterInfo parameter)
+    {
+        var creators = new Dictionary<Type, Func<BlockParameter>>
+        {
             {
-                { typeof(string), () => new StringParameter(parameter.Name!)
-                    { 
-                        DefaultValue = parameter.HasDefaultValue ? (string)parameter.DefaultValue! : "",
-                        MultiLine = parameter.GetCustomAttribute<Attributes.MultiLine>() != null
-                    }
-                },
-
-                { typeof(int), () => new IntParameter(parameter.Name!)
-                    { DefaultValue = parameter.HasDefaultValue ? (int)parameter.DefaultValue! : 0 } },
-
-                { typeof(float), () => new FloatParameter(parameter.Name!)
-                    { DefaultValue = parameter.HasDefaultValue ? (float)parameter.DefaultValue! : 0.0f } },
-
-                { typeof(bool), () => new BoolParameter(parameter.Name!)
-                    { DefaultValue = parameter.HasDefaultValue && (bool)parameter.DefaultValue! } },
-
-                // TODO: Add defaults for these through parameter attributes
-                { typeof(List<string>), () => new ListOfStringsParameter(parameter.Name!) },
-                { typeof(Dictionary<string, string>), () => new DictionaryOfStringsParameter(parameter.Name!) },
-                { typeof(byte[]), () => new ByteArrayParameter(parameter.Name!) }
-            };
-
-            var blockParamAttribute = parameter.GetCustomAttribute<Attributes.BlockParam>();
-
-            // If it's one of the standard types
-            if (creators.TryGetValue(parameter.ParameterType, out var creator))
-            {
-                var blockParam = creator.Invoke();
-                
-                if (blockParamAttribute != null)
+                typeof(string), () => new StringParameter(parameter.Name!)
                 {
-                    blockParam.AssignedName = blockParamAttribute.name;
-                    blockParam.Description = blockParamAttribute.description;
+                    DefaultValue = parameter.HasDefaultValue ? (string)parameter.DefaultValue! : string.Empty,
+                    MultiLine = parameter.GetCustomAttribute<Attributes.MultiLine>() is not null
                 }
+            },
+            {
+                typeof(int), () => new IntParameter(parameter.Name!)
+                {
+                    DefaultValue = parameter.HasDefaultValue ? (int)parameter.DefaultValue! : 0
+                }
+            },
+            {
+                typeof(float), () => new FloatParameter(parameter.Name!)
+                {
+                    DefaultValue = parameter.HasDefaultValue ? (float)parameter.DefaultValue! : 0.0f
+                }
+            },
+            {
+                typeof(bool), () => new BoolParameter(parameter.Name!)
+                {
+                    DefaultValue = parameter.HasDefaultValue && (bool)parameter.DefaultValue!
+                }
+            },
+            {
+                typeof(List<string>), () => new ListOfStringsParameter(parameter.Name!)
+            },
+            {
+                typeof(Dictionary<string, string>), () => new DictionaryOfStringsParameter(parameter.Name!)
+            },
+            {
+                typeof(byte[]), () => new ByteArrayParameter(parameter.Name!)
+            }
+        };
 
-                blockParam.Name = parameter.Name!;
-                return blockParam;
+        var blockParamAttribute = parameter.GetCustomAttribute<Attributes.BlockParam>();
+
+        if (creators.TryGetValue(parameter.ParameterType, out var creator))
+        {
+            var blockParam = creator();
+
+            if (blockParamAttribute is not null)
+            {
+                blockParam.AssignedName = blockParamAttribute.name;
+                blockParam.Description = blockParamAttribute.description;
             }
 
-            // If it's an enum type
-            if (parameter.ParameterType.IsEnum)
-            {
-                var blockParam = new EnumParameter(
-                    parameter.Name!,
-                    parameter.ParameterType,
-                    parameter.HasDefaultValue
-                        ? parameter.DefaultValue!.ToString()!
-                        : Enum.GetNames(parameter.ParameterType).First());
-
-                if (blockParamAttribute != null)
-                {
-                    blockParam.AssignedName = blockParamAttribute.name;
-                }
-
-                return blockParam;
-            }
-
-            throw new ArgumentException($"Parameter {parameter.Name} has an invalid type ({parameter.ParameterType})");
+            blockParam.Name = parameter.Name!;
+            return blockParam;
         }
 
-        /// <summary>
-        /// Retrieves the category tree of all categories and block descriptors.
-        /// </summary>
-        public CategoryTreeNode AsTree()
+        if (parameter.ParameterType.IsEnum)
         {
-            // This is the root node, all assemblies are direct children of this node
-            var root = new CategoryTreeNode {
-                Name = "Root",
-                // Add all descriptors as children of the root node (we need the ToList() in order to have
-                // a new pointer to list and not operate on the same one Descriptors uses, since we will be removing items)
-                Descriptors = [.. Descriptors.Values]
-            };
+            var blockParam = new EnumParameter(
+                parameter.Name!,
+                parameter.ParameterType,
+                parameter.HasDefaultValue
+                    ? parameter.DefaultValue!.ToString()!
+                    : Enum.GetNames(parameter.ParameterType).First());
 
-            // Push leaves down
-            PushLeaves(root, 0);
+            if (blockParamAttribute is not null)
+            {
+                blockParam.AssignedName = blockParamAttribute.name;
+                blockParam.Description = blockParamAttribute.description;
+            }
 
-            return root;
+            return blockParam;
         }
 
-        private void PushLeaves(CategoryTreeNode node, int level)
+        throw new ArgumentException(
+            $"Parameter {parameter.Name} has an invalid type ({parameter.ParameterType})");
+    }
+
+    /// <summary>
+    /// Retrieves the category tree of all categories and block descriptors.
+    /// </summary>
+    public CategoryTreeNode AsTree()
+    {
+        var root = new CategoryTreeNode
         {
-            // Check all descriptors of the node
-            for (var i = 0; i < node.Descriptors.Count; i++)
+            Name = "Root",
+            Descriptors = [.. Descriptors.Values]
+        };
+
+        PushLeaves(root, 0);
+
+        return root;
+    }
+
+    private void PushLeaves(CategoryTreeNode node, int level)
+    {
+        for (var i = 0; i < node.Descriptors.Count; i++)
+        {
+            var descriptor = node.Descriptors[i];
+            var split = descriptor.Category.Path.Split('.');
+
+            if (split.Length <= level)
             {
-                var d = node.Descriptors[i];
-                var split = d.Category.Path.Split('.'); // Example: RuriLib.Blocks.Http
-
-                // If a descriptor's category has a namespace which (split) is longer than the current tree level
-                // then it means that it has subcategories, otherwise it's a leaf
-                if (split.Length <= level)
-                {
-                    continue;
-                }
-                
-                var subCat = split[level]; // Example: level 0 => RuriLib, level 1 => Http
-
-                // Try to get an existing subcategory node
-                var subCatNode = node.SubCategories.FirstOrDefault(s => s.Name == subCat);
-
-                // Create the subcategory node if it doesn't exist
-                if (subCatNode == null)
-                {
-                    subCatNode = new CategoryTreeNode { Parent = node, Name = subCat };
-                    node.SubCategories.Add(subCatNode);
-                }
-
-                subCatNode.Descriptors.Add(d);
-                node.Descriptors.RemoveAt(i);
-                i--;
+                continue;
             }
 
-            // Order them alphabetically
-            node.SubCategories = [.. node.SubCategories.OrderBy(s => s.Name)];
-            node.Descriptors = [.. node.Descriptors.OrderBy(d => d.Name)];
+            var subCategoryName = split[level];
+            var subCategoryNode = node.SubCategories.FirstOrDefault(s => s.Name == subCategoryName);
 
-            // Push leaves of subcategories recursively
-            foreach (var s in node.SubCategories)
+            if (subCategoryNode is null)
             {
-                PushLeaves(s, level + 1);
+                subCategoryNode = new CategoryTreeNode { Parent = node, Name = subCategoryName };
+                node.SubCategories.Add(subCategoryNode);
             }
+
+            subCategoryNode.Descriptors.Add(descriptor);
+            node.Descriptors.RemoveAt(i);
+            i--;
+        }
+
+        node.SubCategories = [.. node.SubCategories.OrderBy(s => s.Name)];
+        node.Descriptors = [.. node.Descriptors.OrderBy(d => d.Name)];
+
+        foreach (var subCategory in node.SubCategories)
+        {
+            PushLeaves(subCategory, level + 1);
         }
     }
+}

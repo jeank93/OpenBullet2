@@ -10,12 +10,15 @@ namespace RuriLib.Models.Blocks.Settings;
 /// </summary>
 public class EnumSetting : Setting
 {
-    private Type _enumType;
+    private Type _enumType = null!;
     private readonly Dictionary<string, string> _enumValues = [];
 
+    /// <summary>
+    /// Creates a new enum setting for the given enum type.
+    /// </summary>
     public EnumSetting(Type enumType)
     {
-        _enumType = enumType;
+        EnumType = enumType;
     }
     
     /// <summary>
@@ -27,13 +30,15 @@ public class EnumSetting : Setting
         set
         {
             _enumType = value;
+            _enumValues.Clear();
             
             // Populate the enum values dictionary (used to have nicer enum names to display)
             foreach (var name in _enumType.GetEnumNames())
             {
                 var fi = _enumType.GetField(name);
 
-                if (fi.GetCustomAttributes(typeof(DescriptionAttribute), false) is DescriptionAttribute[] attributes && attributes.Any())
+                if (fi?.GetCustomAttributes(typeof(DescriptionAttribute), false)
+                    is DescriptionAttribute[] attributes && attributes.Any())
                 {
                     _enumValues[attributes.First().Description] = name;
                 }
@@ -48,7 +53,7 @@ public class EnumSetting : Setting
     /// <summary>
     /// The value of the setting.
     /// </summary>
-    public string Value { get; set; }
+    public string Value { get; set; } = string.Empty;
 
     /// <summary>
     /// The pretty names of the enum values.

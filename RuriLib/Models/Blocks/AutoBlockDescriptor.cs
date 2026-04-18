@@ -1,7 +1,12 @@
-﻿namespace RuriLib.Models.Blocks
+namespace RuriLib.Models.Blocks;
+
+/// <summary>
+/// A descriptor for a block generated from an exposed C# method.
+/// </summary>
+public class AutoBlockDescriptor : BlockDescriptor
 {
-    public class AutoBlockDescriptor : BlockDescriptor
-    {
-        public bool Async { get; set; }
-    }
+    /// <summary>
+    /// Whether the underlying method is asynchronous.
+    /// </summary>
+    public bool Async { get; set; }
 }

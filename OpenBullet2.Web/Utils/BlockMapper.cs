@@ -316,7 +316,7 @@ internal static class BlockMapper
                 break;
 
             case BlockSettingType.Enum:
-                ((EnumSetting)setting.FixedSetting).Value = value.GetString();
+                ((EnumSetting)setting.FixedSetting!).Value = value.GetString() ?? string.Empty;
                 break;
         }
     }

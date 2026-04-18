@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace RuriLib.Models.Blocks.Settings;
 
@@ -12,6 +11,7 @@ public class EnumSetting : Setting
 {
     private Type _enumType = null!;
     private readonly Dictionary<string, string> _enumValues = [];
+    private readonly Dictionary<string, string> _prettyNamesByValue = [];
 
     /// <summary>
     /// Creates a new enum setting for the given enum type.
@@ -20,36 +20,43 @@ public class EnumSetting : Setting
     {
         EnumType = enumType;
     }
-    
+
     /// <summary>
     /// The type of the enum.
     /// </summary>
     public Type EnumType
-    { 
+    {
         get => _enumType;
         set
         {
+            ArgumentNullException.ThrowIfNull(value);
+
+            if (!value.IsEnum)
+            {
+                throw new ArgumentException($"{value} is not an enum type", nameof(value));
+            }
+
             _enumType = value;
             _enumValues.Clear();
-            
-            // Populate the enum values dictionary (used to have nicer enum names to display)
+            _prettyNamesByValue.Clear();
+
             foreach (var name in _enumType.GetEnumNames())
             {
-                var fi = _enumType.GetField(name);
+                var field = _enumType.GetField(name);
+                var prettyName = name;
 
-                if (fi?.GetCustomAttributes(typeof(DescriptionAttribute), false)
-                    is DescriptionAttribute[] attributes && attributes.Any())
+                if (field?.GetCustomAttributes(typeof(DescriptionAttribute), false)
+                    is DescriptionAttribute[] attributes && attributes.Length > 0)
                 {
-                    _enumValues[attributes.First().Description] = name;
+                    prettyName = attributes[0].Description;
                 }
-                else
-                {
-                    _enumValues[name] = name;
-                }
+
+                _enumValues[prettyName] = name;
+                _prettyNamesByValue[name] = prettyName;
             }
         }
     }
-    
+
     /// <summary>
     /// The value of the setting.
     /// </summary>
@@ -64,12 +71,20 @@ public class EnumSetting : Setting
     /// The pretty name of the current value.
     /// </summary>
     public string PrettyName
-        => _enumValues.ContainsValue(Value)
-            ? _enumValues.First(kvp => kvp.Value == Value).Key
+        => _prettyNamesByValue.TryGetValue(Value, out var prettyName)
+            ? prettyName
             : Value;
-    
+
     /// <summary>
     /// Sets the value of the setting from a pretty name.
     /// </summary>
-    public void SetFromPrettyName(string prettyName) => Value = _enumValues[prettyName];
+    public void SetFromPrettyName(string prettyName)
+    {
+        if (!_enumValues.TryGetValue(prettyName, out var value))
+        {
+            throw new KeyNotFoundException($"The enum pretty name {prettyName} was not found");
+        }
+
+        Value = value;
+    }
 }

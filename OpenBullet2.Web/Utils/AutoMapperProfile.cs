@@ -394,9 +394,9 @@ internal class AutoMapperProfile : Profile
         if (setting.InputMode is SettingInputMode.Interpolated)
         {
             return setting.InterpolatedSetting switch {
-                InterpolatedStringSetting x => x.Value,
-                InterpolatedListOfStringsSetting x => x.Value,
-                InterpolatedDictionaryOfStringsSetting x => x.Value,
+                InterpolatedStringSetting x => x.Value ?? string.Empty,
+                InterpolatedListOfStringsSetting x => x.Value ?? [],
+                InterpolatedDictionaryOfStringsSetting x => x.Value ?? [],
                 _ => throw new NotImplementedException()
             };
         }
@@ -406,10 +406,10 @@ internal class AutoMapperProfile : Profile
             IntSetting x => x.Value,
             FloatSetting x => x.Value,
             BoolSetting x => x.Value,
-            ByteArraySetting x => x.Value ?? Array.Empty<byte>(),
+            ByteArraySetting x => x.Value ?? [],
             EnumSetting x => x.Value,
-            ListOfStringsSetting x => x.Value ?? new List<string>(),
-            DictionaryOfStringsSetting x => x.Value ?? new Dictionary<string, string>(),
+            ListOfStringsSetting x => x.Value ?? [],
+            DictionaryOfStringsSetting x => x.Value ?? [],
             _ => throw new NotImplementedException()
         };
     }
@@ -441,23 +441,19 @@ internal class AutoMapperProfile : Profile
 
     private static List<DataRule> MapDataRules(
         DataRulesDto dto, IRuntimeMapper mapper)
-    {
-        List<DataRule> rules = new();
-        rules.AddRange(mapper.Map<List<SimpleDataRule>>(dto.Simple));
-        rules.AddRange(mapper.Map<List<RegexDataRule>>(dto.Regex));
-        return rules;
-    }
+        =>
+        [
+            .. mapper.Map<List<SimpleDataRule>>(dto.Simple),
+            .. mapper.Map<List<RegexDataRule>>(dto.Regex)
+        ];
 
     private static List<ConfigResourceOptions> MapResources(
         ResourcesDto dto, IRuntimeMapper mapper)
-    {
-        List<ConfigResourceOptions> resources = new();
-        resources.AddRange(mapper.Map<List<LinesFromFileResourceOptions>>(
-            dto.LinesFromFile));
-        resources.AddRange(mapper.Map<List<RandomLinesFromFileResourceOptions>>(
-            dto.RandomLinesFromFile));
-        return resources;
-    }
+        =>
+        [
+            .. mapper.Map<List<LinesFromFileResourceOptions>>(dto.LinesFromFile),
+            .. mapper.Map<List<RandomLinesFromFileResourceOptions>>(dto.RandomLinesFromFile)
+        ];
 
     private static BlockInstanceType GetBlockInstanceType(BlockInstance instance) =>
         instance switch {

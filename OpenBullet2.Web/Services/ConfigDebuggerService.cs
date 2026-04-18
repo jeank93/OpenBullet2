@@ -23,10 +23,10 @@ public sealed class ConfigDebuggerService : IDisposable
     private readonly ConfigService _configService;
 
     // Maps debuggers to connections
-    private readonly Dictionary<ConfigDebugger, List<string>> _connections = new();
+    private readonly Dictionary<ConfigDebugger, List<string>> _connections = [];
 
     // Maps config IDs to debuggers
-    private readonly Dictionary<string, ConfigDebugger> _debuggers = new();
+    private readonly Dictionary<string, ConfigDebugger> _debuggers = [];
     private readonly IHubContext<ConfigDebuggerHub> _hub;
     private readonly ILogger<ConfigDebuggerService> _logger;
 
@@ -80,7 +80,7 @@ public sealed class ConfigDebuggerService : IDisposable
         // If we don't already have a debugger for this config, create one
         if (!_debuggers.TryGetValue(configId, out var debugger))
         {
-            var config = _configService.Configs.Find(c => c.Id == configId);
+            var config = _configService.Configs.Find(c => c.Id == configId) ?? throw new ArgumentException($"Invalid config id: {configId}");
             debugger = new ConfigDebugger(config);
             _debuggers[configId] = debugger;
             _connections[debugger] = [];
@@ -210,13 +210,8 @@ public sealed class ConfigDebuggerService : IDisposable
         string configId, DebuggerOptions options)
     {
         // Get the config
-        var config = _configService.Configs.Find(c => c.Id == configId);
-        
-        if (config is null)
-        {
-            throw new ArgumentException($"Invalid config id: {configId}");
-        }
-        
+        var config = _configService.Configs.Find(c => c.Id == configId) ?? throw new ArgumentException($"Invalid config id: {configId}");
+
         // Create the new instance
         var debugger = new ConfigDebugger(config, options) {
             PluginRepo = _pluginRepo,
@@ -231,12 +226,7 @@ public sealed class ConfigDebuggerService : IDisposable
     private ConfigDebugger CreateNew(string configId, DebuggerOptions options)
     {
         // Get the config
-        var config = _configService.Configs.Find(c => c.Id == configId);
-
-        if (config is null)
-        {
-            throw new ArgumentException($"Invalid config id: {configId}");
-        }
+        var config = _configService.Configs.Find(c => c.Id == configId) ?? throw new ArgumentException($"Invalid config id: {configId}");
 
         // If we already have a debugger, we need to dispose it
         if (_debuggers.TryGetValue(config.Id, out var existing))
@@ -272,7 +262,7 @@ public sealed class ConfigDebuggerService : IDisposable
         }
         else
         {
-            _connections[debugger] = new List<string>();
+            _connections[debugger] = [];
         }
 
         // Hook the events to the newly created debugger

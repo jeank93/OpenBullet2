@@ -20,28 +20,19 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage proxies.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
-public class ProxyController : ApiController
+public class ProxyController(IProxyRepository proxyRepo,
+    IProxyGroupRepository proxyGroupRepo, IMapper mapper,
+    HttpClient httpClient,
+    ILogger<ProxyController> logger) : ApiController
 {
-    private readonly ILogger<ProxyController> _logger;
-    private readonly IMapper _mapper;
-    private readonly HttpClient _httpClient;
-    private readonly IProxyGroupRepository _proxyGroupRepo;
-    private readonly IProxyRepository _proxyRepo;
-
-    /// <summary></summary>
-    public ProxyController(IProxyRepository proxyRepo,
-        IProxyGroupRepository proxyGroupRepo, IMapper mapper,
-        HttpClient httpClient,
-        ILogger<ProxyController> logger)
-    {
-        _proxyRepo = proxyRepo;
-        _proxyGroupRepo = proxyGroupRepo;
-        _mapper = mapper;
-        _httpClient = httpClient;
-        _logger = logger;
-    }
+    private readonly ILogger<ProxyController> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
+    private readonly IProxyRepository _proxyRepo = proxyRepo;
 
     /// <summary>
     /// List all of the available proxies for the proxy group with
@@ -233,7 +224,8 @@ public class ProxyController : ApiController
         foreach (var line in lines)
         {
             if (Proxy.TryParse(line, out var proxy, defaultType,
-                    defaultUsername, defaultPassword))
+                    defaultUsername, defaultPassword)
+                && proxy is not null)
             {
                 proxies.Add(proxy);
             }
@@ -320,14 +312,8 @@ public class ProxyController : ApiController
 
     private async Task<ProxyGroupEntity> GetProxyGroupEntityAsync(int id)
     {
-        var entity = await _proxyGroupRepo.GetAsync(id);
-
-        if (entity is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
+        var entity = await _proxyGroupRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
                 id, nameof(IProxyGroupRepository));
-        }
-
         return entity;
     }
 

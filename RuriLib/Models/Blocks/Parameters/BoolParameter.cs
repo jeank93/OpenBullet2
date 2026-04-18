@@ -21,7 +21,6 @@ public class BoolParameter : BlockParameter
     /// <summary></summary>
     public BoolParameter(string name, bool defaultValue = false) : base(name)
     {
-        Name = name;
         DefaultValue = defaultValue;
     }
 
@@ -34,12 +33,6 @@ public class BoolParameter : BlockParameter
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => new()
-        {
-            Name = Name,
-            Description = Description,
-            ReadableName = PrettyName,
-            FixedSetting = new BoolSetting { Value = DefaultValue },
-            InputMode = InputMode
-        };
+        => BlockSettingFactory.CreateBoolSetting(Name, DefaultValue, InputMode,
+            DefaultVariableName, PrettyName, Description);
 }

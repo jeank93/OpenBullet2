@@ -33,12 +33,6 @@ public class IntParameter : BlockParameter
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => new()
-        {
-            Name = Name,
-            Description = Description,
-            ReadableName = PrettyName,
-            FixedSetting = new IntSetting { Value = DefaultValue },
-            InputMode = InputMode
-        };
+        => BlockSettingFactory.CreateIntSetting(Name, DefaultValue, InputMode,
+            DefaultVariableName, PrettyName, Description);
 }

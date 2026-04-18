@@ -38,5 +38,9 @@ public class ListOfStringsParameter : BlockParameter
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => BlockSettingFactory.CreateListOfStringsSetting(Name, DefaultValue, InputMode, PrettyName, Description);
+        => InputMode == SettingInputMode.Variable
+            ? BlockSettingFactory.CreateListOfStringsSetting(Name, DefaultVariableName,
+                PrettyName, Description)
+            : BlockSettingFactory.CreateListOfStringsSetting(Name, DefaultValue, InputMode,
+                PrettyName, Description);
 }

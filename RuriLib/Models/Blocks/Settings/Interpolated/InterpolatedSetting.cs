@@ -1,7 +1,6 @@
-﻿namespace RuriLib.Models.Blocks.Settings.Interpolated
-{
-    public abstract class InterpolatedSetting
-    {
+namespace RuriLib.Models.Blocks.Settings.Interpolated;
 
-    }
+public abstract class InterpolatedSetting
+{
+
 }

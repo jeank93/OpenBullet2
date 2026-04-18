@@ -33,12 +33,6 @@ public class FloatParameter : BlockParameter
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => new()
-        {
-            Name = Name,
-            Description = Description,
-            ReadableName = PrettyName,
-            FixedSetting = new FloatSetting { Value = DefaultValue },
-            InputMode = InputMode
-        };
+        => BlockSettingFactory.CreateFloatSetting(Name, DefaultValue, InputMode,
+            DefaultVariableName, PrettyName, Description);
 }

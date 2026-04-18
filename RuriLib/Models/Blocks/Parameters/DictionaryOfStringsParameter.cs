@@ -38,5 +38,9 @@ public class DictionaryOfStringsParameter : BlockParameter
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => BlockSettingFactory.CreateDictionaryOfStringsSetting(Name, DefaultValue, InputMode, PrettyName, Description);
+        => InputMode == SettingInputMode.Variable
+            ? BlockSettingFactory.CreateDictionaryOfStringsSetting(Name, DefaultVariableName,
+                PrettyName, Description)
+            : BlockSettingFactory.CreateDictionaryOfStringsSetting(Name, DefaultValue, InputMode,
+                PrettyName, Description);
 }

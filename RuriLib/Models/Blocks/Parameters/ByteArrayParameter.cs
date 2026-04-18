@@ -1,6 +1,4 @@
-﻿using RuriLib.Extensions;
 using RuriLib.Models.Blocks.Settings;
-using System;
 
 namespace RuriLib.Models.Blocks.Parameters;
 
@@ -32,19 +30,12 @@ public class ByteArrayParameter : BlockParameter
     public ByteArrayParameter(string name, string defaultVariableName = "")
         : base(name)
     {
-        Name = name;
         DefaultVariableName = defaultVariableName;
         InputMode = SettingInputMode.Variable;
     }
 
     /// <inheritdoc />
     public override BlockSetting ToBlockSetting()
-        => new()
-        {
-            Name = Name,
-            Description = Description,
-            ReadableName = PrettyName,
-            FixedSetting = new ByteArraySetting { Value = DefaultValue },
-            InputMode = InputMode
-        };
+        => BlockSettingFactory.CreateByteArraySetting(Name, DefaultValue, InputMode,
+            DefaultVariableName, PrettyName, Description);
 }

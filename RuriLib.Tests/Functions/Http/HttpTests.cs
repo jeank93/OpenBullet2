@@ -6,23 +6,25 @@ using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Text;
-using Xunit;
-using RuriLib.Blocks.Requests.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using RuriLib.Tests.Utils;
-using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
-using System.IO;
-using RuriLib.Tests.Utils.Mockup;
+using RuriLib.Blocks.Requests.Http;
 using RuriLib.Functions.Http.Options;
+using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
+using RuriLib.Tests.Utils;
+using RuriLib.Tests.Utils.Mockup;
+using Xunit;
 
 namespace RuriLib.Tests.Functions.Http
 {
     public class HttpTests
     {
         private static BotData NewBotData() => new(
-            new(null) 
+            new(null)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()
@@ -178,6 +180,19 @@ namespace RuriLib.Tests.Functions.Http
             Assert.Equal("stringContent", response.Form["stringName"]);
             Assert.Equal("rawContent", response.Form["rawName"]);
             Assert.Equal("fileContent", response.Files["fileName"]);
+        }
+
+        [Fact]
+        public void GetAllCookies_ReturnsCookiesAcrossDomains()
+        {
+            var cookieJar = new CookieContainer();
+            cookieJar.Add(new Uri("https://example.com/"), new Cookie("a", "1"));
+            cookieJar.Add(new Uri("https://sub.example.com/test"), new Cookie("b", "2"));
+
+            var cookies = Http.GetAllCookies(cookieJar);
+
+            Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "a" && c.Value == "1");
+            Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "b" && c.Value == "2");
         }
 
         /*

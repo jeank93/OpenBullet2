@@ -1,0 +1,202 @@
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using RuriLib.Models.Blocks;
+using RuriLib.Models.Configs;
+using Xunit;
+
+namespace RuriLib.Tests.Models.Blocks;
+
+public class LoliCodeBlockInstanceTests
+{
+    private readonly string _nl = Environment.NewLine;
+
+    [Fact]
+    public void ToLC_ReturnsScript()
+    {
+        var block = CreateBlock($"LOG data{_nl}");
+
+        Assert.Equal($"LOG data{_nl}", block.ToLC());
+    }
+
+    [Fact]
+    public void FromLC_AssignsScriptAndAdvancesLineNumber()
+    {
+        var block = CreateBlock();
+        var script = $"LOG data{_nl}END";
+        var lineNumber = 0;
+
+        block.FromLC(ref script, ref lineNumber);
+
+        Assert.Equal(script, block.Script);
+        Assert.Equal(2, lineNumber);
+    }
+
+    [Fact]
+    public void ToCSharp_UnsupportedStatement_PreservesRawLine()
+        => AssertTranspilesTo("return 42;", $"return 42;{_nl}");
+
+    [Fact]
+    public void ToCSharp_TakeOne_DeclaresVariable()
+        => AssertTranspilesTo("TAKEONE FROM \"MyResource\" => myString",
+            $"string myString = globals.Resources[\"MyResource\"].TakeOne();{_nl}");
+
+    [Fact]
+    public void ToCSharp_TakeOne_AssignsExistingVariable()
+        => AssertTranspilesTo("TAKEONE FROM \"MyResource\" => myString",
+            $"myString = globals.Resources[\"MyResource\"].TakeOne();{_nl}", ["myString"]);
+
+    [Fact]
+    public void ToCSharp_Take_DeclaresVariable()
+        => AssertTranspilesTo("TAKE 5 FROM \"MyResource\" => myList",
+            $"List<string> myList = globals.Resources[\"MyResource\"].Take(5);{_nl}");
+
+    [Fact]
+    public void ToCSharp_CodeLabel_OutputsLabel()
+        => AssertTranspilesTo("#MYLABEL", $"MYLABEL:{_nl}");
+
+    [Fact]
+    public void ToCSharp_Jump_OutputsGoto()
+        => AssertTranspilesTo("JUMP #MYLABEL", $"goto MYLABEL;{_nl}");
+
+    [Fact]
+    public void ToCSharp_End_ClosesBlock()
+        => AssertTranspilesTo("END", $"}}{_nl}");
+
+    [Fact]
+    public void ToCSharp_Repeat_OutputsForLoop()
+    {
+        var output = Transpile("REPEAT 10");
+
+        Assert.Matches($@"^for \(var [A-Za-z0-9_]+ = 0; [A-Za-z0-9_]+ < \(10\)\.AsInt\(\); [A-Za-z0-9_]+\+\+\){Regex.Escape(_nl)}\{{{Regex.Escape(_nl)}$",
+            output);
+    }
+
+    [Fact]
+    public void ToCSharp_Foreach_OutputsLoop()
+        => AssertTranspilesTo("FOREACH item IN items",
+            $"foreach (var item in items){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Log_OutputsLogObject()
+        => AssertTranspilesTo("LOG myVar", $"data.Logger.LogObject(myVar);{_nl}");
+
+    [Fact]
+    public void ToCSharp_CLog_OutputsColoredLogObject()
+        => AssertTranspilesTo("CLOG Tomato \"hello\"",
+            $"data.Logger.LogObject(\"hello\", LogColors.Tomato);{_nl}");
+
+    [Fact]
+    public void ToCSharp_While_OutputsLoop()
+        => AssertTranspilesTo("WHILE a < b", $"while (a < b){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_WhileKey_OutputsConditionCheck()
+        => AssertTranspilesTo("WHILE STRINGKEY @left Contains \"abc\"",
+            $"while (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_If_OutputsCondition()
+        => AssertTranspilesTo("IF a < b", $"if (a < b){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_IfKey_OutputsConditionCheck()
+        => AssertTranspilesTo("IF STRINGKEY @left Contains \"abc\"",
+            $"if (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Else_OutputsBranch()
+        => AssertTranspilesTo("ELSE", $"}}{_nl}else{_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_ElseIf_OutputsBranch()
+        => AssertTranspilesTo("ELSE IF a < b", $"}}{_nl}else if (a < b){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_ElseIfKey_OutputsConditionCheck()
+        => AssertTranspilesTo("ELSE IF STRINGKEY @left Contains \"abc\"",
+            $"}}{_nl}else if (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Try_OutputsTryBlock()
+        => AssertTranspilesTo("TRY", $"try{_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Catch_OutputsCatchBlock()
+        => AssertTranspilesTo("CATCH", $"}}{_nl}catch{_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Finally_OutputsFinallyBlock()
+        => AssertTranspilesTo("FINALLY", $"}}{_nl}finally{_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_Lock_OutputsLockBlock()
+        => AssertTranspilesTo("LOCK globals", $"lock(globals){_nl}{{{_nl}");
+
+    [Fact]
+    public void ToCSharp_AcquireLock_OutputsAsyncLockerCall()
+        => AssertTranspilesTo("ACQUIRELOCK globals",
+            $"await data.AsyncLocker.Acquire(nameof(globals), data.CancellationToken);{_nl}");
+
+    [Fact]
+    public void ToCSharp_ReleaseLock_OutputsAsyncLockerCall()
+        => AssertTranspilesTo("RELEASELOCK globals",
+            $"data.AsyncLocker.Release(nameof(globals));{_nl}");
+
+    [Fact]
+    public void ToCSharp_SetVar_DeclaresVariable()
+        => AssertTranspilesTo("SET VAR myString \"hello\"",
+            $"string myString = \"hello\";{_nl}");
+
+    [Fact]
+    public void ToCSharp_SetVar_AssignsExistingVariable()
+        => AssertTranspilesTo("SET VAR myString \"hello\"",
+            $"myString = \"hello\";{_nl}", ["myString"]);
+
+    [Fact]
+    public void ToCSharp_SetCap_DeclaresAndMarksVariable()
+        => AssertTranspilesTo("SET CAP myCapture \"hello\"",
+            $"string myCapture = \"hello\";{_nl}data.MarkForCapture(nameof(myCapture));{_nl}");
+
+    [Fact]
+    public void ToCSharp_SetCap_AssignsAndMarksExistingVariable()
+        => AssertTranspilesTo("SET CAP myCapture \"hello\"",
+            $"myCapture = \"hello\";{_nl}data.MarkForCapture(nameof(myCapture));{_nl}", ["myCapture"]);
+
+    [Fact]
+    public void ToCSharp_SetUseProxy_LowercasesBoolean()
+        => AssertTranspilesTo("SET USEPROXY TRUE", $"data.UseProxy = true;{_nl}");
+
+    [Fact]
+    public void ToCSharp_SetProxy_WithoutAuth_OutputsProxyCtor()
+        => AssertTranspilesTo("SET PROXY \"127.0.0.1\" 9050 SOCKS5",
+            $"data.Proxy = new Proxy(\"127.0.0.1\", 9050, ProxyType.Socks5);{_nl}");
+
+    [Fact]
+    public void ToCSharp_SetProxy_WithAuth_OutputsProxyCtor()
+        => AssertTranspilesTo("SET PROXY \"127.0.0.1\" 9050 SOCKS5 \"user\" \"pass\"",
+            $"data.Proxy = new Proxy(\"127.0.0.1\", 9050, ProxyType.Socks5, \"user\", \"pass\");{_nl}");
+
+    [Fact]
+    public void ToCSharp_Mark_OutputsMarkForCapture()
+        => AssertTranspilesTo("MARK @myVar", $"data.MarkForCapture(nameof(myVar));{_nl}");
+
+    [Fact]
+    public void ToCSharp_Unmark_OutputsUnmarkCapture()
+        => AssertTranspilesTo("UNMARK @myVar", $"data.UnmarkCapture(nameof(myVar));{_nl}");
+
+    private LoliCodeBlockInstance CreateBlock(string script = "")
+        => new(new LoliCodeBlockDescriptor()) { Script = script };
+
+    private string Transpile(string script)
+        => Transpile(script, []);
+
+    private string Transpile(string script, List<string> definedVariables)
+        => CreateBlock(script).ToCSharp(definedVariables, new ConfigSettings());
+
+    private void AssertTranspilesTo(string script, string expected)
+        => Assert.Equal(expected, Transpile(script));
+
+    private void AssertTranspilesTo(string script, string expected, List<string> definedVariables)
+        => Assert.Equal(expected, Transpile(script, definedVariables));
+}

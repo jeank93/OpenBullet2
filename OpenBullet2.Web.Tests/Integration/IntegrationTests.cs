@@ -22,7 +22,6 @@ public class IntegrationTests : IDisposable
     
     protected IntegrationTests(ITestOutputHelper testOutputHelper)
     {
-        Factory = new WebApplicationFactory<Program>();
         _testOutputHelper = testOutputHelper;
         
         var enumConverter = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
@@ -37,6 +36,8 @@ public class IntegrationTests : IDisposable
         
         Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection",
             $"Data Source={UserDataFolder}/OpenBullet.db;");
+
+        Factory = new WebApplicationFactory<Program>();
         
         _serviceScope = Factory.Services.CreateScope();
     }

@@ -118,4 +118,17 @@ public class HttpRequestBlockInstanceTests
         Assert.Contains("Method = RuriLib.Functions.Http.HttpMethod.POST", output);
         Assert.EndsWith("}).ConfigureAwait(false);" + _nl, output);
     }
+
+    [Fact]
+    public void MultipartSettingsGroups_DefaultContentTypes_ArePreserved()
+    {
+        var stringContent = new StringHttpContentSettingsGroup();
+        var fileContent = new FileHttpContentSettingsGroup();
+        var rawContent = new RawHttpContentSettingsGroup();
+
+        Assert.Equal("text/plain", Assert.IsType<StringSetting>(stringContent.ContentType.FixedSetting).Value);
+        Assert.Equal("application/octet-stream", Assert.IsType<StringSetting>(fileContent.ContentType.FixedSetting).Value);
+        Assert.Equal("application/octet-stream", Assert.IsType<StringSetting>(rawContent.ContentType.FixedSetting).Value);
+        Assert.IsType<ByteArraySetting>(rawContent.Data.FixedSetting);
+    }
 }

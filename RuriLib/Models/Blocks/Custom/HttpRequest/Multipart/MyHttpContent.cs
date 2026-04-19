@@ -1,8 +1,7 @@
-﻿namespace RuriLib.Models.Blocks.Custom.HttpRequest.Multipart
+namespace RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
+
+public abstract class MyHttpContent(string name, string contentType)
 {
-    public abstract class MyHttpContent
-    {
-        public string Name { get; set; }
-        public string ContentType { get; set; }
-    }
+    public string Name { get; set; } = name;
+    public string ContentType { get; set; } = contentType;
 }

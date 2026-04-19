@@ -1,7 +1,5 @@
-﻿namespace RuriLib.Models.Blocks.Custom.HttpRequest
-{
-    public class RequestParams
-    {
+namespace RuriLib.Models.Blocks.Custom.HttpRequest;
 
-    }
+public class RequestParams
+{
 }

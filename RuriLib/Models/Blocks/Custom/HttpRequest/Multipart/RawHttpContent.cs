@@ -1,14 +1,6 @@
-﻿namespace RuriLib.Models.Blocks.Custom.HttpRequest.Multipart
-{
-    public class RawHttpContent : MyHttpContent
-    {
-        public byte[] Data { get; set; }
+namespace RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
 
-        public RawHttpContent(string name, byte[] data, string contentType)
-        {
-            Name = name;
-            Data = data;
-            ContentType = contentType;
-        }
-    }
+public class RawHttpContent(string name, byte[] data, string contentType) : MyHttpContent(name, contentType)
+{
+    public byte[] Data { get; set; } = data;
 }

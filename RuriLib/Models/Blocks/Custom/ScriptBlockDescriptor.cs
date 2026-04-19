@@ -13,7 +13,7 @@ public class ScriptBlockDescriptor : BlockDescriptor
         Id = "Script";
         Name = "Script";
         Description = "This block can invoke a script in a different language, pass some variables and return some results.";
-        Category = new BlockCategory
+        Category = new()
         {
             Name = "Interop",
             BackgroundColor = "#ddadaf",

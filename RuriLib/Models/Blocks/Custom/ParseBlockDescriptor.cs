@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using RuriLib.Models.Blocks.Parameters;
 using RuriLib.Models.Blocks.Settings;
 
@@ -17,7 +16,7 @@ public class ParseBlockDescriptor : BlockDescriptor
         Id = "Parse";
         Name = Id;
         Description = "Parses text from a string";
-        Category = new BlockCategory
+        Category = new()
         {
             Name = "Parsing",
             BackgroundColor = "#ffd700",
@@ -27,7 +26,7 @@ public class ParseBlockDescriptor : BlockDescriptor
             Description = "Blocks for extracting data from strings"
         };
 
-        Parameters = new Dictionary<string, BlockParameter>
+        Parameters = new()
         {
             ["input"] = new StringParameter("input", "data.SOURCE", SettingInputMode.Variable),
             ["prefix"] = new StringParameter("prefix"),

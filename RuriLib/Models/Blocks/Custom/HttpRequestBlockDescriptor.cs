@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using RuriLib.Functions.Http;
 using RuriLib.Functions.Http.Options;
 using RuriLib.Models.Blocks.Parameters;
@@ -19,7 +18,7 @@ public class HttpRequestBlockDescriptor : BlockDescriptor
         Id = "HttpRequest";
         Name = "Http Request";
         Description = "Performs an Http request and reads the response";
-        Category = new BlockCategory
+        Category = new()
         {
             Name = "Http",
             BackgroundColor = "#32cd32",
@@ -28,7 +27,7 @@ public class HttpRequestBlockDescriptor : BlockDescriptor
             Namespace = "RuriLib.Blocks.Requests.Http.Methods",
             Description = "Blocks for performing Http requests"
         };
-        Parameters = new Dictionary<string, BlockParameter>
+        Parameters = new()
         {
             ["url"] = new StringParameter("url", "https://google.com"),
             ["method"] = new EnumParameter("method", typeof(HttpMethod), HttpMethod.GET.ToString()),
@@ -67,7 +66,7 @@ public class HttpRequestBlockDescriptor : BlockDescriptor
                 SettingInputMode.Fixed),
             ["customCookies"] = new DictionaryOfStringsParameter("customCookies", null, SettingInputMode.Interpolated),
             ["customHeaders"] = new DictionaryOfStringsParameter("customHeaders",
-                new Dictionary<string, string>
+                new()
                 {
                     ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
                     ["Pragma"] = "no-cache",

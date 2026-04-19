@@ -1,8 +1,7 @@
-﻿namespace RuriLib.Models.Blocks.Custom.Keycheck
+namespace RuriLib.Models.Blocks.Custom.Keycheck;
+
+public enum KeychainMode
 {
-    public enum KeychainMode
-    {
-        OR,
-        AND
-    }
+    OR,
+    AND
 }

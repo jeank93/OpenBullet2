@@ -1,5 +1,6 @@
 ﻿using RuriLib.Helpers.Blocks;
 using RuriLib.Helpers.LoliCode;
+using System;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
@@ -77,6 +78,13 @@ namespace RuriLib.Tests.Helpers.LoliCode
         }
 
         [Fact]
+        public void ParseList_UnterminatedList_Throws()
+        {
+            var input = "[\"one\"";
+            Assert.Throws<Exception>(() => LineParser.ParseList(ref input));
+        }
+
+        [Fact]
         public void ParseByteArray_NormalBase64_Parse()
         {
             var input = "/wA= is my byte array";
@@ -125,6 +133,13 @@ namespace RuriLib.Tests.Helpers.LoliCode
         }
 
         [Fact]
+        public void ParseDictionary_UnterminatedDictionary_Throws()
+        {
+            var input = "{ (\"key1\", \"value1\")";
+            Assert.Throws<Exception>(() => LineParser.ParseDictionary(ref input));
+        }
+
+        [Fact]
         public void ParseSetting_FixedStringSetting_Parse()
         {
             var block = BlockFactory.GetBlock<AutoBlockInstance>("ConstantString");
@@ -160,6 +175,15 @@ namespace RuriLib.Tests.Helpers.LoliCode
             Assert.Equal(SettingInputMode.Interpolated, valueSetting.InputMode);
             Assert.IsType<InterpolatedStringSetting>(valueSetting.InterpolatedSetting);
             Assert.Equal("my <interp> string", ((InterpolatedStringSetting)valueSetting.InterpolatedSetting).Value);
+        }
+
+        [Fact]
+        public void ParseSetting_MissingEquals_Throws()
+        {
+            var block = BlockFactory.GetBlock<AutoBlockInstance>("ConstantString");
+            var input = "value";
+
+            Assert.Throws<Exception>(() => LoliCodeParser.ParseSetting(ref input, block.Settings, block.Descriptor));
         }
     }
 }

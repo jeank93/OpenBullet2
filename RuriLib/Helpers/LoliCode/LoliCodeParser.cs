@@ -23,24 +23,30 @@ public static class LoliCodeParser
     public static void ParseSetting(ref string input, Dictionary<string, BlockSetting> settings, 
         BlockDescriptor descriptor)
     {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(descriptor);
+
         input = input.TrimStart();
 
         // myParam = "myValue"
         var name = LineParser.ParseToken(ref input);
 
-        if (!descriptor.Parameters.ContainsKey(name) || !settings.ContainsKey(name))
+        if (!descriptor.Parameters.TryGetValue(name, out var param)
+            || !settings.TryGetValue(name, out var setting))
+        {
             throw new Exception($"Incorrect setting name: {name}");
-
-        var param = descriptor.Parameters[name];
-        var setting = settings[name];
+        }
 
         input = input.TrimStart();
 
         // = "myValue"
-        if (input[0] != '=')
+        if (input.Length == 0 || input[0] != '=')
+        {
             throw new Exception("Could not parse the setting");
+        }
 
-        input = input.Substring(1);
+        input = input[1..];
         input = input.TrimStart();
 
         ParseSettingValue(ref input, setting, param);
@@ -53,6 +59,10 @@ public static class LoliCodeParser
     public static void ParseSettingValue<T>(ref string input, BlockSetting setting,
         T param) where T : BlockParameter
     {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(setting);
+        ArgumentNullException.ThrowIfNull(param);
+
         // @myVariable
         // $"interp"
         // "fixedValue"
@@ -71,7 +81,7 @@ public static class LoliCodeParser
             setting.InputVariableName = variableName;
             setting.InterpolatedSetting = param switch
             {
-                StringParameter x => new InterpolatedStringSetting() { MultiLine = x.MultiLine },
+                StringParameter x => new InterpolatedStringSetting { MultiLine = x.MultiLine },
                 ListOfStringsParameter _ => new InterpolatedListOfStringsSetting(),
                 DictionaryOfStringsParameter _ => new InterpolatedDictionaryOfStringsSetting(),
                 _ => null
@@ -81,7 +91,7 @@ public static class LoliCodeParser
                 BoolParameter _ => new BoolSetting(),
                 IntParameter _ => new IntSetting(),
                 FloatParameter _ => new FloatSetting(),
-                StringParameter x => new StringSetting() { MultiLine = x.MultiLine },
+                StringParameter x => new StringSetting { MultiLine = x.MultiLine },
                 ListOfStringsParameter _ => new ListOfStringsSetting(),
                 DictionaryOfStringsParameter _ => new DictionaryOfStringsSetting(),
                 ByteArrayParameter _ => new ByteArraySetting(),
@@ -102,9 +112,19 @@ public static class LoliCodeParser
             };
             setting.FixedSetting = param switch // Initialize fixed setting as well, used for type switching
             {
-                StringParameter x => new StringSetting { Value = (setting.InterpolatedSetting as InterpolatedStringSetting).Value, MultiLine = x.MultiLine },
-                ListOfStringsParameter _ => new ListOfStringsSetting { Value = (setting.InterpolatedSetting as InterpolatedListOfStringsSetting).Value },
-                DictionaryOfStringsParameter _ => new DictionaryOfStringsSetting { Value = (setting.InterpolatedSetting as InterpolatedDictionaryOfStringsSetting).Value },
+                StringParameter x => new StringSetting
+                {
+                    Value = ((InterpolatedStringSetting)setting.InterpolatedSetting).Value,
+                    MultiLine = x.MultiLine
+                },
+                ListOfStringsParameter _ => new ListOfStringsSetting
+                {
+                    Value = ((InterpolatedListOfStringsSetting)setting.InterpolatedSetting).Value
+                },
+                DictionaryOfStringsParameter _ => new DictionaryOfStringsSetting
+                {
+                    Value = ((InterpolatedDictionaryOfStringsSetting)setting.InterpolatedSetting).Value
+                },
                 _ => throw new NotSupportedException()
             };
         }
@@ -130,7 +150,11 @@ public static class LoliCodeParser
     /// Checks whether a line is a valid LoliCode block setting.
     /// </summary>
     public static bool IsSetting(string input)
-        => Regex.IsMatch(input, "^( |\t)+([0-9A-Za-z]+) = .+$");
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        return Regex.IsMatch(input, "^( |\t)+([0-9A-Za-z]+) = .+$");
+    }
 
     /// <summary>
     /// Detects the type of the next token in the given <paramref name="input"/>.
@@ -138,6 +162,8 @@ public static class LoliCodeParser
     /// </summary>
     public static VariableType? DetectTokenType(string input)
     {
+        ArgumentNullException.ThrowIfNull(input);
+
         if (input.StartsWith('"'))
             return VariableType.String;
 
@@ -168,7 +194,7 @@ public static class LoliCodeParser
     /// <summary>
     /// All the supported key identifiers.
     /// </summary>
-    public static readonly string[] keyIdentifiers = new[] { "BOOLKEY", "STRINGKEY", "INTKEY", "FLOATKEY", "LISTKEY", "DICTKEY" };
+    public static readonly string[] keyIdentifiers = ["BOOLKEY", "STRINGKEY", "INTKEY", "FLOATKEY", "LISTKEY", "DICTKEY"];
 
     /// <summary>
     /// Parses a <see cref="Key"/> from the input and moves forward.

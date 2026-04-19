@@ -189,7 +189,7 @@ namespace RuriLib.Tests.Functions.Http
             cookieJar.Add(new Uri("https://example.com/"), new Cookie("a", "1"));
             cookieJar.Add(new Uri("https://sub.example.com/test"), new Cookie("b", "2"));
 
-            var cookies = Http.GetAllCookies(cookieJar);
+            var cookies = global::RuriLib.Functions.Http.Http.GetAllCookies(cookieJar);
 
             Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "a" && c.Value == "1");
             Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "b" && c.Value == "2");

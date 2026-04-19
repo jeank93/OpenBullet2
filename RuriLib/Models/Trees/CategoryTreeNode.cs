@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System;
 using RuriLib.Models.Blocks;
 
 namespace RuriLib.Models.Trees;
@@ -44,6 +45,11 @@ public class CategoryTreeNode
             if (Descriptors.Count > 0)
             {
                 return Descriptors.First().Category;
+            }
+
+            if (SubCategories.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot resolve the category of an empty tree node");
             }
 
             var category = SubCategories.First().Category;

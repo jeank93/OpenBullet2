@@ -53,7 +53,7 @@ public class ScriptBlockInstance : BlockInstance
         writer.WriteLine($"INTERPRETER:{Interpreter}");
         writer.WriteLine($"INPUT {InputVariables}");
         writer.WriteLine("BEGIN SCRIPT");
-        writer.WriteLine(Regex.Replace(Script, @"(\r\n)*$", ""));
+        writer.WriteLine(TrimTrailingLineEndings(Script));
         writer.WriteLine("END SCRIPT");
 
         foreach (var output in OutputVariables)
@@ -138,7 +138,7 @@ public class ScriptBlockInstance : BlockInstance
             throw new LoliCodeParsingException(lineNumber, "Missing END SCRIPT definition");
         }
 
-        Script = Regex.Replace(writer.ToString(), @"(\r\n)*$", ""); // Remove blank lines at the end except one
+        Script = TrimTrailingLineEndings(writer.ToString()); // Remove blank lines at the end
 
         OutputVariables = [];
         while (reader.ReadLine() is { } line)
@@ -336,7 +336,10 @@ public class ScriptBlockInstance : BlockInstance
         };
 
     private string MakeNodeObject()
-        => string.Join("\r\n", OutputVariables.Select(o => $"  '{o.Name}': {o.Name},"));
+        => string.Join(global::System.Environment.NewLine, OutputVariables.Select(o => $"  '{o.Name}': {o.Name},"));
+
+    private static string TrimTrailingLineEndings(string value)
+        => value.TrimEnd('\r', '\n');
 
     private string MakeInputs()
         => string.Join(",", GetInputs().Select(SanitizeInput));

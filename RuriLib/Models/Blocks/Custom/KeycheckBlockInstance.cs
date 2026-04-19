@@ -1,267 +1,175 @@
-﻿using RuriLib.Exceptions;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using RuriLib.Exceptions;
 using RuriLib.Extensions;
 using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Configs;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 
-namespace RuriLib.Models.Blocks.Custom
+namespace RuriLib.Models.Blocks.Custom;
+
+public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockInstance(descriptor)
 {
-    public class KeycheckBlockInstance : BlockInstance
+    public List<Keychain> Keychains { get; set; } = [];
+
+    public override string ToLC(bool printDefaultParams = false)
     {
-        public List<Keychain> Keychains { get; set; } = new List<Keychain>();
+        /*
+         *   KEYCHAIN SUCCESS OR
+         *     STRINGKEY @myVariable Contains "abc"
+         *     DICTKEY @data.COOKIES HasKey "my-cookie"
+         *   KEYCHAIN FAIL AND
+         *     LISTKEY @myList Contains "item"
+         *     FLOATKEY 1 GreaterThan 2
+         */
 
-        public KeycheckBlockInstance(KeycheckBlockDescriptor descriptor)
-            : base(descriptor)
+        using var writer = new LoliCodeWriter(base.ToLC(printDefaultParams));
+
+        // Write all the keychains
+        foreach (var keychain in Keychains)
         {
-            
-        }
+            writer
+                .AppendToken("KEYCHAIN", 2)
+                .AppendToken(keychain.ResultStatus)
+                .AppendLine(keychain.Mode.ToString());
 
-        public override string ToLC(bool printDefaultParams = false)
-        {
-            /*
-             *   KEYCHAIN SUCCESS OR
-             *     STRINGKEY @myVariable Contains "abc"
-             *     DICTKEY @data.COOKIES HasKey "my-cookie"
-             *   KEYCHAIN FAIL AND
-             *     LISTKEY @myList Contains "item"
-             *     FLOATKEY 1 GreaterThan 2
-             */
-
-            using var writer = new LoliCodeWriter(base.ToLC(printDefaultParams));
-
-            // Write all the keychains
-            foreach (var keychain in Keychains)
+            foreach (var key in keychain.Keys)
             {
-                writer
-                    .AppendToken("KEYCHAIN", 2)
-                    .AppendToken(keychain.ResultStatus)
-                    .AppendLine(keychain.Mode.ToString());
-
-                foreach (var key in keychain.Keys)
+                (var keyName, var comparison) = key switch
                 {
-                    (string keyName, string comparison) = key switch
-                    {
-                        BoolKey x => ("BOOLKEY", x.Comparison.ToString()),
-                        StringKey x => ("STRINGKEY", x.Comparison.ToString()),
-                        IntKey x => ("INTKEY", x.Comparison.ToString()),
-                        FloatKey x => ("FLOATKEY", x.Comparison.ToString()),
-                        DictionaryKey x => ("DICTKEY", x.Comparison.ToString()),
-                        ListKey x => ("LISTKEY", x.Comparison.ToString()),
-                        _ => throw new Exception("Unknown key type")
-                    };
-
-                    writer
-                        .AppendToken(keyName, 4)
-                        .AppendToken(LoliCodeWriter.GetSettingValue(key.Left))
-                        .AppendToken(comparison)
-                        .AppendLine(LoliCodeWriter.GetSettingValue(key.Right));
-                }
-            }
-
-            return writer.ToString();
-        }
-
-        public override void FromLC(ref string script, ref int lineNumber)
-        {
-            /*
-             *   KEYCHAIN SUCCESS OR
-             *     STRINGKEY @myVariable Contains "abc"
-             *     DICTKEY @data.COOKIES HasKey "my-cookie"
-             *   KEYCHAIN FAIL AND
-             *     LISTKEY @myList Contains "item"
-             *     FLOATKEY 1 GreaterThan 2
-             */
-
-            // First parse the options that are common to every BlockInstance
-            base.FromLC(ref script, ref lineNumber);
-
-            using var reader = new StringReader(script);
-
-            while (reader.ReadLine() is { } line)
-            {
-                line = line.Trim();
-                var lineCopy = line;
-                lineNumber++;
-
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
-
-                if (line.StartsWith("KEYCHAIN"))
-                {
-                    try
-                    {
-                        var keychain = new Keychain();
-                        LineParser.ParseToken(ref line);
-                        keychain.ResultStatus = LineParser.ParseToken(ref line);
-                        keychain.Mode = Enum.Parse<KeychainMode>(LineParser.ParseToken(ref line));
-                        Keychains.Add(keychain);
-                    }
-                    catch
-                    {
-                        throw new LoliCodeParsingException(lineNumber, $"Invalid keychain declaration: {lineCopy.TruncatePretty(50)}");
-                    }
-                }
-
-                else if (Regex.IsMatch(line, "^[A-Z]+KEY "))
-                {
-                    try
-                    {
-                        var keyType = LineParser.ParseToken(ref line);
-                        Keychains.Last().Keys.Add(LoliCodeParser.ParseKey(ref line, keyType));
-                    }
-                    catch
-                    {
-                        throw new LoliCodeParsingException(lineNumber, $"Invalid key declaration: {lineCopy.TruncatePretty(50)}");
-                    }
-                }
-
-                else
-                {
-                    try
-                    {
-                        LoliCodeParser.ParseSetting(ref line, Settings, Descriptor);
-                    }
-                    catch
-                    {
-                        throw new LoliCodeParsingException(lineNumber, $"Could not parse the setting: {lineCopy.TruncatePretty(50)}");
-                    }
-                }
-            }
-        }
-
-        public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
-        {
-            /*
-             *   if (Conditions.Check(myVar, StrComparison.Contains, "hello"))
-             *     data.STATUS = "SUCCESS";
-             *     
-             *   else if (Conditions.Check(myList, ListComparison.Contains, "item") || Conditions.Check(data.COOKIES, DictComparison.HasKey, "name"))
-             *     { data.STATUS = "FAIL"; return; }
-             *     
-             *   else if (myBool)
-             *     { data.STATUS = "BAN"; return; }
-             */
-
-            using var writer = new StringWriter();
-            var banIfNoMatch = Settings["banIfNoMatch"];
-            var nonEmpty = Keychains.Where(kc => kc.Keys.Count > 0).ToList();
-
-            // If there are no keychains
-            if (nonEmpty.Count == 0)
-            {
-                writer.WriteLine($"if ({CSharpWriter.FromSetting(banIfNoMatch)})");
-
-                if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-                {
-                    writer.WriteLine(" { data.STATUS = \"BAN\"; }");
-                    writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; }");
-                }
-                else
-                {
-                    writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
-                    writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; return; }");
-                }
-
-                if (settings.GeneralSettings.ContinueStatuses.Contains("RETRY"))
-                {
-                    writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; }");
-                }
-                else
-                {
-                    writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; return; }");
-                }
-
-                return writer.ToString();
-            }
-
-            // Write all the keychains
-            for (var i = 0; i < nonEmpty.Count; i++)
-            {
-                var keychain = nonEmpty[i];
-
-                if (i == 0)
-                {
-                    writer.Write("if (");
-                }
-                else
-                {
-                    writer.Write("else if (");
-                }
-
-                var conditions = keychain.Keys.Select(CSharpWriter.ConvertKey);
-
-                var chainedCondition = keychain.Mode switch
-                {
-                    KeychainMode.OR => string.Join(" || ", conditions),
-                    KeychainMode.AND => string.Join(" && ", conditions),
-                    _ => throw new Exception("Invalid Keychain Mode")
+                    BoolKey x => ("BOOLKEY", x.Comparison.ToString()),
+                    StringKey x => ("STRINGKEY", x.Comparison.ToString()),
+                    IntKey x => ("INTKEY", x.Comparison.ToString()),
+                    FloatKey x => ("FLOATKEY", x.Comparison.ToString()),
+                    DictionaryKey x => ("DICTKEY", x.Comparison.ToString()),
+                    ListKey x => ("LISTKEY", x.Comparison.ToString()),
+                    _ => throw new InvalidOperationException("Unknown key type")
                 };
 
-                writer.Write(chainedCondition);
-                writer.WriteLine(")");
+                writer
+                    .AppendToken(keyName, 4)
+                    .AppendToken(LoliCodeWriter.GetSettingValue(key.Left))
+                    .AppendToken(comparison)
+                    .AppendLine(LoliCodeWriter.GetSettingValue(key.Right));
+            }
+        }
 
-                // Continue on this status
-                if (settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus))
-                {
-                    writer.WriteLine($" {{ data.STATUS = \"{keychain.ResultStatus}\"; }}");
-                }
+        return writer.ToString();
+    }
 
-                // Do not continue on this status (return)
-                else
-                {
-                    writer.WriteLine($"  {{ data.STATUS = \"{keychain.ResultStatus}\"; return; }}");
-                }
+    public override void FromLC(ref string script, ref int lineNumber)
+    {
+        /*
+         *   KEYCHAIN SUCCESS OR
+         *     STRINGKEY @myVariable Contains "abc"
+         *     DICTKEY @data.COOKIES HasKey "my-cookie"
+         *   KEYCHAIN FAIL AND
+         *     LISTKEY @myList Contains "item"
+         *     FLOATKEY 1 GreaterThan 2
+         */
+
+        ArgumentNullException.ThrowIfNull(script);
+
+        // First parse the options that are common to every BlockInstance
+        base.FromLC(ref script, ref lineNumber);
+
+        using var reader = new StringReader(script);
+
+        while (reader.ReadLine() is { } line)
+        {
+            line = line.Trim();
+            var lineCopy = line;
+            lineNumber++;
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
             }
 
-            // The whole purpose of this is to make the code a bit prettier
-            if (banIfNoMatch.InputMode == SettingInputMode.Fixed)
+            if (line.StartsWith("KEYCHAIN", StringComparison.Ordinal))
             {
-                if (((BoolSetting)banIfNoMatch.FixedSetting).Value)
+                try
                 {
-                    writer.WriteLine("else");
-
-                    if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-                    {
-                        writer.WriteLine(" { data.STATUS = \"BAN\"; }");
-                    }
-                    else
-                    {
-                        writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
-                    }
+                    var keychain = new Keychain();
+                    LineParser.ParseToken(ref line);
+                    keychain.ResultStatus = LineParser.ParseToken(ref line);
+                    keychain.Mode = Enum.Parse<KeychainMode>(LineParser.ParseToken(ref line));
+                    Keychains.Add(keychain);
                 }
-                else
+                catch
                 {
+                    throw new LoliCodeParsingException(lineNumber, $"Invalid keychain declaration: {lineCopy.TruncatePretty(50)}");
+                }
+            }
+            else if (Regex.IsMatch(line, "^[A-Z]+KEY "))
+            {
+                try
+                {
+                    if (Keychains.Count == 0)
+                    {
+                        throw new FormatException();
+                    }
 
+                    var keyType = LineParser.ParseToken(ref line);
+                    Keychains[^1].Keys.Add(LoliCodeParser.ParseKey(ref line, keyType));
+                }
+                catch
+                {
+                    throw new LoliCodeParsingException(lineNumber, $"Invalid key declaration: {lineCopy.TruncatePretty(50)}");
                 }
             }
             else
             {
-                writer.WriteLine($"else if ({CSharpWriter.FromSetting(banIfNoMatch)})");
-
-                if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
+                try
                 {
-                    writer.WriteLine(" { data.STATUS = \"BAN\"; }");
+                    LoliCodeParser.ParseSetting(ref line, Settings, Descriptor);
                 }
-                else
+                catch
                 {
-                    writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
+                    throw new LoliCodeParsingException(lineNumber, $"Could not parse the setting: {lineCopy.TruncatePretty(50)}");
                 }
             }
+        }
+    }
 
-            // Check global ban keys
+    public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
+    {
+        /*
+         *   if (Conditions.Check(myVar, StrComparison.Contains, "hello"))
+         *     data.STATUS = "SUCCESS";
+         *
+         *   else if (Conditions.Check(myList, ListComparison.Contains, "item") || Conditions.Check(data.COOKIES, DictComparison.HasKey, "name"))
+         *     { data.STATUS = "FAIL"; return; }
+         *
+         *   else if (myBool)
+         *     { data.STATUS = "BAN"; return; }
+         */
+
+        ArgumentNullException.ThrowIfNull(definedVariables);
+        ArgumentNullException.ThrowIfNull(settings);
+
+        using var writer = new StringWriter();
+        var banIfNoMatch = Settings["banIfNoMatch"];
+        var nonEmpty = Keychains.Where(kc => kc.Keys.Count > 0).ToList();
+
+        // If there are no keychains
+        if (nonEmpty.Count == 0)
+        {
+            writer.WriteLine($"if ({CSharpWriter.FromSetting(banIfNoMatch)})");
+
             if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
             {
+                writer.WriteLine(" { data.STATUS = \"BAN\"; }");
                 writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; }");
             }
             else
             {
+                writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
                 writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; return; }");
             }
 
@@ -276,5 +184,96 @@ namespace RuriLib.Models.Blocks.Custom
 
             return writer.ToString();
         }
+
+        // Write all the keychains
+        for (var i = 0; i < nonEmpty.Count; i++)
+        {
+            var keychain = nonEmpty[i];
+
+            if (i == 0)
+            {
+                writer.Write("if (");
+            }
+            else
+            {
+                writer.Write("else if (");
+            }
+
+            var conditions = keychain.Keys.Select(CSharpWriter.ConvertKey);
+
+            var chainedCondition = keychain.Mode switch
+            {
+                KeychainMode.OR => string.Join(" || ", conditions),
+                KeychainMode.AND => string.Join(" && ", conditions),
+                _ => throw new InvalidOperationException("Invalid Keychain Mode")
+            };
+
+            writer.Write(chainedCondition);
+            writer.WriteLine(")");
+
+            // Continue on this status
+            if (settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus))
+            {
+                writer.WriteLine($" {{ data.STATUS = \"{keychain.ResultStatus}\"; }}");
+            }
+
+            // Do not continue on this status (return)
+            else
+            {
+                writer.WriteLine($"  {{ data.STATUS = \"{keychain.ResultStatus}\"; return; }}");
+            }
+        }
+
+        // The whole purpose of this is to make the code a bit prettier
+        if (banIfNoMatch.InputMode == SettingInputMode.Fixed)
+        {
+            if (((BoolSetting)banIfNoMatch.FixedSetting).Value)
+            {
+                writer.WriteLine("else");
+
+                if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
+                {
+                    writer.WriteLine(" { data.STATUS = \"BAN\"; }");
+                }
+                else
+                {
+                    writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
+                }
+            }
+        }
+        else
+        {
+            writer.WriteLine($"else if ({CSharpWriter.FromSetting(banIfNoMatch)})");
+
+            if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
+            {
+                writer.WriteLine(" { data.STATUS = \"BAN\"; }");
+            }
+            else
+            {
+                writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
+            }
+        }
+
+        // Check global ban keys
+        if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
+        {
+            writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; }");
+        }
+        else
+        {
+            writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; return; }");
+        }
+
+        if (settings.GeneralSettings.ContinueStatuses.Contains("RETRY"))
+        {
+            writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; }");
+        }
+        else
+        {
+            writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; return; }");
+        }
+
+        return writer.ToString();
     }
 }

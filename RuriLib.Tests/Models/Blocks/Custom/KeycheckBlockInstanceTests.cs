@@ -1,253 +1,258 @@
-﻿using RuriLib.Helpers.Blocks;
+using System;
+using System.Collections.Generic;
+using RuriLib.Exceptions;
+using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Conditions.Comparisons;
 using RuriLib.Models.Configs;
-using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
-namespace RuriLib.Tests.Models.Blocks.Custom
+namespace RuriLib.Tests.Models.Blocks.Custom;
+
+public class KeycheckBlockInstanceTests
 {
-    public class KeycheckBlockInstanceTests
+    private readonly string _nl = Environment.NewLine;
+
+    /*
+    [Fact]
+    public void ToLC_NormalBlock_OutputScript()
     {
-        /*
-        [Fact]
-        public void ToLC_NormalBlock_OutputScript()
+        var repo = new DescriptorsRepository();
+        var descriptor = repo.GetAs<KeycheckBlockDescriptor>("Keycheck");
+        var block = new KeycheckBlockInstance(descriptor);
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Fixed;
+        (banIfNoMatch.FixedSetting as BoolSetting).Value = false;
+
+        block.Disabled = true;
+        block.Label = "My Label";
+
+        block.Keychains = new List<Keychain>
         {
-            var repo = new DescriptorsRepository();
-            var descriptor = repo.GetAs<KeycheckBlockDescriptor>("Keycheck");
-            var block = new KeycheckBlockInstance(descriptor);
-
-            var banIfNoMatch = block.Settings["banIfNoMatch"];
-            banIfNoMatch.InputMode = SettingInputMode.Fixed;
-            (banIfNoMatch.FixedSetting as BoolSetting).Value = false;
-
-            block.Disabled = true;
-            block.Label = "My Label";
-
-            block.Keychains = new List<Keychain>
+            new Keychain
             {
-                new Keychain
+                ResultStatus = "SUCCESS",
+                Mode = KeychainMode.OR,
+                Keys = new List<Key>
                 {
-                    ResultStatus = "SUCCESS",
-                    Mode = KeychainMode.OR,
-                    Keys = new List<Key>
+                    new StringKey
                     {
-                        new StringKey
+                        Left = new BlockSetting
                         {
-                            Left = new BlockSetting
-                            {
-                                InputMode = SettingInputMode.Variable,
-                                InputVariableName = "myString"
-                            },
-                            Comparison = StrComparison.Contains,
-                            Right = new BlockSetting
-                            {
-                                FixedSetting = new StringSetting { Value = "abc" }
-                            }
+                            InputMode = SettingInputMode.Variable,
+                            InputVariableName = "myString"
                         },
-                        new FloatKey
+                        Comparison = StrComparison.Contains,
+                        Right = new BlockSetting
                         {
-                            Left = new BlockSetting
-                            {
-                                FixedSetting = new FloatSetting { Value = 3f }
-                            },
-                            Comparison = NumComparison.GreaterThan,
-                            Right = new BlockSetting
-                            {
-                                FixedSetting = new FloatSetting { Value = 1.5f }
-                            }
+                            FixedSetting = new StringSetting { Value = "abc" }
                         }
-                    }
-                },
-                new Keychain
-                {
-                    ResultStatus = "FAIL",
-                    Mode = KeychainMode.AND,
-                    Keys = new List<Key>
+                    },
+                    new FloatKey
                     {
-                        new ListKey
+                        Left = new BlockSetting
                         {
-                            Left = new BlockSetting
-                            {
-                                InputMode = SettingInputMode.Variable,
-                                InputVariableName = "myList"
-                            },
-                            Comparison = ListComparison.Contains,
-                            Right = new BlockSetting
-                            {
-                                FixedSetting = new StringSetting { Value = "abc" }
-                            }
+                            FixedSetting = new FloatSetting { Value = 3f }
                         },
-                        new DictionaryKey
+                        Comparison = NumComparison.GreaterThan,
+                        Right = new BlockSetting
                         {
-                            Left = new BlockSetting
-                            {
-                                InputMode = SettingInputMode.Variable,
-                                InputVariableName = "myDict"
-                            },
-                            Comparison = DictComparison.HasKey,
-                            Right = new BlockSetting
-                            {
-                                FixedSetting = new StringSetting { Value = "abc" }
-                            }
+                            FixedSetting = new FloatSetting { Value = 1.5f }
                         }
                     }
                 }
-            };
-
-            var expected = "DISABLED\r\nLABEL:My Label\r\n  banIfNoMatch = False\r\n  KEYCHAIN SUCCESS OR\r\n    STRINGKEY @myString Contains \"abc\"\r\n    FLOATKEY 3 GreaterThan 1.5\r\n  KEYCHAIN FAIL AND\r\n    LISTKEY @myList Contains \"abc\"\r\n    DICTKEY @myDict HasKey \"abc\"\r\n";
-            Assert.Equal(expected, block.ToLC());
-        }
-
-        [Fact]
-        public void FromLC_NormalScript_BuildBlock()
-        {
-            var block = BlockFactory.GetBlock<KeycheckBlockInstance>("Keycheck");
-            var script = "DISABLED\r\nLABEL:My Label\r\n  banIfNoMatch = False\r\n  KEYCHAIN SUCCESS OR\r\n    STRINGKEY @myString Contains \"abc\"\r\n    FLOATKEY 3 GreaterThan 1.5\r\n  KEYCHAIN FAIL AND\r\n    LISTKEY @myList Contains \"abc\"\r\n    DICTKEY @myDict HasKey \"abc\"\r\n";
-            int lineNumber = 0;
-            block.FromLC(ref script, ref lineNumber);
-
-            Assert.True(block.Disabled);
-            Assert.Equal("My Label", block.Label);
-
-            BlockSetting left, right;
-
-            var banIfNoMatch = block.Settings["banIfNoMatch"];
-            Assert.False((banIfNoMatch.FixedSetting as BoolSetting).Value);
-
-            var kc1 = block.Keychains[0];
-
-            Assert.Equal("SUCCESS", kc1.ResultStatus);
-            Assert.Equal(KeychainMode.OR, kc1.Mode);
-
-            var k1 = kc1.Keys[0] as StringKey;
-            var k2 = kc1.Keys[1] as FloatKey;
-
-            left = k1.Left;
-            right = k1.Right;
-            Assert.Equal(SettingInputMode.Variable, left.InputMode);
-            Assert.Equal("myString", left.InputVariableName);
-            Assert.Equal(StrComparison.Contains, k1.Comparison);
-            Assert.Equal(SettingInputMode.Fixed, right.InputMode);
-            Assert.Equal("abc", (right.FixedSetting as StringSetting).Value);
-
-            left = k2.Left;
-            right = k2.Right;
-            Assert.Equal(SettingInputMode.Fixed, left.InputMode);
-            Assert.Equal(3F, (left.FixedSetting as FloatSetting).Value);
-            Assert.Equal(NumComparison.GreaterThan, k2.Comparison);
-            Assert.Equal(SettingInputMode.Fixed, right.InputMode);
-            Assert.Equal(1.5F, (right.FixedSetting as FloatSetting).Value);
-
-            var kc2 = block.Keychains[1];
-
-            Assert.Equal("FAIL", kc2.ResultStatus);
-            Assert.Equal(KeychainMode.AND, kc2.Mode);
-
-            var k3 = kc2.Keys[0] as ListKey;
-            var k4 = kc2.Keys[1] as DictionaryKey;
-
-            left = k3.Left;
-            right = k3.Right;
-            Assert.Equal(SettingInputMode.Variable, left.InputMode);
-            Assert.Equal("myList", left.InputVariableName);
-            Assert.Equal(ListComparison.Contains, k3.Comparison);
-            Assert.Equal(SettingInputMode.Fixed, right.InputMode);
-            Assert.Equal("abc", (right.FixedSetting as StringSetting).Value);
-
-            left = k4.Left;
-            right = k4.Right;
-            Assert.Equal(SettingInputMode.Variable, left.InputMode);
-            Assert.Equal("myDict", left.InputVariableName);
-            Assert.Equal(DictComparison.HasKey, k4.Comparison);
-            Assert.Equal(SettingInputMode.Fixed, right.InputMode);
-            Assert.Equal("abc", (right.FixedSetting as StringSetting).Value);
-        }
-
-        [Fact]
-        public void ToCSharp_NormalBlock_OutputScript()
-        {
-            var repo = new DescriptorsRepository();
-            var descriptor = repo.GetAs<KeycheckBlockDescriptor>("Keycheck");
-            var block = new KeycheckBlockInstance(descriptor);
-
-            var banIfNoMatch = block.Settings["banIfNoMatch"];
-            banIfNoMatch.InputMode = SettingInputMode.Variable;
-            banIfNoMatch.InputVariableName = "myBool";
-
-            block.Disabled = true;
-            block.Label = "My Label";
-
-            block.Keychains = new List<Keychain>
+            },
+            new Keychain
             {
-                new Keychain
+                ResultStatus = "FAIL",
+                Mode = KeychainMode.AND,
+                Keys = new List<Key>
                 {
-                    ResultStatus = "SUCCESS",
-                    Mode = KeychainMode.OR,
-                    Keys = new List<Key>
+                    new ListKey
                     {
-                        new StringKey
+                        Left = new BlockSetting
                         {
-                            Left = BlockSettingFactory.CreateStringSetting("", "myString", SettingInputMode.Variable),
-                            Comparison = StrComparison.Contains,
-                            Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                            InputMode = SettingInputMode.Variable,
+                            InputVariableName = "myList"
                         },
-                        new FloatKey
+                        Comparison = ListComparison.Contains,
+                        Right = new BlockSetting
                         {
-                            Left = BlockSettingFactory.CreateFloatSetting("", 3F),
-                            Comparison = NumComparison.GreaterThan,
-                            Right = BlockSettingFactory.CreateFloatSetting("", 1.5F)
+                            FixedSetting = new StringSetting { Value = "abc" }
                         }
-                    }
-                },
-                new Keychain
-                {
-                    ResultStatus = "FAIL",
-                    Mode = KeychainMode.AND,
-                    Keys = new List<Key>
+                    },
+                    new DictionaryKey
                     {
-                        new ListKey
+                        Left = new BlockSetting
                         {
-                            Left = BlockSettingFactory.CreateListOfStringsSetting("", "myList"),
-                            Comparison = ListComparison.Contains,
-                            Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                            InputMode = SettingInputMode.Variable,
+                            InputVariableName = "myDict"
                         },
-                        new DictionaryKey
+                        Comparison = DictComparison.HasKey,
+                        Right = new BlockSetting
                         {
-                            Left = BlockSettingFactory.CreateDictionaryOfStringsSetting("", "myDict"),
-                            Comparison = DictComparison.HasKey,
-                            Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                            FixedSetting = new StringSetting { Value = "abc" }
                         }
                     }
                 }
-            };
+            }
+        };
 
-            string expected = "if (Conditions.Check(myString.AsString(), StrComparison.Contains, \"abc\") || Conditions.Check(3F, NumComparison.GreaterThan, 1.5F))\r\n  data.STATUS = \"SUCCESS\";\r\nelse if (Conditions.Check(myList.AsList(), ListComparison.Contains, \"abc\") && Conditions.Check(myDict.AsDict(), DictComparison.HasKey, \"abc\"))\r\n  { data.STATUS = \"FAIL\"; return; }\r\nelse if (myBool.AsBool())\r\n  { data.STATUS = \"BAN\"; return; }\r\n";
-            Assert.Equal(expected, block.ToCSharp(new List<string>(), new ConfigSettings()));
-        }
-
-        [Fact]
-        public void ToCSharp_NoKeychains_OutputScript()
-        {
-            var repo = new DescriptorsRepository();
-            var descriptor = repo.GetAs<KeycheckBlockDescriptor>("Keycheck");
-            var block = new KeycheckBlockInstance(descriptor);
-
-            var banIfNoMatch = block.Settings["banIfNoMatch"];
-            banIfNoMatch.InputMode = SettingInputMode.Variable;
-            banIfNoMatch.InputVariableName = "myBool";
-
-            block.Disabled = true;
-            block.Label = "My Label";
-
-            block.Keychains = new List<Keychain> { };
-
-            string expected = "if (myBool.AsBool())\r\n  { data.STATUS = \"BAN\"; return; }\r\n";
-            Assert.Equal(expected, block.ToCSharp(new List<string>(), new ConfigSettings()));
-        }
-        */
+        var expected = "DISABLED\r\nLABEL:My Label\r\n  banIfNoMatch = False\r\n  KEYCHAIN SUCCESS OR\r\n    STRINGKEY @myString Contains \"abc\"\r\n    FLOATKEY 3 GreaterThan 1.5\r\n  KEYCHAIN FAIL AND\r\n    LISTKEY @myList Contains \"abc\"\r\n    DICTKEY @myDict HasKey \"abc\"\r\n";
+        Assert.Equal(expected, block.ToLC());
     }
+    */
+
+    [Fact]
+    public void ToLC_NormalBlock_OutputScript()
+    {
+        var block = CreateBlock();
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Fixed;
+        (banIfNoMatch.FixedSetting as BoolSetting)!.Value = false;
+
+        block.Disabled = true;
+        block.Label = "My Label";
+        block.Keychains = CreateKeychains();
+
+        var expected = $"DISABLED{_nl}LABEL:My Label{_nl}  banIfNoMatch = False{_nl}  KEYCHAIN SUCCESS OR{_nl}    STRINGKEY @myString Contains \"abc\"{_nl}    FLOATKEY 3 GreaterThan 1.5{_nl}  KEYCHAIN FAIL AND{_nl}    LISTKEY @myList Contains \"abc\"{_nl}    DICTKEY @myDict HasKey \"abc\"{_nl}";
+        Assert.Equal(expected, block.ToLC());
+    }
+
+    [Fact]
+    public void FromLC_NormalScript_BuildBlock()
+    {
+        var block = BlockFactory.GetBlock<KeycheckBlockInstance>("Keycheck");
+        var script = $"DISABLED{_nl}LABEL:My Label{_nl}  banIfNoMatch = False{_nl}  KEYCHAIN SUCCESS OR{_nl}    STRINGKEY @myString Contains \"abc\"{_nl}    FLOATKEY 3 GreaterThan 1.5{_nl}  KEYCHAIN FAIL AND{_nl}    LISTKEY @myList Contains \"abc\"{_nl}    DICTKEY @myDict HasKey \"abc\"{_nl}";
+        var lineNumber = 0;
+
+        block.FromLC(ref script, ref lineNumber);
+
+        Assert.True(block.Disabled);
+        Assert.Equal("My Label", block.Label);
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        Assert.False((banIfNoMatch.FixedSetting as BoolSetting)!.Value);
+
+        var firstKeychain = block.Keychains[0];
+        Assert.Equal("SUCCESS", firstKeychain.ResultStatus);
+        Assert.Equal(KeychainMode.OR, firstKeychain.Mode);
+
+        var firstKey = (StringKey)firstKeychain.Keys[0];
+        Assert.Equal(SettingInputMode.Variable, firstKey.Left.InputMode);
+        Assert.Equal("myString", firstKey.Left.InputVariableName);
+        Assert.Equal(StrComparison.Contains, firstKey.Comparison);
+        Assert.Equal("abc", (firstKey.Right.FixedSetting as StringSetting)!.Value);
+
+        var secondKey = (FloatKey)firstKeychain.Keys[1];
+        Assert.Equal(3F, (secondKey.Left.FixedSetting as FloatSetting)!.Value);
+        Assert.Equal(NumComparison.GreaterThan, secondKey.Comparison);
+        Assert.Equal(1.5F, (secondKey.Right.FixedSetting as FloatSetting)!.Value);
+
+        var secondKeychain = block.Keychains[1];
+        Assert.Equal("FAIL", secondKeychain.ResultStatus);
+        Assert.Equal(KeychainMode.AND, secondKeychain.Mode);
+
+        var thirdKey = (ListKey)secondKeychain.Keys[0];
+        Assert.Equal("myList", thirdKey.Left.InputVariableName);
+        Assert.Equal(ListComparison.Contains, thirdKey.Comparison);
+        Assert.Equal("abc", (thirdKey.Right.FixedSetting as StringSetting)!.Value);
+
+        var fourthKey = (DictionaryKey)secondKeychain.Keys[1];
+        Assert.Equal("myDict", fourthKey.Left.InputVariableName);
+        Assert.Equal(DictComparison.HasKey, fourthKey.Comparison);
+        Assert.Equal("abc", (fourthKey.Right.FixedSetting as StringSetting)!.Value);
+    }
+
+    [Fact]
+    public void FromLC_KeyWithoutKeychain_Throws()
+    {
+        var block = BlockFactory.GetBlock<KeycheckBlockInstance>("Keycheck");
+        var script = $"    STRINGKEY @myString Contains \"abc\"{_nl}";
+        var lineNumber = 0;
+
+        Assert.Throws<LoliCodeParsingException>(() => block.FromLC(ref script, ref lineNumber));
+    }
+
+    [Fact]
+    public void ToCSharp_NormalBlock_OutputScript()
+    {
+        var block = CreateBlock();
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Variable;
+        banIfNoMatch.InputVariableName = "myBool";
+
+        block.Disabled = true;
+        block.Label = "My Label";
+        block.Keychains = CreateKeychains();
+
+        var expected = $"if (CheckCondition(data, myString.AsString(), StrComparison.Contains, \"abc\") || CheckCondition(data, 3F, NumComparison.GreaterThan, 1.5F)){_nl} {{ data.STATUS = \"SUCCESS\"; }}{_nl}else if (CheckCondition(data, myList.AsList(), ListComparison.Contains, \"abc\") && CheckCondition(data, myDict.AsDict(), DictComparison.HasKey, \"abc\")){_nl}  {{ data.STATUS = \"FAIL\"; return; }}{_nl}else if (myBool.AsBool()){_nl}  {{ data.STATUS = \"BAN\"; return; }}{_nl}if (CheckGlobalBanKeys(data)) {{ data.STATUS = \"BAN\"; return; }}{_nl}if (CheckGlobalRetryKeys(data)) {{ data.STATUS = \"RETRY\"; return; }}{_nl}";
+        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+    }
+
+    [Fact]
+    public void ToCSharp_NoKeychains_OutputScript()
+    {
+        var block = CreateBlock();
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Variable;
+        banIfNoMatch.InputVariableName = "myBool";
+
+        var expected = $"if (myBool.AsBool()){_nl}  {{ data.STATUS = \"BAN\"; return; }}{_nl}if (CheckGlobalBanKeys(data)) {{ data.STATUS = \"BAN\"; return; }}{_nl}if (CheckGlobalRetryKeys(data)) {{ data.STATUS = \"RETRY\"; return; }}{_nl}";
+        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+    }
+
+    private static KeycheckBlockInstance CreateBlock()
+        => new(new KeycheckBlockDescriptor());
+
+    private static List<Keychain> CreateKeychains()
+        => new()
+        {
+            new Keychain
+            {
+                ResultStatus = "SUCCESS",
+                Mode = KeychainMode.OR,
+                Keys =
+                [
+                    new StringKey
+                    {
+                        Left = BlockSettingFactory.CreateStringSetting("", "myString", SettingInputMode.Variable),
+                        Comparison = StrComparison.Contains,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    },
+                    new FloatKey
+                    {
+                        Left = BlockSettingFactory.CreateFloatSetting("", 3F),
+                        Comparison = NumComparison.GreaterThan,
+                        Right = BlockSettingFactory.CreateFloatSetting("", 1.5F)
+                    }
+                ]
+            },
+            new Keychain
+            {
+                ResultStatus = "FAIL",
+                Mode = KeychainMode.AND,
+                Keys =
+                [
+                    new ListKey
+                    {
+                        Left = BlockSettingFactory.CreateListOfStringsSetting("", "myList"),
+                        Comparison = ListComparison.Contains,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    },
+                    new DictionaryKey
+                    {
+                        Left = BlockSettingFactory.CreateDictionaryOfStringsSetting("", "myDict"),
+                        Comparison = DictComparison.HasKey,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    }
+                ]
+            }
+        };
 }

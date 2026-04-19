@@ -43,7 +43,7 @@ public class BlockDescriptor
     /// <summary>
     /// The category metadata for the block.
     /// </summary>
-    public BlockCategory Category { get; set; }
+    public BlockCategory Category { get; set; } = new();
 
     /// <summary>
     /// The settings parameters keyed by parameter name.

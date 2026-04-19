@@ -1,46 +1,52 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RuriLib.Helpers
+namespace RuriLib.Helpers;
+
+public class AsyncLocker : IDisposable
 {
-    public class AsyncLocker : IDisposable
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> semaphores = new();
+
+    public Task Acquire(string key, CancellationToken cancellationToken = default)
     {
-        private readonly Dictionary<string, SemaphoreSlim> semaphores = new();
+        ArgumentNullException.ThrowIfNull(key);
 
-        public Task Acquire(string key, CancellationToken cancellationToken = default)
+        var semaphore = semaphores.GetOrAdd(key, static _ => new SemaphoreSlim(1, 1));
+        return semaphore.WaitAsync(cancellationToken);
+    }
+
+    public Task Acquire(Type classType, string methodName, CancellationToken cancellationToken = default)
+        => Acquire(CombineTypes(classType, methodName), cancellationToken);
+
+    public void Release(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (!semaphores.TryGetValue(key, out var semaphore))
         {
-            if (!semaphores.ContainsKey(key))
-            {
-                semaphores[key] = new SemaphoreSlim(1, 1);
-            }
-
-            return semaphores[key].WaitAsync(cancellationToken);
+            throw new InvalidOperationException($"No semaphore exists for key '{key}'.");
         }
 
-        public Task Acquire(Type classType, string methodName, CancellationToken cancellationToken = default)
-            => Acquire(CombineTypes(classType, methodName), cancellationToken);
+        semaphore.Release();
+    }
 
-        public void Release(string key) => semaphores[key].Release();
+    public void Release(Type classType, string methodName) => Release(CombineTypes(classType, methodName));
 
-        public void Release(Type classType, string methodName) => Release(CombineTypes(classType, methodName));
+    private static string CombineTypes(Type classType, string methodName)
+    {
+        ArgumentNullException.ThrowIfNull(classType);
+        ArgumentNullException.ThrowIfNull(methodName);
 
-        private string CombineTypes(Type classType, string methodName) => $"{classType.FullName}.{methodName}";
+        return $"{classType.FullName}.{methodName}";
+    }
 
-        public void Dispose()
+    public void Dispose()
+    {
+        foreach (var semaphore in semaphores.Values)
         {
-            foreach (var semaphore in semaphores.Values)
-            {
-                try
-                {
-                    semaphore.Dispose();
-                }
-                catch
-                {
-
-                }
-            }
+            semaphore.Dispose();
         }
     }
 }

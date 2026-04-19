@@ -3,7 +3,6 @@
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <ApplicationIcon>logo.ico</ApplicationIcon>
-        <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <!--
         We cannot use this because of CSharpScript API https://github.com/dotnet/roslyn/issues/50719

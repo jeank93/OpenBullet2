@@ -1,9 +1,3 @@
-﻿using RuriLib.Functions.Http;
-using RuriLib.Logging;
-using RuriLib.Models.Bots;
-using RuriLib.Models.Configs;
-using RuriLib.Models.Data;
-using RuriLib.Models.Environment;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,148 +7,159 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RuriLib.Blocks.Requests.Http;
+using RuriLib.Functions.Http;
 using RuriLib.Functions.Http.Options;
+using RuriLib.Logging;
 using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
+using RuriLib.Models.Bots;
+using RuriLib.Models.Configs;
+using RuriLib.Models.Data;
+using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils;
 using RuriLib.Tests.Utils.Mockup;
 using Xunit;
 
-namespace RuriLib.Tests.Functions.Http
+namespace RuriLib.Tests.Functions.Http;
+
+public class HttpTests
 {
-    public class HttpTests
+    private static BotData NewBotData() => new(
+        new(null!)
+        {
+            ProxySettings = new MockedProxySettingsProvider(),
+            Security = new MockedSecurityProvider()
+        },
+        new ConfigSettings(),
+        new BotLogger(),
+        new DataLine("", new WordlistType()),
+        null,
+        false);
+
+    private readonly string httpBin = "https://httpbin.org/anything";
+
+    [Theory]
+    [InlineData(HttpLibrary.RuriLibHttp)]
+    [InlineData(HttpLibrary.SystemNet)]
+    public async Task HttpRequestStandard_Get_Verify(HttpLibrary library)
     {
-        private static BotData NewBotData() => new(
-            new(null)
-            {
-                ProxySettings = new MockedProxySettingsProvider(),
-                Security = new MockedSecurityProvider()
-            },
-            new ConfigSettings(),
-            new BotLogger(),
-            new DataLine("", new WordlistType()),
-            null,
-            false);
+        var data = NewBotData();
 
-        private readonly string httpBin = "https://httpbin.org/anything";
-
-        [Theory]
-        [InlineData(HttpLibrary.RuriLibHttp)]
-        [InlineData(HttpLibrary.SystemNet)]
-        public async Task HttpRequestStandard_Get_Verify(HttpLibrary library)
+        var cookies = new Dictionary<string, string>
         {
-            var data = NewBotData();
+            { "name1", "value1" },
+            { "name2", "value2" }
+        };
 
-            var cookies = new Dictionary<string, string>
-            {
-                { "name1", "value1" },
-                { "name2", "value2" }
-            };
-
-            var headers = new Dictionary<string, string>
-            {
-                { "Custom", "value" }
-            };
-
-            var options = new StandardHttpRequestOptions
-            {
-                Url = httpBin,
-                Method = HttpMethod.GET,
-                HttpLibrary = library,
-                CustomHeaders = headers,
-                CustomCookies = cookies
-            };
-
-            await Methods.HttpRequestStandard(data, options);
-
-            var response = JsonConvert.DeserializeObject<HttpBinResponse>(data.SOURCE);
-            Assert.Equal("value", response.Headers["Custom"]);
-            Assert.Equal("httpbin.org", response.Headers["Host"]);
-            Assert.Equal("name1=value1; name2=value2", response.Headers["Cookie"]);
-            Assert.Equal("GET", response.Method);
-            Assert.Equal(httpBin, response.Url);
-        }
-
-        [Theory]
-        [InlineData(HttpLibrary.RuriLibHttp)]
-        [InlineData(HttpLibrary.SystemNet)]
-        public async Task HttpRequestStandard_Post_Verify(HttpLibrary library)
+        var headers = new Dictionary<string, string>
         {
-            var data = NewBotData();
+            { "Custom", "value" }
+        };
 
-            var options = new StandardHttpRequestOptions
-            {
-                Url = httpBin,
-                Method = HttpMethod.POST,
-                HttpLibrary = library,
-                Content = "name1=value1&name2=value2",
-                ContentType = "application/x-www-form-urlencoded"
-            };
-
-            await Methods.HttpRequestStandard(data, options);
-
-            var response = JsonConvert.DeserializeObject<HttpBinResponse>(data.SOURCE);
-            Assert.Equal("POST", response.Method);
-            Assert.Equal("value1", response.Form["name1"]);
-            Assert.Equal("value2", response.Form["name2"]);
-            Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
-        }
-
-        [Theory]
-        [InlineData(HttpLibrary.RuriLibHttp)]
-        [InlineData(HttpLibrary.SystemNet)]
-        public async Task HttpRequestRaw_Post_Verify(HttpLibrary library)
+        var options = new StandardHttpRequestOptions
         {
-            var data = NewBotData();
+            Url = httpBin,
+            Method = HttpMethod.GET,
+            HttpLibrary = library,
+            CustomHeaders = headers,
+            CustomCookies = cookies
+        };
 
-            var options = new RawHttpRequestOptions
-            {
-                Url = httpBin,
-                Method = HttpMethod.POST,
-                HttpLibrary = library,
-                Content = Encoding.UTF8.GetBytes("name1=value1&name2=value2"),
-                ContentType = "application/x-www-form-urlencoded"
-            };
+        await Methods.HttpRequestStandard(data, options);
 
-            await Methods.HttpRequestRaw(data, options);
+        var response = DeserializeHttpBinResponse(data.SOURCE);
+        Assert.Equal("value", response.Headers["Custom"]);
+        Assert.Equal("httpbin.org", response.Headers["Host"]);
+        Assert.Equal("name1=value1; name2=value2", response.Headers["Cookie"]);
+        Assert.Equal("GET", response.Method);
+        Assert.Equal(httpBin, response.Url);
+    }
 
-            var response = JsonConvert.DeserializeObject<HttpBinResponse>(data.SOURCE);
-            Assert.Equal("POST", response.Method);
-            Assert.Equal("value1", response.Form["name1"]);
-            Assert.Equal("value2", response.Form["name2"]);
-            Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
-        }
+    [Theory]
+    [InlineData(HttpLibrary.RuriLibHttp)]
+    [InlineData(HttpLibrary.SystemNet)]
+    public async Task HttpRequestStandard_Post_Verify(HttpLibrary library)
+    {
+        var data = NewBotData();
 
-        [Theory]
-        [InlineData(HttpLibrary.RuriLibHttp)]
-        [InlineData(HttpLibrary.SystemNet)]
-        public async Task HttpRequestBasicAuth_Normal_Verify(HttpLibrary library)
+        var options = new StandardHttpRequestOptions
         {
-            var data = NewBotData();
+            Url = httpBin,
+            Method = HttpMethod.POST,
+            HttpLibrary = library,
+            Content = "name1=value1&name2=value2",
+            ContentType = "application/x-www-form-urlencoded"
+        };
 
-            var options = new BasicAuthHttpRequestOptions
-            {
-                Url = httpBin,
-                Method = HttpMethod.GET,
-                HttpLibrary = library,
-                Username = "myUsername",
-                Password = "myPassword"
-            };
+        await Methods.HttpRequestStandard(data, options);
 
-            await Methods.HttpRequestBasicAuth(data, options);
+        var response = DeserializeHttpBinResponse(data.SOURCE);
+        Assert.Equal("POST", response.Method);
+        Assert.Equal("value1", response.Form["name1"]);
+        Assert.Equal("value2", response.Form["name2"]);
+        Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
+    }
 
-            var response = JsonConvert.DeserializeObject<HttpBinResponse>(data.SOURCE);
-            Assert.Equal("GET", response.Method);
-            Assert.Equal("Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("myUsername:myPassword")), response.Headers["Authorization"]);
-        }
+    [Theory]
+    [InlineData(HttpLibrary.RuriLibHttp)]
+    [InlineData(HttpLibrary.SystemNet)]
+    public async Task HttpRequestRaw_Post_Verify(HttpLibrary library)
+    {
+        var data = NewBotData();
 
-        [Theory]
-        [InlineData(HttpLibrary.RuriLibHttp)]
-        [InlineData(HttpLibrary.SystemNet)]
-        public async Task HttpRequestMultipart_Post_Verify(HttpLibrary library)
+        var options = new RawHttpRequestOptions
         {
-            var data = NewBotData();
+            Url = httpBin,
+            Method = HttpMethod.POST,
+            HttpLibrary = library,
+            Content = Encoding.UTF8.GetBytes("name1=value1&name2=value2"),
+            ContentType = "application/x-www-form-urlencoded"
+        };
 
-            var tempFile = Path.GetTempFileName();
+        await Methods.HttpRequestRaw(data, options);
+
+        var response = DeserializeHttpBinResponse(data.SOURCE);
+        Assert.Equal("POST", response.Method);
+        Assert.Equal("value1", response.Form["name1"]);
+        Assert.Equal("value2", response.Form["name2"]);
+        Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
+    }
+
+    [Theory]
+    [InlineData(HttpLibrary.RuriLibHttp)]
+    [InlineData(HttpLibrary.SystemNet)]
+    public async Task HttpRequestBasicAuth_Normal_Verify(HttpLibrary library)
+    {
+        var data = NewBotData();
+
+        var options = new BasicAuthHttpRequestOptions
+        {
+            Url = httpBin,
+            Method = HttpMethod.GET,
+            HttpLibrary = library,
+            Username = "myUsername",
+            Password = "myPassword"
+        };
+
+        await Methods.HttpRequestBasicAuth(data, options);
+
+        var response = DeserializeHttpBinResponse(data.SOURCE);
+        Assert.Equal("GET", response.Method);
+        Assert.Equal(
+            "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("myUsername:myPassword")),
+            response.Headers["Authorization"]);
+    }
+
+    [Theory]
+    [InlineData(HttpLibrary.RuriLibHttp)]
+    [InlineData(HttpLibrary.SystemNet)]
+    public async Task HttpRequestMultipart_Post_Verify(HttpLibrary library)
+    {
+        var data = NewBotData();
+
+        var tempFile = Path.GetTempFileName();
+
+        try
+        {
             File.WriteAllText(tempFile, "fileContent");
 
             var contents = new List<MyHttpContent>
@@ -175,44 +180,52 @@ namespace RuriLib.Tests.Functions.Http
 
             await Methods.HttpRequestMultipart(data, options);
 
-            var response = JsonConvert.DeserializeObject<HttpBinResponse>(data.SOURCE);
+            var response = DeserializeHttpBinResponse(data.SOURCE);
             Assert.Equal("POST", response.Method);
             Assert.Equal("stringContent", response.Form["stringName"]);
             Assert.Equal("rawContent", response.Form["rawName"]);
             Assert.Equal("fileContent", response.Files["fileName"]);
         }
-
-        [Fact]
-        public void GetAllCookies_ReturnsCookiesAcrossDomains()
+        finally
         {
-            var cookieJar = new CookieContainer();
-            cookieJar.Add(new Uri("https://example.com/"), new Cookie("a", "1"));
-            cookieJar.Add(new Uri("https://sub.example.com/test"), new Cookie("b", "2"));
-
-            var cookies = global::RuriLib.Functions.Http.Http.GetAllCookies(cookieJar);
-
-            Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "a" && c.Value == "1");
-            Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "b" && c.Value == "2");
+            File.Delete(tempFile);
         }
-
-        /*
-        // Test for future implementation of HTTP/2.0
-        [Fact]
-        public async Task HttpRequestStandard_Http2_Verify()
-        {
-            var data = NewBotData();
-
-            var options = new StandardHttpRequestOptions
-            {
-                Url = "https://http2.golang.org/reqinfo",
-                Method = HttpMethod.GET,
-                HttpVersion = "2.0"
-            };
-
-            await Methods.HttpRequestStandard(data, options);
-
-            Assert.Contains("Protocol: HTTP/2.0", data.SOURCE);
-        }
-        */
     }
+
+    [Fact]
+    public void GetAllCookies_ReturnsCookiesAcrossDomains()
+    {
+        var cookieJar = new CookieContainer();
+        cookieJar.Add(new Uri("https://example.com/"), new Cookie("a", "1"));
+        cookieJar.Add(new Uri("https://sub.example.com/test"), new Cookie("b", "2"));
+
+        var cookies = global::RuriLib.Functions.Http.Http.GetAllCookies(cookieJar);
+
+        Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "a" && c.Value == "1");
+        Assert.Contains(cookies.Cast<Cookie>(), c => c.Name == "b" && c.Value == "2");
+    }
+
+    /*
+    // Test for future implementation of HTTP/2.0
+    [Fact]
+    public async Task HttpRequestStandard_Http2_Verify()
+    {
+        var data = NewBotData();
+
+        var options = new StandardHttpRequestOptions
+        {
+            Url = "https://http2.golang.org/reqinfo",
+            Method = HttpMethod.GET,
+            HttpVersion = "2.0"
+        };
+
+        await Methods.HttpRequestStandard(data, options);
+
+        Assert.Contains("Protocol: HTTP/2.0", data.SOURCE);
+    }
+    */
+
+    private static HttpBinResponse DeserializeHttpBinResponse(string source)
+        => JsonConvert.DeserializeObject<HttpBinResponse>(source)
+           ?? throw new InvalidOperationException("httpbin response could not be deserialized");
 }

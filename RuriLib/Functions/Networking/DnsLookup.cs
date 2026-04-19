@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using RuriLib.Functions.Http;
 using RuriLib.Http.Models;
 using RuriLib.Models.Proxies;
@@ -16,29 +16,64 @@ public static class DnsLookup
     /// Retrieves a list of records from Google's DNS over HTTP service at dns.google.com.
     /// The list is ordered by priority.
     /// </summary>
-    public static async Task<List<string>> FromGoogleAsync(string domain, string type, Proxy? proxy = null,
-        int timeout = 30000, CancellationToken cancellationToken = default)
+    public static async Task<List<string>> FromGoogleAsync(
+        string domain,
+        string type,
+        Proxy? proxy = null,
+        int timeout = 30000,
+        CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(domain);
+        ArgumentNullException.ThrowIfNull(type);
+
         var url = $"https://dns.google.com/resolve?name={Uri.EscapeDataString(domain)}&type={type}";
-            
+
         using var httpClient = HttpFactory.GetRLHttpClient(proxy, new HttpOptions
         {
-            ConnectTimeout = TimeSpan.FromMilliseconds(timeout), 
+            ConnectTimeout = TimeSpan.FromMilliseconds(timeout),
             ReadWriteTimeout = TimeSpan.FromMilliseconds(timeout)
         });
 
-        using var request = new HttpRequest();
-        request.Uri = new Uri(url);
+        using var request = new HttpRequest
+        {
+            Uri = new Uri(url)
+        };
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
-        var json = await response.Content!.ReadAsStringAsync(cancellationToken);
-        var obj = JObject.Parse(json);
+        var json = await (response.Content?.ReadAsStringAsync(cancellationToken)
+            ?? Task.FromResult(string.Empty));
+        var answers = JObject.Parse(json)["Answer"] as JArray;
 
-        return obj["Answer"]!
-            .Select(i => i.Value<string>("data"))
-            .Select(i => (int.Parse(i.Split(' ')[0]), i.Split(' ')[1]))
-            .OrderBy(kvp => kvp.Item1)
-            .Select(kvp => kvp.Item2.TrimEnd('.'))
+        if (answers is null)
+        {
+            return [];
+        }
+
+        return answers
+            .Select(ParseAnswer)
+            .Where(record => record.HasValue)
+            .Select(record => record!.Value)
+            .OrderBy(record => record.Priority)
+            .Select(record => record.Value)
             .ToList();
+    }
+
+    private static (int Priority, string Value)? ParseAnswer(JToken token)
+    {
+        var data = token.Value<string>("data");
+
+        if (string.IsNullOrWhiteSpace(data))
+        {
+            return null;
+        }
+
+        var parts = data.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 2 && int.TryParse(parts[0], out var priority))
+        {
+            return (priority, parts[1].TrimEnd('.'));
+        }
+
+        return (int.MaxValue, data.TrimEnd('.'));
     }
 }

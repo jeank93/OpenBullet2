@@ -13,7 +13,7 @@ public class LoliCodeBlockDescriptor : BlockDescriptor
         Id = "loliCode";
         Name = "LoliCode";
         Description = "This block can hold a LoliCode script";
-        Category = new BlockCategory
+        Category = new()
         {
             Description = "Category for the LoliCode script block",
             BackgroundColor = "#303030",

@@ -1,11 +1,10 @@
-﻿namespace RuriLib.Models.Blocks.Custom.Parse
+namespace RuriLib.Models.Blocks.Custom.Parse;
+
+public enum ParseMode
 {
-    public enum ParseMode
-    {
-        LR,
-        CSS,
-        XPath,
-        Json,
-        Regex
-    }
+    LR,
+    CSS,
+    XPath,
+    Json,
+    Regex
 }

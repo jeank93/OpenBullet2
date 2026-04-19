@@ -41,7 +41,7 @@ public class AutoBlockInstanceTests
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
         var script = $"DISABLED{_nl}LABEL:My Label{_nl}  input = @myInput{_nl}  index = 3{_nl}  => CAP @myOutput{_nl}";
-        int lineNumber = 0;
+        var lineNumber = 0;
         block.FromLC(ref script, ref lineNumber);
 
         Assert.True(block.Disabled);

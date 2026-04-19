@@ -1,23 +1,22 @@
-﻿using Newtonsoft.Json;
 using System.IO;
+using Newtonsoft.Json;
 using Xunit;
 
-namespace RuriLib.Tests
+namespace RuriLib.Tests;
+
+public class ExportDescriptors
 {
-    public class ExportDescriptors
+    [Fact]
+    public void ExportAllDescriptors()
     {
-        [Fact]
-        public void ExportAllDescriptors()
+        var settings = new JsonSerializerSettings
         {
-            var settings = new JsonSerializerSettings
-            {
-                Formatting = Formatting.Indented
-            };
+            Formatting = Formatting.Indented
+        };
 
-            var json = JsonConvert.SerializeObject(
-                Globals.DescriptorsRepository.Descriptors, settings);
+        var json = JsonConvert.SerializeObject(
+            Globals.DescriptorsRepository.Descriptors, settings);
 
-            File.WriteAllText("descriptors.json", json);
-        }
+        File.WriteAllText("descriptors.json", json);
     }
 }

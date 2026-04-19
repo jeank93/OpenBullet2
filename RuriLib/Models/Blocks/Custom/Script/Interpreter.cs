@@ -1,9 +1,8 @@
-﻿namespace RuriLib.Models.Blocks.Custom.Script
+namespace RuriLib.Models.Blocks.Custom.Script;
+
+public enum Interpreter
 {
-    public enum Interpreter
-    {
-        Jint,
-        NodeJS,
-        IronPython
-    }
+    Jint,
+    NodeJS,
+    IronPython
 }

@@ -1,132 +1,121 @@
-﻿using RuriLib.Helpers.Blocks;
+using System;
+using RuriLib.Exceptions;
+using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.HttpRequest;
 using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Configs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Xunit;
 
-namespace RuriLib.Tests.Models.Blocks.Custom
+namespace RuriLib.Tests.Models.Blocks.Custom;
+
+public class HttpRequestBlockInstanceTests
 {
-    public class HttpRequestBlockInstanceTests
+    private readonly string _nl = Environment.NewLine;
+
+    /*
+    [Fact]
+    public void ToLC_StandardPost_OutputScript()
     {
-        /*
-        [Fact]
-        public void ToLC_StandardPost_OutputScript()
+        var repo = new DescriptorsRepository();
+        var descriptor = repo.GetAs<HttpRequestBlockDescriptor>("HttpRequest");
+        var block = new HttpRequestBlockInstance(descriptor);
+        ...
+    }
+    */
+
+    [Fact]
+    public void ToLC_StandardPost_OutputScript()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+
+        var url = block.Settings["url"];
+        url.InputMode = SettingInputMode.Fixed;
+        (url.FixedSetting as StringSetting)!.Value = "https://example.com";
+
+        var method = block.Settings["method"];
+        method.InputMode = SettingInputMode.Fixed;
+        (method.FixedSetting as EnumSetting)!.Value = "POST";
+
+        block.RequestParams = new StandardRequestParams
         {
-            var repo = new DescriptorsRepository();
-            var descriptor = repo.GetAs<HttpRequestBlockDescriptor>("HttpRequest");
-            var block = new HttpRequestBlockInstance(descriptor);
+            Content = BlockSettingFactory.CreateStringSetting(string.Empty, "key1=value1&key2=value2", SettingInputMode.Fixed),
+            ContentType = BlockSettingFactory.CreateStringSetting(string.Empty, "application/x-www-form-urlencoded", SettingInputMode.Fixed)
+        };
 
-            var url = block.Settings["url"];
-            url.InputMode = SettingInputMode.Fixed;
-            (url.FixedSetting as StringSetting).Value = "https://example.com";
+        var output = block.ToLC();
 
-            var method = block.Settings["method"];
-            method.InputMode = SettingInputMode.Fixed;
-            (method.FixedSetting as EnumSetting).Value = "POST";
+        Assert.Contains($"  url = \"https://example.com\"{_nl}", output);
+        Assert.Contains($"  method = POST{_nl}", output);
+        Assert.Contains($"  TYPE:STANDARD{_nl}", output);
+        Assert.Contains($"  \"key1=value1&key2=value2\"{_nl}", output);
+        Assert.Contains($"  \"application/x-www-form-urlencoded\"{_nl}", output);
+    }
 
-            block.RequestParams = new StandardRequestParams
-            {
-                Content = new BlockSetting { FixedSetting = new StringSetting { Value = "key1=value1&key2=value2" } },
-                ContentType = new BlockSetting { FixedSetting = new StringSetting { Value = "application/x-www-form-urlencoded" } }
-            };
+    [Fact]
+    public void FromLC_MultipartPost_BuildBlock()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        var script = $"  url = \"https://example.com\"{_nl}  method = POST{_nl}  TYPE:MULTIPART{_nl}  @myBoundary{_nl}  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"{_nl}  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"{_nl}";
+        var lineNumber = 0;
 
-            var expected = "  url = \"https://example.com\"\r\n  method = POST\r\n  TYPE:STANDARD\r\n  \"key1=value1&key2=value2\"\r\n  \"application/x-www-form-urlencoded\"\r\n";
-            Assert.Equal(expected, block.ToLC());
-        }
+        block.FromLC(ref script, ref lineNumber);
 
-        [Fact]
-        public void ToLC_MultipartPost_OutputScript()
-        {
-            var repo = new DescriptorsRepository();
-            var descriptor = repo.GetAs<HttpRequestBlockDescriptor>("HttpRequest");
-            var block = new HttpRequestBlockInstance(descriptor);
+        Assert.Equal("https://example.com", Assert.IsType<StringSetting>(block.Settings["url"].FixedSetting).Value);
+        Assert.Equal("POST", Assert.IsType<EnumSetting>(block.Settings["method"].FixedSetting).Value);
 
-            var url = block.Settings["url"];
-            url.InputMode = SettingInputMode.Fixed;
-            (url.FixedSetting as StringSetting).Value = "https://example.com";
+        var multipart = Assert.IsType<MultipartRequestParams>(block.RequestParams);
+        Assert.Equal(SettingInputMode.Variable, multipart.Boundary.InputMode);
+        Assert.Equal("myBoundary", multipart.Boundary.InputVariableName);
 
-            var method = block.Settings["method"];
-            method.InputMode = SettingInputMode.Fixed;
-            (method.FixedSetting as EnumSetting).Value = "POST";
+        var stringContent = Assert.IsType<StringHttpContentSettingsGroup>(multipart.Contents[0]);
+        Assert.Equal("stringName", Assert.IsType<StringSetting>(stringContent.Name.FixedSetting).Value);
+        Assert.Equal("stringContent", Assert.IsType<StringSetting>(stringContent.Data.FixedSetting).Value);
+        Assert.Equal("stringContentType", Assert.IsType<StringSetting>(stringContent.ContentType.FixedSetting).Value);
 
-            block.RequestParams = new MultipartRequestParams
-            {
-                Boundary = new BlockSetting { InputMode = SettingInputMode.Variable, InputVariableName = "myBoundary" },
-                Contents = new List<HttpContentSettingsGroup>
-                {
-                    new StringHttpContentSettingsGroup
-                    {
-                        Name = new BlockSetting { FixedSetting = new StringSetting { Value = "stringName" } },
-                        Data = new BlockSetting { FixedSetting = new StringSetting { Value = "stringContent" } },
-                        ContentType = new BlockSetting { FixedSetting = new StringSetting { Value = "stringContentType" } }
-                    },
-                    new FileHttpContentSettingsGroup
-                    {
-                        Name = new BlockSetting { FixedSetting = new StringSetting { Value = "fileName" } },
-                        FileName = new BlockSetting { FixedSetting = new StringSetting { Value = "file.txt" } },
-                        ContentType = new BlockSetting { FixedSetting = new StringSetting { Value = "fileContentType" } }
-                    },
-                }
-            };
+        var fileContent = Assert.IsType<FileHttpContentSettingsGroup>(multipart.Contents[1]);
+        Assert.Equal("fileName", Assert.IsType<StringSetting>(fileContent.Name.FixedSetting).Value);
+        Assert.Equal("file.txt", Assert.IsType<StringSetting>(fileContent.FileName.FixedSetting).Value);
+        Assert.Equal("fileContentType", Assert.IsType<StringSetting>(fileContent.ContentType.FixedSetting).Value);
+    }
 
-            var expected = "  url = \"https://example.com\"\r\n  method = POST\r\n  TYPE:MULTIPART\r\n  @myBoundary\r\n  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"\r\n  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"\r\n";
-            Assert.Equal(expected, block.ToLC());
-        }
+    [Fact]
+    public void FromLC_MultipartWithoutBoundary_Throws()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        var script = $"  TYPE:MULTIPART{_nl}";
+        var lineNumber = 0;
 
-        [Fact]
-        public void FromLC_MultipartPost_BuildBlock()
-        {
-            var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
-            var script = "  url = \"https://example.com\"\r\n  method = POST\r\n  TYPE:MULTIPART\r\n  @myBoundary\r\n  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"\r\n  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"\r\n";
-            int lineNumber = 0;
-            block.FromLC(ref script, ref lineNumber);
+        Assert.Throws<LoliCodeParsingException>(() => block.FromLC(ref script, ref lineNumber));
+    }
 
-            var url = block.Settings["url"];
-            Assert.Equal("https://example.com", (url.FixedSetting as StringSetting).Value);
+    [Fact]
+    public void FromLC_ContentWithoutMultipart_Throws()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        var script = $"  CONTENT:STRING \"name\" \"content\" \"contentType\"{_nl}";
+        var lineNumber = 0;
 
-            var method = block.Settings["method"];
-            Assert.Equal("POST", (method.FixedSetting as EnumSetting).Value);
+        Assert.Throws<LoliCodeParsingException>(() => block.FromLC(ref script, ref lineNumber));
+    }
 
-            Assert.IsType<MultipartRequestParams>(block.RequestParams);
+    [Fact]
+    public void ToCSharp_MultipartPost_OutputScript()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        var script = $"  url = \"https://example.com\"{_nl}  method = POST{_nl}  TYPE:MULTIPART{_nl}  @myBoundary{_nl}  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"{_nl}  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"{_nl}";
+        var lineNumber = 0;
+        block.FromLC(ref script, ref lineNumber);
 
-            var multipart = (MultipartRequestParams)block.RequestParams;
-            Assert.Equal(SettingInputMode.Variable, multipart.Boundary.InputMode);
-            Assert.Equal("myBoundary", multipart.Boundary.InputVariableName);
+        var output = block.ToCSharp([], new ConfigSettings());
 
-            var content = multipart.Contents[0];
-            Assert.IsType<StringHttpContentSettingsGroup>(content);
-            var stringContent = (StringHttpContentSettingsGroup)content;
-            Assert.Equal("stringName", (stringContent.Name.FixedSetting as StringSetting).Value);
-            Assert.Equal("stringContent", (stringContent.Data.FixedSetting as StringSetting).Value);
-            Assert.Equal("stringContentType", (stringContent.ContentType.FixedSetting as StringSetting).Value);
-
-            content = multipart.Contents[1];
-            Assert.IsType<FileHttpContentSettingsGroup>(content);
-            var fileContent = (FileHttpContentSettingsGroup)content;
-            Assert.Equal("fileName", (fileContent.Name.FixedSetting as StringSetting).Value);
-            Assert.Equal("file.txt", (fileContent.FileName.FixedSetting as StringSetting).Value);
-            Assert.Equal("fileContentType", (fileContent.ContentType.FixedSetting as StringSetting).Value);
-        }
-
-        [Fact]
-        public void ToCSharp_MultipartPost_OutputScript()
-        {
-            var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
-            var script = "  url = \"https://example.com\"\r\n  method = POST\r\n  TYPE:MULTIPART\r\n  @myBoundary\r\n  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"\r\n  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"\r\n";
-            int lineNumber = 0;
-            block.FromLC(ref script, ref lineNumber);
-            var headers = block.Settings["customHeaders"];
-            (headers.FixedSetting as DictionaryOfStringsSetting).Value.Clear(); 
-
-            string expected = "await HttpRequestMultipart(data, \"https://example.com\", RuriLib.Functions.Http.HttpMethod.POST, true, RuriLib.Functions.Http.SecurityProtocol.SystemDefault, myBoundary.AsString(), new List<MyHttpContent> { new StringHttpContent(\"stringName\", \"stringContent\", \"stringContentType\"), new FileHttpContent(\"fileName\", \"file.txt\", \"fileContentType\") }, new Dictionary<string, string> {}, new Dictionary<string, string> {}, 10000, \"1.1\");\r\n";
-            Assert.Equal(expected, block.ToCSharp(new List<string>(), new ConfigSettings()));
-        }
-        */
+        Assert.Contains("await HttpRequestMultipart(data, new MultipartHttpRequestOptions {", output);
+        Assert.Contains("Boundary = myBoundary.AsString()", output);
+        Assert.Contains("new StringHttpContent(\"stringName\", \"stringContent\", \"stringContentType\")", output);
+        Assert.Contains("new FileHttpContent(\"fileName\", \"file.txt\", \"fileContentType\")", output);
+        Assert.Contains("Url = \"https://example.com\"", output);
+        Assert.Contains("Method = RuriLib.Functions.Http.HttpMethod.POST", output);
+        Assert.EndsWith("}).ConfigureAwait(false);" + _nl, output);
     }
 }

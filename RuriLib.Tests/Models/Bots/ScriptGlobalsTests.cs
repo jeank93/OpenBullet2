@@ -23,7 +23,7 @@ public class ScriptGlobalsTests
         }));
 
         var scriptGlobals = new ScriptGlobals(botData, globals);
-        var input = (IDictionary<string, object>)scriptGlobals.input;
+        var input = (IDictionary<string, object?>)scriptGlobals.input;
 
         Assert.Equal("hello", input["left"]);
         Assert.Equal("world", input["right"]);
@@ -52,7 +52,7 @@ public class ScriptGlobalsTests
             }));
 
         var scriptGlobals = new ScriptGlobals(botData, globals);
-        var input = (IDictionary<string, object>)scriptGlobals.input;
+        var input = (IDictionary<string, object?>)scriptGlobals.input;
 
         Assert.Equal("hello%20world", input["value"]);
     }

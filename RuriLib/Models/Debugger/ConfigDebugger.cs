@@ -209,7 +209,7 @@ public class ConfigDebugger : IDisposable
         // Set custom inputs
         foreach (var input in Config.Settings.InputSettings.CustomInputs)
         {
-            (scriptGlobals.input as IDictionary<string, object>)!.Add(input.VariableName, input.DefaultAnswer);
+            (scriptGlobals.input as IDictionary<string, object?>)!.Add(input.VariableName, input.DefaultAnswer);
         }
 
         // [LEGACY] Set up the VariablesList

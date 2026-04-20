@@ -4,8 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace RuriLib.Legacy.LS
-{
+namespace RuriLib.Legacy.LS;
+
     /// <summary>
     /// Parses a block from LoliScript code.
     /// </summary>
@@ -80,7 +80,13 @@ namespace RuriLib.Legacy.LS
             }
 
             // Create the actual block from the identifier
-            var block = (Activator.CreateInstance(BlockMappings[identifier]) as BlockBase).FromLS(input);
+            if (!BlockMappings.TryGetValue(identifier, out var blockType))
+            {
+                throw new ArgumentException($"Unknown identifier {identifier}");
+            }
+
+            var block = (Activator.CreateInstance(blockType) as BlockBase)?.FromLS(input)
+                ?? throw new InvalidOperationException($"Could not create a block instance for identifier {identifier}");
             
             // Set disabled
             if (block != null)
@@ -97,4 +103,3 @@ namespace RuriLib.Legacy.LS
             return block;
         }
     }
-}

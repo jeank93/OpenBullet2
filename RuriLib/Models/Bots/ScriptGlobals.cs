@@ -33,7 +33,7 @@ public class ScriptGlobals
 
         foreach (var variable in data.Line.GetVariables())
         {
-            ((IDictionary<string, object>)input).Add(
+            ((IDictionary<string, object?>)input).Add(
                 variable.Name,
                 data.ConfigSettings.DataSettings.UrlEncodeDataAfterSlicing
                     ? Uri.EscapeDataString(variable.AsString())

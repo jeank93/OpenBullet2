@@ -5,18 +5,18 @@ using RuriLib.Models.Proxies;
 using RuriLib.Models.Variables;
 using System;
 
-namespace RuriLib.Legacy.LS
+namespace RuriLib.Legacy.LS;
+
+/// <summary>
+/// Parses a SET command.
+/// </summary>
+internal class SetParser
 {
     /// <summary>
-    /// Parses a SET command.
+    /// Gets the Action that needs to be executed.
     /// </summary>
-    internal class SetParser
+    static internal Action Parse(string line, LSGlobals ls)
     {
-        /// <summary>
-        /// Gets the Action that needs to be executed.
-        /// </summary>
-        static internal Action Parse(string line, LSGlobals ls)
-        {
             var data = ls.BotData;
             var input = line.Trim();
             var field = LineParser.ParseToken(ref input, TokenType.Parameter, true).ToUpper();
@@ -71,6 +71,11 @@ namespace RuriLib.Legacy.LS
                         break;
 
                     case "PROXYTYPE":
+                        if (data.Proxy == null)
+                        {
+                            throw new InvalidOperationException("Cannot set PROXYTYPE before PROXY");
+                        }
+
                         data.Proxy.Type = (ProxyType)LineParser.ParseEnum(ref input, "PROXYTYPE", typeof(ProxyType));
                         break;
 
@@ -145,4 +150,3 @@ namespace RuriLib.Legacy.LS
             });
         }
     }
-}

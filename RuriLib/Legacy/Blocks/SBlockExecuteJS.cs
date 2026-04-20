@@ -108,7 +108,7 @@ namespace RuriLib.Legacy.Blocks
             {
                 try
                 {
-                    InsertVariable(ls, IsCapture, false, new List<string>() { returned.ToString() }, OutputVariable, "", "", false, true);
+                    InsertVariable(ls, IsCapture, false, new List<string>() { returned.ToString() ?? string.Empty }, OutputVariable, "", "", false, true);
                 }
                 catch
                 {

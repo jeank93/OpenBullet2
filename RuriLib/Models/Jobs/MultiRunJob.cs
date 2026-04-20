@@ -261,7 +261,7 @@ public class MultiRunJob : Job
 
                     // Set custom inputs answers
                     foreach (var answer in input.CustomInputsAnswers ?? [])
-                        (scriptGlobals.input as IDictionary<string, object>).Add(answer.Key, answer.Value);
+                        (scriptGlobals.input as IDictionary<string, object?>).Add(answer.Key, answer.Value);
 
                     botData.Logger.Log($"[{DateTime.Now.ToLongTimeString()}] BOT STARTED WITH DATA {botData.Line.Data} AND PROXY {botData.Proxy}");
 
@@ -428,11 +428,11 @@ public class MultiRunJob : Job
                                     break;
 
                                 case VariableType.ListOfStrings:
-                                    outputVariables[variable.Name] = variable.AsListOfStrings();
+                                    outputVariables[variable.Name] = variable.AsListOfStrings() ?? [];
                                     break;
 
                                 case VariableType.DictionaryOfStrings:
-                                    outputVariables[variable.Name] = variable.AsDictionaryOfStrings();
+                                    outputVariables[variable.Name] = variable.AsDictionaryOfStrings() ?? [];
                                     break;
                             }
                         }

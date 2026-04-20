@@ -13,12 +13,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace RuriLib.Legacy.Blocks
+namespace RuriLib.Legacy.Blocks;
+
+public abstract class BlockBase
 {
-    public abstract class BlockBase
-    {
-        public string Label { get; set; }
-        public bool Disabled { get; set; }
+    public string Label { get; set; } = string.Empty;
+    public bool Disabled { get; set; }
 
         /// <summary>Whether the block is a selenium-related block.</summary>
         [JsonIgnore]
@@ -98,7 +98,7 @@ namespace RuriLib.Legacy.Blocks
             if (variables.Count > 0)
             {
                 // Example: we have 3 lists of sizes 3, 7 and 5. We need to take 7
-                var max = variables.Max(v => v.AsListOfStrings().Count);
+                var max = variables.Max(v => v.AsListOfStrings()?.Count ?? 0);
 
                 for (var i = 0; i < max; i++)
                 {
@@ -107,7 +107,9 @@ namespace RuriLib.Legacy.Blocks
                     foreach (var variable in variables)
                     {
                         var list = variable.AsListOfStrings();
-                        replaced = list.Count > i ? replaced.Replace($"<{variable.Name}[*]>", list[i]) : replaced.Replace($"<{variable.Name}[*]>", "NULL");
+                        replaced = list is not null && list.Count > i
+                            ? replaced.Replace($"<{variable.Name}[*]>", list[i])
+                            : replaced.Replace($"<{variable.Name}[*]>", "NULL");
                     }
 
                     toReplace.Add(replaced);
@@ -133,7 +135,7 @@ namespace RuriLib.Legacy.Blocks
                 }
                 else
                 {
-                    foreach (var item in dict.AsDictionaryOfStrings())
+                    foreach (var item in dict.AsDictionaryOfStrings() ?? [])
                     {
                         toReplace.Add(original.Replace(full, item.Value));
                     }
@@ -175,7 +177,7 @@ namespace RuriLib.Legacy.Blocks
                 }
                 else
                 {
-                    foreach (var item in dict.AsDictionaryOfStrings())
+                    foreach (var item in dict.AsDictionaryOfStrings() ?? [])
                     {
                         toReplace.Add(original.Replace(full, item.Key));
                     }
@@ -327,6 +329,11 @@ namespace RuriLib.Legacy.Blocks
 
                             var dict = v.AsDictionaryOfStrings();
 
+                            if (dict == null)
+                            {
+                                break;
+                            }
+
                             if (args.Contains("(") && args.Contains(")"))
                             {
                                 var key = ParseArguments(args, '(', ')')[0];
@@ -419,7 +426,7 @@ namespace RuriLib.Legacy.Blocks
                 list = list.Select(Uri.EscapeDataString).ToList();
             }
 
-            Variable variable = null;
+            Variable? variable = null;
             
             if (recursive)
             {
@@ -464,11 +471,18 @@ namespace RuriLib.Legacy.Blocks
             }
         }
 
-        public static VariablesList GetVariables(BotData data) => data.TryGetObject<VariablesList>("legacyVariables");
+        public static VariablesList GetVariables(BotData data)
+            => data.TryGetObject<VariablesList>("legacyVariables")
+            ?? throw new InvalidOperationException("The legacy variables list was not initialized");
         #endregion
 
-        private static string GetListItem(List<string> list, int index)
+        private static string? GetListItem(List<string>? list, int index)
         {
+            if (list == null)
+            {
+                return null;
+            }
+
             // If the index is negative, start from the end
             if (index < 0)
             {
@@ -478,5 +492,4 @@ namespace RuriLib.Legacy.Blocks
 
             return index > list.Count - 1 || index < 0 ? null : list[index];
         }
-    }
 }

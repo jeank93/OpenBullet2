@@ -467,13 +467,14 @@ namespace RuriLib.Legacy.Blocks
 
             var replacedInput = ReplaceValues(InputString, ls);
             var variablesList = GetVariables(data);
-            Variable variableToAdd = null;
+            Variable? variableToAdd = null;
             var logColor = IsCapture ? LogColors.Tomato : LogColors.Yellow;
 
             switch (Group)
             {
                 case UtilityGroup.List:
-                    var list = variablesList.Get<ListOfStringsVariable>(ListName)?.AsListOfStrings();
+                    var list = variablesList.Get<ListOfStringsVariable>(ListName)?.AsListOfStrings()
+                        ?? throw new InvalidOperationException($"List {ListName} was not found");
                     var list2 = variablesList.Get<ListOfStringsVariable>(SecondListName)?.AsListOfStrings();
                     var item = ReplaceValues(ListItem, ls);
                     var index = int.Parse(ReplaceValues(ListIndex, ls));
@@ -515,15 +516,15 @@ namespace RuriLib.Legacy.Blocks
                             break;
 
                         case ListAction.Concat:
-                            variableToAdd = new ListOfStringsVariable(list.Concat(list2).ToList());
+                            variableToAdd = new ListOfStringsVariable(list.Concat(list2 ?? []).ToList());
                             break;
 
                         case ListAction.Zip:
-                            variableToAdd = new ListOfStringsVariable(list.Zip(list2, (a, b) => a + b).ToList());
+                            variableToAdd = new ListOfStringsVariable(list.Zip(list2 ?? [], (a, b) => a + b).ToList());
                             break;
 
                         case ListAction.Map:
-                            variableToAdd = new DictionaryOfStringsVariable(list.Zip(list2, (k, v) => new { k, v }).ToDictionary(x => x.k, x => x.v));
+                            variableToAdd = new DictionaryOfStringsVariable(list.Zip(list2 ?? [], (k, v) => new { k, v }).ToDictionary(x => x.k, x => x.v));
                             break;
 
                         case ListAction.Add:
@@ -579,7 +580,8 @@ namespace RuriLib.Legacy.Blocks
                     break;
 
                 case UtilityGroup.Variable:
-                    string single = variablesList.Get<StringVariable>(VarName).AsString();
+                    var single = variablesList.Get<StringVariable>(VarName)?.AsString()
+                        ?? throw new InvalidOperationException($"Variable {VarName} was not found");
                     switch (VarAction)
                     {
                         case VarAction.Split:

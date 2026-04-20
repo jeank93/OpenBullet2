@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
 
-namespace RuriLib.Legacy.LS
-{
+namespace RuriLib.Legacy.LS;
+
     /// <summary>
     /// Provides useful functions for writing a block as a piece of LoliScript code.
     /// </summary>
@@ -22,7 +22,8 @@ namespace RuriLib.Legacy.LS
         public BlockWriter(Type blockType, bool indented = true, bool disabled = false)
         {
             Type = blockType;
-            Block = Activator.CreateInstance(blockType);
+            Block = Activator.CreateInstance(blockType)
+                ?? throw new InvalidOperationException($"Could not create a block instance of type {blockType.Name}");
             Indented = indented;
             Disabled = disabled;
             if (Disabled) Write("!");
@@ -138,8 +139,7 @@ namespace RuriLib.Legacy.LS
         public bool CheckDefault(object value, string property)
         {
             var prop = Type.GetProperty(property);
-            var val = prop.GetValue(Block);
+            var val = prop?.GetValue(Block);
             return value.Equals(val);
         }
     }
-}

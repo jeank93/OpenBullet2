@@ -4,11 +4,11 @@ using RuriLib.Models.Variables;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RuriLib.Legacy.LS
+namespace RuriLib.Legacy.LS;
+
+public class VariablesList
 {
-    public class VariablesList
-    {
-        public List<Variable> Variables { get; private set; }
+    public List<Variable> Variables { get; private set; }
 
         public IEnumerable<StringVariable> Strings
             => Variables.Where(v => v is StringVariable).Cast<StringVariable>();
@@ -19,7 +19,7 @@ namespace RuriLib.Legacy.LS
         public IEnumerable<DictionaryOfStringsVariable> Dictionaries
             => Variables.Where(v => v is DictionaryOfStringsVariable).Cast<DictionaryOfStringsVariable>();
         
-        public VariablesList(List<Variable> initialVariables = null)
+        public VariablesList(List<Variable>? initialVariables = null)
         {
             Variables = initialVariables ?? new();
         }
@@ -29,7 +29,7 @@ namespace RuriLib.Legacy.LS
         /// </summary>
         /// <param name="name">The name of the variable</param>
         /// <returns>The variable or null if it wasn't found.</returns>
-        public Variable Get(string name) => Variables.FirstOrDefault(v => v.Name == name);
+        public Variable? Get(string name) => Variables.FirstOrDefault(v => v.Name == name);
 
         /// <summary>
         /// Gets a variable given its name and type.
@@ -37,7 +37,7 @@ namespace RuriLib.Legacy.LS
         /// <param name="name">The name of the variable</param>
         /// <param name="type">The type of the variable</param>
         /// <returns>The variable or null if it wasn't found.</returns>
-        public T Get<T>(string name) where T : Variable => Variables.FirstOrDefault(v => v.Name == name) as T;
+        public T? Get<T>(string name) where T : Variable => Variables.FirstOrDefault(v => v.Name == name) as T;
 
         /// <summary>
         /// Helper method that checks if a variable exists given its name.
@@ -85,5 +85,4 @@ namespace RuriLib.Legacy.LS
         /// </summary>
         public void RemoveAll(Comparer comparer, string name, LSGlobals ls)
             => Variables.RemoveAll(v => Condition.ReplaceAndVerify(v.Name, comparer, name, ls));
-    }
 }

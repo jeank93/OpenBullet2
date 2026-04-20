@@ -9,18 +9,19 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace RuriLib.Legacy.Configs
+namespace RuriLib.Legacy.Configs;
+
+/// <summary>
+/// Maps settings of legacy configs to the new format.
+/// </summary>
+public static class ConfigConverter
 {
-    /// <summary>
-    /// Maps settings of legacy configs to the new format.
-    /// </summary>
-    public static class ConfigConverter
-    {
         public static Config Convert(string fileContent, string id)
         {
             // Deserialize the legacy config
             var split = fileContent.Split(new string[] { "[SETTINGS]", "[SCRIPT]" }, StringSplitOptions.RemoveEmptyEntries);
-            var legacySettings = JsonConvert.DeserializeObject<LegacyConfigSettings>(split[0].TrimStart('\r', '\n'));
+            var legacySettings = JsonConvert.DeserializeObject<LegacyConfigSettings>(split[0].TrimStart('\r', '\n'))
+                ?? throw new InvalidOperationException("Could not deserialize the legacy settings");
             var loliScript = split[1].TrimStart('\r', '\n');
 
             // Create a legacy config in the new format
@@ -169,5 +170,4 @@ namespace RuriLib.Legacy.Configs
                     throw new NotSupportedException("Unsupported data rule");
             }
         }
-    }
 }

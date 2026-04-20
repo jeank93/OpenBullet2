@@ -852,7 +852,7 @@ namespace RuriLib.Legacy.Blocks
                 data.Logger.Log($"Executed function {FunctionType} on input {localInputString} with outcome {outputString}", LogColors.GreenYellow);
 
                 // Add to the outputs
-                outputs.Add(outputString);
+                outputs.Add(outputString ?? string.Empty);
             }
 
             var isList = outputs.Count > 1 || InputString.Contains("[*]") || InputString.Contains("(*)") || InputString.Contains("{*}");

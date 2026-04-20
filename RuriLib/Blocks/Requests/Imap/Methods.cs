@@ -24,6 +24,9 @@ using static RuriLib.Functions.Time.TimeConverter;
 
 namespace RuriLib.Blocks.Requests.Imap;
 
+/// <summary>
+/// Blocks for working with the IMAP protocol.
+/// </summary>
 [BlockCategory("IMAP", "Blocks for working with the IMAP protocol", "#93c", "#fff")]
 public static class Methods
 {
@@ -320,13 +323,9 @@ public static class Methods
         data.Logger.LogHeader();
 
         var protocolLogger = data.TryGetObject<ProtocolLogger>("imapLogger");
-        
-        if (protocolLogger is null)
-        {
-            throw new BlockExecutionException("You need to connect to an IMAP server first!");
-        }
-        
-        var bytes = (protocolLogger.Stream as MemoryStream)!.ToArray();
+        var stream = protocolLogger?.Stream as MemoryStream
+            ?? throw new BlockExecutionException("The IMAP protocol logger is not initialized");
+        var bytes = stream.ToArray();
         var log = Encoding.UTF8.GetString(bytes);
 
         data.Logger.Log(log, LogColors.DarkOrchid);

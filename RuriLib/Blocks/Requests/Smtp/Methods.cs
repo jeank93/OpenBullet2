@@ -23,6 +23,9 @@ using RuriLib.Models.Proxies;
 
 namespace RuriLib.Blocks.Requests.Smtp;
 
+/// <summary>
+/// Blocks for working with the SMTP protocol.
+/// </summary>
 [BlockCategory("SMTP", "Blocks for working with the SMTP protocol", "#b5651d", "#fff")]
 public static class Methods
 {
@@ -324,7 +327,7 @@ public static class Methods
     }
 
     /// <summary>
-    /// Gets the protocol log", name = "Get Smtp Log.
+    /// Gets the protocol log.
     /// </summary>
     [Block("Gets the protocol log", name = "Get Smtp Log")]
     public static string SmtpGetLog(BotData data)

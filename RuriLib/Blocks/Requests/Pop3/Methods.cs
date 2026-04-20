@@ -21,6 +21,9 @@ using RuriLib.Models.Proxies;
 
 namespace RuriLib.Blocks.Requests.Pop3;
 
+/// <summary>
+/// Blocks for working with the POP3 protocol.
+/// </summary>
 [BlockCategory("POP3", "Blocks for working with the POP3 protocol", "#74c365")]
 public static class Methods
 {

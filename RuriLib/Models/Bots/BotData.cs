@@ -43,7 +43,7 @@ public class BotData
         
     [Obsolete("Do not use this property, it's only here for retro compatibility but it can cause memory leaks." +
               " Use the SetObject and TryGetObject methods instead!")]
-    public Dictionary<string, object> Objects => _objects;
+    public Dictionary<string, object> Objects => _objects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value!);
 
     // This list will hold the names of all variables that are marked for capture
     public List<string> MarkedForCapture { get; } = new List<string>();
@@ -51,16 +51,16 @@ public class BotData
     public BotData(Providers providers, ConfigSettings configSettings, IBotLogger logger,
         DataLine line, Proxy? proxy = null, bool useProxy = false)
     {
-        Providers = providers;
-        ConfigSettings = configSettings;
-        Logger = logger;
+        Providers = providers ?? throw new ArgumentNullException(nameof(providers));
+        ConfigSettings = configSettings ?? throw new ArgumentNullException(nameof(configSettings));
+        Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         // Create a new local RNG seeded with a random seed from the global RNG
         // This is needed because when multiple threads try to access the same RNG it stops giving
         // random values after a while!
         Random = providers.RNG.GetNew();
 
-        Line = line;
+        Line = line ?? throw new ArgumentNullException(nameof(line));
         Proxy = proxy;
         UseProxy = useProxy;
     }
@@ -128,6 +128,8 @@ public class BotData
 
     public void SetObject(string name, object? obj, bool disposeExisting = true)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
         if (_objects.TryGetValue(name, out var existing))
         {
             if (existing is IDisposable d && disposeExisting)
@@ -140,7 +142,11 @@ public class BotData
     }
 
     public T? TryGetObject<T>(string name) where T : class 
-        => _objects.TryGetValue(name, out var value) && value is T t ? t : null;
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        return _objects.TryGetValue(name, out var value) && value is T t ? t : null;
+    }
 
     public void DisposeObjectsExcept(string[]? except = null)
     {

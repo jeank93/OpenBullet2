@@ -31,4 +31,32 @@ public class ProxyTests
         Assert.Equal("user", proxy.Username);
         Assert.Equal("pass", proxy.Password);
     }
+
+    [Fact]
+    public void Constructor_WithoutCredentials_LeavesAuthenticationDisabled()
+    {
+        var proxy = new Proxy("127.0.0.1", 8000);
+
+        Assert.False(proxy.NeedsAuthentication);
+        Assert.Null(proxy.Username);
+        Assert.Null(proxy.Password);
+    }
+
+    [Fact]
+    public void GetHashCode_WithNullCredentials_DoesNotThrow()
+    {
+        var proxy = new Proxy("127.0.0.1", 8000, username: null, password: null);
+
+        var exception = Record.Exception(() => proxy.GetHashCode());
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void Protocol_UsesLowercaseTypeName()
+    {
+        var proxy = new Proxy("127.0.0.1", 8000, ProxyType.Socks5);
+
+        Assert.Equal("socks5", proxy.Protocol);
+    }
 }

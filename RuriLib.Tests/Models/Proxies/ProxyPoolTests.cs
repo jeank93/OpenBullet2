@@ -83,6 +83,45 @@ public class ProxyPoolTests
         Assert.Null(pool.GetProxy(true, 3));
     }
 
+    [Fact]
+    public async Task ReloadAllAsync_FiltersOutDisallowedProxyTypes()
+    {
+        ListProxySource source = new([
+            new("127.0.0.1", 8000, ProxyType.Http),
+            new("127.0.0.1", 9000, ProxyType.Socks5)
+        ]);
+
+        using var pool = new ProxyPool([source], new ProxyPoolOptions
+        {
+            AllowedTypes = [ProxyType.Socks5]
+        });
+
+        await pool.ReloadAllAsync(false);
+
+        var proxies = pool.Proxies.ToArray();
+        Assert.Single(proxies);
+        Assert.Equal(ProxyType.Socks5, proxies[0].Type);
+    }
+
+    [Fact]
+    public async Task ReleaseProxy_Ban_SetsBannedStatusAndTimestamp()
+    {
+        ListProxySource source = new([new Proxy("127.0.0.1", 8000)]);
+
+        using var pool = new ProxyPool([source]);
+
+        await pool.ReloadAllAsync(false);
+        var proxy = pool.GetProxy();
+
+        Assert.NotNull(proxy);
+
+        pool.ReleaseProxy(proxy, ban: true);
+
+        Assert.Equal(ProxyStatus.Banned, proxy.ProxyStatus);
+        Assert.NotNull(proxy.LastBanned);
+        Assert.Equal(1, proxy.TotalUses);
+    }
+
     [Fact(Timeout = 10000)]
     public async Task GetProxy_BatchFile_ReturnValidProxy()
     {

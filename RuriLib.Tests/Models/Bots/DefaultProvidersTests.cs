@@ -92,7 +92,8 @@ public class DefaultProvidersTests
                                                                                        Assert.False(provider.ContainsBanKey("xxbankeyyy", out _, caseSensitive: true));
                                                                                        Assert.True(provider.ContainsRetryKey("zzretrykeyzz", out var retryKey));
                                                                                        Assert.Equal("RETRYKEY", retryKey);
-                                                                                       Assert.False(provider.ContainsRetryKey("", out _));
+                                                                                       Assert.False(provider.ContainsRetryKey("", out var missingRetryKey));
+                                                                                       Assert.Equal(string.Empty, missingRetryKey);
                                                                                    });
 
     private static void WithSettingsService(Action<RuriLibSettingsService> action)

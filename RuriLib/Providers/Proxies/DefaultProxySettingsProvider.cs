@@ -11,6 +11,8 @@ public class DefaultProxySettingsProvider : IProxySettingsProvider
 
     public DefaultProxySettingsProvider(RuriLibSettingsService settings)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+
         this.settings = settings.RuriLibSettings.ProxySettings;
     }
 
@@ -22,27 +24,31 @@ public class DefaultProxySettingsProvider : IProxySettingsProvider
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            matchedKey = null;
+            matchedKey = string.Empty;
             return false;
         }
 
-        matchedKey = settings.GlobalBanKeys.Where(k => !string.IsNullOrEmpty(k)).FirstOrDefault(k => text.Contains(k,
-            caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+        matchedKey = settings.GlobalBanKeys
+            .FirstOrDefault(k => !string.IsNullOrEmpty(k) && text.Contains(k,
+                caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+            ?? string.Empty;
 
-        return matchedKey != null;
+        return matchedKey.Length != 0;
     }
 
     public bool ContainsRetryKey(string text, out string matchedKey, bool caseSensitive = false)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            matchedKey = null;
+            matchedKey = string.Empty;
             return false;
         }
 
-        matchedKey = settings.GlobalRetryKeys.Where(k => !string.IsNullOrEmpty(k)).FirstOrDefault(k => text.Contains(k,
-            caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase));
+        matchedKey = settings.GlobalRetryKeys
+            .FirstOrDefault(k => !string.IsNullOrEmpty(k) && text.Contains(k,
+                caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
+            ?? string.Empty;
 
-        return matchedKey != null;
+        return matchedKey.Length != 0;
     }
 }

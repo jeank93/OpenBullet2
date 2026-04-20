@@ -1,9 +1,8 @@
-﻿namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public enum ProxyWorkingStatus
 {
-    public enum ProxyWorkingStatus
-    {
-        Working,
-        NotWorking,
-        Untested
-    }
+    Working,
+    NotWorking,
+    Untested
 }

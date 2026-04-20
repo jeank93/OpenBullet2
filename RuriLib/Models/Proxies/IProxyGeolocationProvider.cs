@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
-namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public interface IProxyGeolocationProvider
 {
-    public interface IProxyGeolocationProvider
-    {
-        Task<string> GeolocateAsync(string host);
-    }
+    Task<string> GeolocateAsync(string host);
 }

@@ -18,7 +18,7 @@ public class Proxy
     /// <summary>
     /// The host of the proxy.
     /// </summary>
-    public string Host { get; set; }
+    public string Host { get; set; } = string.Empty;
     
     /// <summary>
     /// The port of the proxy.
@@ -102,10 +102,10 @@ public class Proxy
     /// <summary>
     /// Creates a new instance of the Proxy class.
     /// </summary>
-    public Proxy(string host, int port, ProxyType type = ProxyType.Http, string username = "", string password = "")
+    public Proxy(string host, int port, ProxyType type = ProxyType.Http, string? username = null, string? password = null)
     {
-        // TODO: Username and password should be nullable and default to null
-        
+        ArgumentNullException.ThrowIfNull(host);
+
         Host = host;
         Port = port;
         Type = type;
@@ -120,7 +120,7 @@ public class Proxy
     /// <example>Proxy.Parse("127.0.0.1:8000:username:password")</example>
     /// <example>Proxy.Parse("(socks5)127.0.0.1:8000")</example>
     public static bool TryParse(string proxyString, out Proxy? proxy, ProxyType defaultType = ProxyType.Http,
-        string defaultUsername = "", string defaultPassword = "")
+        string? defaultUsername = null, string? defaultPassword = null)
     {
         try
         {
@@ -141,11 +141,9 @@ public class Proxy
     /// <example>Proxy.Parse("127.0.0.1:8000:username:password")</example>
     /// <example>Proxy.Parse("(socks5)127.0.0.1:8000")</example>
     public static Proxy Parse(string proxyString, ProxyType defaultType = ProxyType.Http,
-        string defaultUsername = "", string defaultPassword = "")
+        string? defaultUsername = null, string? defaultPassword = null)
     {
         ArgumentNullException.ThrowIfNull(proxyString);
-        ArgumentNullException.ThrowIfNull(defaultUsername);
-        ArgumentNullException.ThrowIfNull(defaultPassword);
 
         var proxy = new Proxy(string.Empty, 0, defaultType, defaultUsername, defaultPassword);
 
@@ -201,8 +199,7 @@ public class Proxy
     public override int GetHashCode()
     {
         // TODO: Make these properties get-only
-        return Host.GetHashCode() + Port.GetHashCode() + Type.GetHashCode()
-               + Username.GetHashCode() + Password.GetHashCode();
+        return HashCode.Combine(Host, Port, Type, Username, Password);
     }
 
     /// <inheritdoc />

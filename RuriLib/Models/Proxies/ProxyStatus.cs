@@ -1,10 +1,9 @@
-﻿namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public enum ProxyStatus
 {
-    public enum ProxyStatus
-    {
-        Available,
-        Busy,
-        Bad,
-        Banned
-    }
+    Available,
+    Busy,
+    Bad,
+    Banned
 }

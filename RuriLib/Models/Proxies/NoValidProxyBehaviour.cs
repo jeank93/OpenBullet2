@@ -1,9 +1,8 @@
-﻿namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public enum NoValidProxyBehaviour
 {
-    public enum NoValidProxyBehaviour
-    {
-        DoNothing,
-        Unban,
-        Reload
-    }
+    DoNothing,
+    Unban,
+    Reload
 }

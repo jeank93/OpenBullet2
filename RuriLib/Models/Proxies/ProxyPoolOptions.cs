@@ -1,8 +1,6 @@
-﻿namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public class ProxyPoolOptions
 {
-    public class ProxyPoolOptions
-    {
-        public ProxyType[] AllowedTypes { get; set; } 
-            = new ProxyType[] { ProxyType.Http, ProxyType.Socks4, ProxyType.Socks5 };
-    }
+    public ProxyType[] AllowedTypes { get; set; } = [ProxyType.Http, ProxyType.Socks4, ProxyType.Socks5];
 }

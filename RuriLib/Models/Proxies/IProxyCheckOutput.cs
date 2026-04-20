@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
-namespace RuriLib.Models.Proxies
+namespace RuriLib.Models.Proxies;
+
+public interface IProxyCheckOutput
 {
-    public interface IProxyCheckOutput
-    {
-        Task StoreAsync(Proxy proxy);
-    }
+    Task StoreAsync(Proxy proxy);
 }

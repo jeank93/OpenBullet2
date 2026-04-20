@@ -1,5 +1,6 @@
 using RuriLib.Models.Data;
 using RuriLib.Models.Data.DataPools;
+using System;
 using System.Linq;
 using Xunit;
 
@@ -26,5 +27,18 @@ public class DataPoolTests
     {
         DataPool pool = new InfiniteDataPool();
         Assert.Equal(100, pool.DataList.Take(100).Count());
+    }
+
+    [Fact]
+    public void ListDataPool_NullList_Throws() => Assert.Throws<ArgumentNullException>(() => new ListDataPool(null!));
+
+    [Fact]
+    public void RangeDataPool_Reload_RegeneratesSequence()
+    {
+        var pool = new RangeDataPool(5, 3, 5, true);
+
+        pool.Reload();
+
+        Assert.Equal(new[] { "05", "10", "15" }, pool.DataList.ToArray());
     }
 }

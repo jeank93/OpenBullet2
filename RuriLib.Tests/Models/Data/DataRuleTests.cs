@@ -70,4 +70,28 @@ public class DataRuleTests
 
         Assert.True(rule.IsSatisfied("abcdef"));
     }
+
+    [Fact]
+    public void IsSatisfied_LongerThan_True()
+    {
+        var rule = new SimpleDataRule
+        {
+            Comparison = StringRule.LongerThan,
+            StringToCompare = "3"
+        };
+
+        Assert.True(rule.IsSatisfied("abcdef"));
+    }
+
+    [Fact]
+    public void RegexDataRule_IsSatisfied_RespectsInvert()
+    {
+        var rule = new RegexDataRule
+        {
+            RegexToMatch = "^abc",
+            Invert = true
+        };
+
+        Assert.False(rule.IsSatisfied("abcdef"));
+    }
 }

@@ -5,93 +5,92 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RuriLib.Models.Jobs
+namespace RuriLib.Models.Jobs;
+
+// Todo: Implement IDisposable and dispose the following when a job is deleted or edited
+// - GroupProxySource
+// - DatabaseHitOutput
+// - DatabaseProxyCheckOutput
+public abstract class Job
 {
-    // Todo: Implement IDisposable and dispose the following when a job is deleted or edited
-    // - GroupProxySource
-    // - DatabaseHitOutput
-    // - DatabaseProxyCheckOutput
-    public abstract class Job
+    // Public properties
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int OwnerId { get; set; }
+    public JobStatus Status { get; protected set; } = JobStatus.Idle;
+    public DateTime CreationTime { get; set; } = DateTime.Now;
+    public DateTime StartTime { get; set; } = DateTime.Now;
+    public StartCondition StartCondition { get; set; } = new RelativeTimeStartCondition();
+    public virtual TimeSpan Elapsed => DateTime.Now - StartTime;
+    public virtual TimeSpan Remaining => throw new NotImplementedException();
+
+    // Virtual properties
+    public virtual float Progress => throw new NotImplementedException();
+
+    // Protected fields
+    protected readonly RuriLibSettingsService settings;
+    protected readonly PluginRepository pluginRepo;
+    protected readonly IJobLogger? logger;
+
+    // Private fields
+    private bool waitFinished;
+    private CancellationTokenSource? cts; // Cancellation token for cancelling the StartCondition wait
+
+    public Job(RuriLibSettingsService settings, PluginRepository pluginRepo, IJobLogger? logger = null)
     {
-        // Public properties
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int OwnerId { get; set; } = 0;
-        public JobStatus Status { get; protected set; } = JobStatus.Idle;
-        public DateTime CreationTime { get; set; } = DateTime.Now;
-        public DateTime StartTime { get; set; } = DateTime.Now;
-        public StartCondition StartCondition { get; set; } = new RelativeTimeStartCondition();
-        public virtual TimeSpan Elapsed => DateTime.Now - StartTime;
-        public virtual TimeSpan Remaining => throw new NotImplementedException();
+        this.settings = settings;
+        this.pluginRepo = pluginRepo;
+        this.logger = logger;
+    }
 
-        // Virtual properties
-        public virtual float Progress => throw new NotImplementedException();
+    public virtual async Task Start(CancellationToken cancellationToken = default)
+    {
+        waitFinished = false;
+        cts?.Dispose();
+        cts = new CancellationTokenSource();
 
-        // Protected fields
-        protected readonly RuriLibSettingsService settings;
-        protected readonly PluginRepository pluginRepo;
-        protected readonly IJobLogger logger;
+        StartTime = DateTime.Now;
 
-        // Private fields
-        private bool waitFinished = false;
-        private CancellationTokenSource cts; // Cancellation token for cancelling the StartCondition wait
-
-        public Job(RuriLibSettingsService settings, PluginRepository pluginRepo, IJobLogger logger = null)
+        try
         {
-            this.settings = settings;
-            this.pluginRepo = pluginRepo;
-            this.logger = logger;
+            logger?.LogInfo(Id, "Waiting for the start condition to be verified...");
+            await StartCondition.WaitUntilVerified(this, cts.Token);
+            logger?.LogInfo(Id, "Finished waiting");
+        }
+        catch (TaskCanceledException)
+        {
+            // The token has been cancelled, skip the wait
+            logger?.LogInfo(Id, "The wait has been manually skipped");
         }
 
-        public virtual async Task Start(CancellationToken cancellationToken = default)
+        waitFinished = true;
+    }
+
+    public void SkipWait()
+    {
+        if (!waitFinished && cts is not null && !cts.IsCancellationRequested)
         {
-            waitFinished = false;
-            cts?.Dispose();
-            cts = new CancellationTokenSource();
-
-            StartTime = DateTime.Now;
-
-            try
-            {
-                logger?.LogInfo(Id, "Waiting for the start condition to be verified...");
-                await StartCondition.WaitUntilVerified(this, cts.Token);
-                logger?.LogInfo(Id, "Finished waiting");
-            }
-            catch (TaskCanceledException)
-            {
-                // The token has been cancelled, skip the wait
-                logger?.LogInfo(Id, "The wait has been manually skipped");
-            }
-
-            waitFinished = true;
+            cts.Cancel();
         }
+    }
 
-        public void SkipWait()
-        {
-            if (!waitFinished && !cts.IsCancellationRequested)
-            {
-                cts.Cancel();
-            }
-        }
+    public virtual Task Pause()
+    {
+        throw new NotImplementedException();
+    }
 
-        public virtual Task Pause()
-        {
-            throw new NotImplementedException();
-        }
+    public virtual Task Resume()
+    {
+        throw new NotImplementedException();
+    }
 
-        public virtual Task Resume()
-        {
-            throw new NotImplementedException();
-        }
+    public virtual Task Stop()
+    {
+        throw new NotImplementedException();
+    }
 
-        public virtual Task Stop()
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual Task Abort()
-        {
-            throw new NotImplementedException();
-        }
+    public virtual Task Abort()
+    {
+        throw new NotImplementedException();
     }
 }

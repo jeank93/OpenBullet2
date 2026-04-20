@@ -1,6 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Net.Proxy;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Functions.Http;
 using RuriLib.Functions.Smtp;
 using RuriLib.Http.Models;
@@ -331,7 +332,9 @@ public static class Methods
         data.Logger.LogHeader();
 
         var protocolLogger = data.TryGetObject<ProtocolLogger>("smtpLogger");
-        var bytes = (protocolLogger.Stream as MemoryStream).ToArray();
+        var stream = protocolLogger?.Stream as MemoryStream
+            ?? throw new BlockExecutionException("The SMTP protocol logger is not initialized");
+        var bytes = stream.ToArray();
         var log = Encoding.UTF8.GetString(bytes);
 
         data.Logger.Log(log, LogColors.LightBrown);

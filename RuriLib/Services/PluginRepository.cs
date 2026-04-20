@@ -101,7 +101,7 @@ public class PluginRepository
             {
                 try
                 {
-                    var folder = Path.Combine(BaseFolder, Path.GetDirectoryName(entry.FullName));
+                    var folder = Path.Combine(BaseFolder, Path.GetDirectoryName(entry.FullName) ?? string.Empty);
                     Directory.CreateDirectory(folder);
                     entry.ExtractToFile(Path.Combine(BaseFolder, entry.FullName), true);
                 }

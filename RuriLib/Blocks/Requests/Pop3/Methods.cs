@@ -2,6 +2,7 @@
 using MailKit.Net.Pop3;
 using MailKit.Net.Proxy;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Functions.Http;
 using RuriLib.Functions.Networking;
 using RuriLib.Functions.Pop3;
@@ -306,7 +307,9 @@ public static class Methods
         data.Logger.LogHeader();
 
         var protocolLogger = data.TryGetObject<ProtocolLogger>("pop3Logger");
-        var bytes = (protocolLogger.Stream as MemoryStream).ToArray();
+        var stream = protocolLogger?.Stream as MemoryStream
+            ?? throw new BlockExecutionException("The POP3 protocol logger is not initialized");
+        var bytes = stream.ToArray();
         var log = Encoding.UTF8.GetString(bytes);
 
         data.Logger.Log(log, LogColors.Mantis);

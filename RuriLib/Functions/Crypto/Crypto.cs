@@ -550,7 +550,7 @@ namespace RuriLib.Functions.Crypto
             aes.Mode = mode;
             aes.Padding = padding;
 
-            using var decryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
             return PerformCryptography(cipherText, decryptor);
         }
 
@@ -578,7 +578,7 @@ namespace RuriLib.Functions.Crypto
                 throw new ArgumentNullException(nameof(cipherText));
             }
 
-            if (key == null || key.Length <= 0)
+            if (key is not { Length: > 0 })
             {
                 throw new ArgumentNullException(nameof(key));
             }

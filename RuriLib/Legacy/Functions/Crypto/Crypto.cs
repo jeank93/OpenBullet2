@@ -426,12 +426,8 @@ namespace RuriLib.Legacy.Functions.Crypto
         /// <returns>The AES-encrypted string encoded as base64</returns>
         public static string AESEncrypt(string data, string key, string iv = "", CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None)
         {
-            string encData = null;
             byte[][] keys = ConvertKeys(key, iv);
-
-            encData = EncryptStringToBytes_Aes(data, keys[0], keys[1], mode, padding);
-
-            return encData;
+            return EncryptStringToBytes_Aes(data, keys[0], keys[1], mode, padding);
         }
 
         /// <summary>
@@ -445,12 +441,8 @@ namespace RuriLib.Legacy.Functions.Crypto
         /// <returns>The plaintext string</returns>
         public static string AESDecrypt(string data, string key, string iv = "", CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None)
         {
-            string decData = null;
             byte[][] keys = ConvertKeys(key, iv);
-
-            decData = DecryptStringFromBytes_Aes(data, keys[0], keys[1], mode, padding);
-
-            return decData;
+            return DecryptStringFromBytes_Aes(data, keys[0], keys[1], mode, padding);
         }
 
         private static byte[][] ConvertKeys(string key, string iv)

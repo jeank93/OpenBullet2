@@ -218,7 +218,7 @@ public static class Methods
     /// Generates a PKCS v5 #2.0 key using a Password-Based Key Derivation Function.
     /// </summary>
     [Block("Generates a PKCS v5 #2.0 key using a Password-Based Key Derivation Function", name = "PBKDF2PKCS5")]
-    public static byte[] PBKDF2PKCS5(BotData data, byte[] password, byte[] salt = null, int saltSize = 8,
+    public static byte[] PBKDF2PKCS5(BotData data, byte[] password, byte[]? salt = null, int saltSize = 8,
         int iterations = 1, int keyLength = 16, HashFunction type = HashFunction.SHA1)
     {
         data.Logger.LogHeader();

@@ -6,6 +6,7 @@ using RuriLib.Models.Bots;
 using RuriLib.Models.Captchas;
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using CaptchaSharp.Models.CaptchaOptions;
 
@@ -581,9 +582,10 @@ public static class Methods
         {
             if (ex is AggregateException { InnerException: not null } aggEx)
             {
-                throw aggEx.InnerException;
+                var innerException = aggEx.InnerException ?? ex;
+                ExceptionDispatchInfo.Capture(innerException).Throw();
             }
-            
+             
             throw;
         }
     }

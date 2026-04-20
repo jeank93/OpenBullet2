@@ -188,7 +188,10 @@ public static class Methods
         return parsed;
     }
 
-    // Old signature (without multiLine) for backwards compatibility
+    /// <summary>
+    /// Matches all regex groups and formats them as strings.
+    /// </summary>
+    /// <remarks>Backwards-compatible overload without the multiline flag.</remarks>
     public static List<string> MatchRegexGroupsRecursive(BotData data, string input,
         string pattern, string outputFormat, string prefix = "", string suffix = "", bool urlEncodeOutput = false)
         => MatchRegexGroupsRecursive(data, input, pattern, outputFormat, false, prefix, suffix, urlEncodeOutput);
@@ -213,7 +216,10 @@ public static class Methods
         return parsed;
     }
 
-    // Old signature (without multiLine) for backwards compatibility
+    /// <summary>
+    /// Matches the first regex group result and formats it as a string.
+    /// </summary>
+    /// <remarks>Backwards-compatible overload without the multiline flag.</remarks>
     public static string MatchRegexGroups(BotData data, string input, string pattern, string outputFormat,
         string prefix = "", string suffix = "", bool urlEncodeOutput = false)
         => MatchRegexGroups(data, input, pattern, outputFormat, false, prefix, suffix, urlEncodeOutput);

@@ -12,6 +12,9 @@ using System.Text.RegularExpressions;
 // ReSharper disable once CheckNamespace
 namespace RuriLib.Blocks.Functions.String;
 
+/// <summary>
+/// Blocks for working with strings.
+/// </summary>
 [BlockCategory("String Functions", "Blocks for working with strings", "#9acd32")]
 public static class Methods
 {

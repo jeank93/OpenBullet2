@@ -11,6 +11,9 @@ using RuriLib.Exceptions;
 
 namespace RuriLib.Blocks.Interop;
 
+/// <summary>
+/// Blocks and helpers for interoperability with other programs.
+/// </summary>
 [BlockCategory("Interop", "Blocks for interoperability with other programs", "#ddadaf")]
 public static class Methods
 {
@@ -50,6 +53,9 @@ public static class Methods
      * These are not blocks, but they take BotData as an input. The ScriptBlockInstance will take care
      * of writing C# code that calls these methods where necessary once it's transpiled.
      */
+    /// <summary>
+    /// Invokes a NodeJS script from a file or inline source.
+    /// </summary>
     public static async Task<T?> InvokeNode<T>(BotData data, string scriptOrFile, object[] parameters, bool isScript = false, string? scriptHash = null)
     {
         data.Logger.LogHeader();
@@ -108,6 +114,9 @@ public static class Methods
         ).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Executes a JavaScript file using Jint.
+    /// </summary>
     public static Engine InvokeJint(BotData data, Engine engine, string scriptFile)
     {
         data.Logger.LogHeader();
@@ -118,6 +127,9 @@ public static class Methods
         return engine;
     }
 
+    /// <summary>
+    /// Creates a new IronPython scope from the configured engine.
+    /// </summary>
     public static ScriptScope GetIronPyScope(BotData data)
     {
         data.Logger.LogHeader();
@@ -133,6 +145,9 @@ public static class Methods
         return engine.CreateScope();
     }
 
+    /// <summary>
+    /// Executes an IronPython script file in the provided scope.
+    /// </summary>
     public static void ExecuteIronPyScript(BotData data, ScriptScope scope, string scriptFile)
     {
         var engine = data.TryGetObject<ScriptEngine>("ironPyEngine");

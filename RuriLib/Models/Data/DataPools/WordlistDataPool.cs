@@ -1,27 +1,29 @@
-﻿using System.IO;
+using System;
+using System.IO;
 using System.Linq;
 
-namespace RuriLib.Models.Data.DataPools
-{
-    public class WordlistDataPool : DataPool
-    {
-        public Wordlist Wordlist { get; }
+namespace RuriLib.Models.Data.DataPools;
 
-        /// <summary>
-        /// Creates a DataPool by loading lines from a given <paramref name="wordlist"/>.
-        /// </summary>
-        public WordlistDataPool(Wordlist wordlist)
-        {
-            Wordlist = wordlist;
-            DataList = File.ReadLines(wordlist.Path);
-            Size = wordlist.Total;
-            WordlistType = wordlist.Type.Name;
-        }
-        
-        /// <inheritdoc/>
-        public override void Reload()
-        {
-            DataList = File.ReadLines(Wordlist.Path);
-        }
+public class WordlistDataPool : DataPool
+{
+    public Wordlist Wordlist { get; }
+
+    /// <summary>
+    /// Creates a DataPool by loading lines from a given <paramref name="wordlist"/>.
+    /// </summary>
+    public WordlistDataPool(Wordlist wordlist)
+    {
+        ArgumentNullException.ThrowIfNull(wordlist);
+
+        Wordlist = wordlist;
+        DataList = File.ReadLines(wordlist.Path ?? throw new ArgumentException("The wordlist must reside on disk", nameof(wordlist)));
+        Size = wordlist.Total;
+        WordlistType = wordlist.Type.Name;
+    }
+
+    /// <inheritdoc/>
+    public override void Reload()
+    {
+        DataList = File.ReadLines(Wordlist.Path ?? throw new InvalidOperationException("The wordlist must reside on disk"));
     }
 }

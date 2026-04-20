@@ -102,7 +102,7 @@ public static class Methods
         if (fill)
         {
             zipped = list1.Count < list2.Count
-                ? list1.Concat(Enumerable.Repeat(fillString, list2.Count - list2.Count)).Zip(list2, zipFunc).ToList()
+                ? list1.Concat(Enumerable.Repeat(fillString, list2.Count - list1.Count)).Zip(list2, zipFunc).ToList()
                 : list1.Zip(list2.Concat(Enumerable.Repeat(fillString, list1.Count - list2.Count)), zipFunc).ToList();
         }
         else
@@ -114,6 +114,9 @@ public static class Methods
         return zipped;
     }
 
+    /// <summary>
+    /// Maps two lists into a dictionary.
+    /// </summary>
     [Block("Maps two lists into a dictionary", extraInfo = "For example [1,2] and [a,b] will be mapped into {(1,a), (2,b)}")]
     public static Dictionary<string, string> MapLists(BotData data, [Variable] List<string> list1, [Variable] List<string> list2)
     {
@@ -162,7 +165,7 @@ public static class Methods
         }
         else if (index < 0)
         {
-            index += list.Count +1 ;
+            index += list.Count;
         }
         
         var removedItem = list[index];
@@ -171,6 +174,9 @@ public static class Methods
         data.Logger.Log($"Removed item {removedItem} at index {index}", LogColors.YellowGreen);
     }
 
+    /// <summary>
+    /// Removes all items that match a given condition from a list.
+    /// </summary>
     [Block("Removes all items that match a given condition from a list")]
     public static void RemoveAllFromList(BotData data, [Variable] List<string> list, StrComparison comparison, string term)
     {
@@ -181,6 +187,9 @@ public static class Methods
         data.Logger.Log($"Removed {count} items", LogColors.YellowGreen);
     }
 
+    /// <summary>
+    /// Removes duplicate items from a list.
+    /// </summary>
     [Block("Removes duplicate items from a list")]
     public static List<string> RemoveDuplicates(BotData data, [Variable] List<string> list)
     {
@@ -191,6 +200,9 @@ public static class Methods
         return unique;
     }
 
+    /// <summary>
+    /// Gets a random item from a list.
+    /// </summary>
     [Block("Gets a random item from a list")]
     public static string GetRandomItem(BotData data, [Variable] List<string> list)
     {
@@ -201,6 +213,9 @@ public static class Methods
         return item;
     }
 
+    /// <summary>
+    /// Shuffles the items of a list.
+    /// </summary>
     [Block("Shuffles the items of a list")]
     public static void Shuffle(BotData data, [Variable] List<string> list)
     {
@@ -210,6 +225,9 @@ public static class Methods
         data.Logger.Log("Shuffled the list", LogColors.YellowGreen);
     }
 
+    /// <summary>
+    /// Splits the items of a list to create a dictionary.
+    /// </summary>
     [Block("Splits the items of a list to create a dictionary", name = "To Dictionary")]
     public static Dictionary<string, string> ListToDictionary(BotData data, [Variable] List<string> list,
         string separator = ":", bool autoTrim = true)
@@ -222,7 +240,7 @@ public static class Methods
         {
             var split = item.Split(separator, 2, autoTrim ? StringSplitOptions.TrimEntries : StringSplitOptions.None);
 
-            if (!string.IsNullOrEmpty(split[0]))
+            if (split.Length >= 2 && !string.IsNullOrEmpty(split[0]))
             {
                 dict[split[0]] = split[1];
             }
@@ -232,6 +250,9 @@ public static class Methods
         return dict;
     }
 
+    /// <summary>
+    /// Gets the index of an element of a list.
+    /// </summary>
     [Block("Gets the index of an element of a list", name = "Index Of")]
     public static int ListIndexOf(BotData data, [Variable] List<string> list, string item, bool exactMatch = false,
         bool caseSensitive = false)
@@ -254,6 +275,9 @@ public static class Methods
         return index;
     }
 
+    /// <summary>
+    /// Creates a list of numbers starting from the specified number.
+    /// </summary>
     [Block("Creates a list of N numbers starting from the specified number", name = "Create List of Numbers")]
     public static List<string> CreateListOfNumbers(BotData data, int start, int count)
     {

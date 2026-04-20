@@ -329,16 +329,23 @@ public class BlockSolveCaptcha : BlockBase
 
         string errorMessage;
 
-        var proxy = data.UseProxy && UseProxy
-            ? new Proxy
+        Proxy? proxy = null;
+        if (data.UseProxy && UseProxy)
+        {
+            if (data.Proxy == null)
+            {
+                throw new InvalidOperationException("A proxy is required when captcha solving uses proxies");
+            }
+
+            proxy = new Proxy
             {
                 Host = data.Proxy.Host,
                 Port = data.Proxy.Port,
                 Type = (ProxyType)Enum.Parse(typeof(ProxyType), data.Proxy.Type.ToString()),
                 Username = data.Proxy.Username,
                 Password = data.Proxy.Password,
-            }
-            : null;
+            };
+        }
         
         var cookies = data.COOKIES.ToDictionary(cookie => cookie.Key, cookie => cookie.Value);
 
@@ -372,12 +379,9 @@ public class BlockSolveCaptcha : BlockBase
                 }
                 catch (Exception ex) // This unwraps aggregate exceptions
                 {
-                    if (ex is AggregateException { InnerException: not null } aggEx)
-                    {
-                        throw aggEx.InnerException;
-                    }
-
-                    throw;
+                    throw ex is AggregateException { InnerException: not null } aggEx
+                        ? aggEx.InnerException
+                        : ex;
                 }
             }
             catch (BadAuthenticationException ex)
@@ -421,12 +425,9 @@ public class BlockSolveCaptcha : BlockBase
             }
             catch (Exception ex) // This unwraps aggregate exceptions
             {
-                if (ex is AggregateException { InnerException: not null } aggEx)
-                {
-                    throw aggEx.InnerException;
-                }
-
-                throw;
+                throw ex is AggregateException { InnerException: not null } aggEx
+                    ? aggEx.InnerException
+                    : ex;
             }
         }
         catch (NotSupportedException ex)

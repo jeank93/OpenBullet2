@@ -15,8 +15,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RuriLib.Legacy.Blocks
-{
+namespace RuriLib.Legacy.Blocks;
+
     /// <summary>
     /// A block that can interact with a selenium-driven browser.
     /// </summary>
@@ -169,7 +169,8 @@ namespace RuriLib.Legacy.Blocks
             }
 
             var replacedInput = ReplaceValues(Input, ls);
-            Actions keyActions = null;
+            var validatedBrowser = browser;
+            Actions? keyActions = null;
 
             switch (Action)
             {
@@ -179,21 +180,21 @@ namespace RuriLib.Legacy.Blocks
                     break;
 
                 case BrowserAction.Close:
-                    browser.Close();
+                    validatedBrowser!.Close();
                     data.SetObject("selenium", null);
                     break;
 
                 case BrowserAction.Quit:
-                    browser.Quit();
+                    validatedBrowser!.Quit();
                     data.SetObject("selenium", null);
                     break;
 
                 case BrowserAction.ClearCookies:
-                    browser.Manage().Cookies.DeleteAllCookies();
+                    validatedBrowser!.Manage().Cookies.DeleteAllCookies();
                     break;
 
                 case BrowserAction.SendKeys:
-                    keyActions = new Actions(browser);
+                    keyActions = new Actions(validatedBrowser!);
                     foreach (var s in replacedInput.Split(new string[] { "||" }, StringSplitOptions.None))
                     {
                         switch (s)
@@ -222,7 +223,7 @@ namespace RuriLib.Legacy.Blocks
 
                                 if (matchingField != null)
                                 {
-                                    keyActions.SendKeys(matchingField.GetValue(null).ToString());
+                                    keyActions.SendKeys(matchingField.GetValue(null)?.ToString() ?? string.Empty);
                                 }
                                 else
                                 {
@@ -239,61 +240,61 @@ namespace RuriLib.Legacy.Blocks
 
                 case BrowserAction.Screenshot:
                     var screenshotFile = Utils.GetScreenshotPath(data);
-                    browser.GetScreenshot().SaveAsFile(screenshotFile);
+                    validatedBrowser!.GetScreenshot().SaveAsFile(screenshotFile);
                     break;
 
                 case BrowserAction.OpenNewTab:
-                    ((IJavaScriptExecutor)browser).ExecuteScript("window.open();");
-                    browser.SwitchTo().Window(browser.WindowHandles.Last());
+                    ((IJavaScriptExecutor)validatedBrowser!).ExecuteScript("window.open();");
+                    validatedBrowser.SwitchTo().Window(validatedBrowser.WindowHandles.Last());
                     break;
 
                 case BrowserAction.SwitchToTab:
-                    browser.SwitchTo().Window(browser.WindowHandles[int.Parse(replacedInput)]);
+                    validatedBrowser!.SwitchTo().Window(validatedBrowser.WindowHandles[int.Parse(replacedInput)]);
                     UpdateSeleniumData(data);
                     break;
 
                 case BrowserAction.CloseCurrentTab:
-                    ((IJavaScriptExecutor)browser).ExecuteScript("window.close();");
+                    ((IJavaScriptExecutor)validatedBrowser!).ExecuteScript("window.close();");
                     break;
 
                 case BrowserAction.Refresh:
-                    browser.Navigate().Refresh();
+                    validatedBrowser!.Navigate().Refresh();
                     break;
 
                 case BrowserAction.Back:
-                    browser.Navigate().Back();
+                    validatedBrowser!.Navigate().Back();
                     break;
 
                 case BrowserAction.Forward:
-                    browser.Navigate().Forward();
+                    validatedBrowser!.Navigate().Forward();
                     break;
 
                 case BrowserAction.Maximize:
-                    browser.Manage().Window.Maximize();
+                    validatedBrowser!.Manage().Window.Maximize();
                     break;
 
                 case BrowserAction.Minimize:
-                    browser.Manage().Window.Minimize();
+                    validatedBrowser!.Manage().Window.Minimize();
                     break;
 
                 case BrowserAction.FullScreen:
-                    browser.Manage().Window.FullScreen();
+                    validatedBrowser!.Manage().Window.FullScreen();
                     break;
 
                 case BrowserAction.SetWidth:
-                    browser.Manage().Window.Size = new Size(int.Parse(replacedInput), browser.Manage().Window.Size.Height);
+                    validatedBrowser!.Manage().Window.Size = new Size(int.Parse(replacedInput), validatedBrowser.Manage().Window.Size.Height);
                     break;
 
                 case BrowserAction.SetHeight:
-                    browser.Manage().Window.Size = new Size(browser.Manage().Window.Size.Width, int.Parse(replacedInput));
+                    validatedBrowser!.Manage().Window.Size = new Size(validatedBrowser.Manage().Window.Size.Width, int.Parse(replacedInput));
                     break;
 
                 case BrowserAction.DOMtoSOURCE:
-                    data.SOURCE = browser.FindElement(By.TagName("body")).GetAttribute("innerHTML");
+                    data.SOURCE = validatedBrowser!.FindElement(By.TagName("body")).GetAttribute("innerHTML");
                     break;
 
                 case BrowserAction.GetCookies:
-                    foreach (var cookie in browser.Manage().Cookies.AllCookies)
+                    foreach (var cookie in validatedBrowser!.Manage().Cookies.AllCookies)
                     {
                         if (!string.IsNullOrWhiteSpace(cookie.Name))
                         {
@@ -308,7 +309,7 @@ namespace RuriLib.Legacy.Blocks
                     {
                         try
                         {
-                            browser.Manage().Cookies.AddCookie(new Cookie(cookie.Key, cookie.Value, baseURL, "/", DateTime.MaxValue));
+                            validatedBrowser!.Manage().Cookies.AddCookie(new Cookie(cookie.Key, cookie.Value, baseURL, "/", DateTime.MaxValue));
                         }
                         catch
                         {
@@ -318,15 +319,15 @@ namespace RuriLib.Legacy.Blocks
                     break;
 
                 case BrowserAction.SwitchToDefault:
-                    browser.SwitchTo().DefaultContent();
+                    validatedBrowser!.SwitchTo().DefaultContent();
                     break;
 
                 case BrowserAction.SwitchToAlert:
-                    browser.SwitchTo().Alert();
+                    validatedBrowser!.SwitchTo().Alert();
                     break;
 
                 case BrowserAction.SwitchToParentFrame:
-                    browser.SwitchTo().ParentFrame();
+                    validatedBrowser!.SwitchTo().ParentFrame();
                     break;
             }
 
@@ -390,6 +391,11 @@ namespace RuriLib.Legacy.Blocks
                     if (data.UseProxy)
                     {
                         // TODO: Add support for auth proxies using yove
+                        if (data.Proxy == null)
+                        {
+                            throw new InvalidOperationException("A proxy is required when UseProxy is enabled");
+                        }
+
                         chromeop.AddArgument($"--proxy-server={data.Proxy.Type.ToString().ToLower()}://{data.Proxy.Host}:{data.Proxy.Port}");
                     }
 
@@ -404,7 +410,7 @@ namespace RuriLib.Legacy.Blocks
                     fireservice.SuppressInitialDiagnosticInformation = true;
                     fireservice.HideCommandPromptWindow = true;
                     fireop.AddArgument("--log-level=3");
-                    fireop.BrowserExecutableLocation = provider.FirefoxBinaryLocation;
+                    fireop.BinaryLocation = provider.FirefoxBinaryLocation;
 
                     if (Helpers.Utils.IsDocker())
                     {
@@ -429,6 +435,11 @@ namespace RuriLib.Legacy.Blocks
                     if (data.UseProxy)
                     {
                         fireprofile.SetPreference("network.proxy.type", 1);
+                        if (data.Proxy == null)
+                        {
+                            throw new InvalidOperationException("A proxy is required when UseProxy is enabled");
+                        }
+
                         if (data.Proxy.Type == ProxyType.Http)
                         {
                             fireprofile.SetPreference("network.proxy.http", data.Proxy.Host);
@@ -460,4 +471,3 @@ namespace RuriLib.Legacy.Blocks
             data.Logger.Log("Opened!", LogColors.White);
         }
     }
-}

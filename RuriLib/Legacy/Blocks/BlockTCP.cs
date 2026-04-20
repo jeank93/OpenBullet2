@@ -197,8 +197,16 @@ namespace RuriLib.Legacy.Blocks
                         if (WaitForHello)
                         {
                             // Read the stream to make sure we are connected
-                            if (UseSSL) bytes = await ssl.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                            else bytes = await net.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                            if (UseSSL)
+                            {
+                                bytes = await (ssl ?? throw new InvalidOperationException("The SSL stream was not initialized"))
+                                    .ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                bytes = await (net ?? throw new InvalidOperationException("The network stream was not initialized"))
+                                    .ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                            }
 
                             // Save the response as ASCII in the SOURCE variable
                             response = Encoding.ASCII.GetString(buffer, 0, bytes);
@@ -301,13 +309,15 @@ namespace RuriLib.Legacy.Blocks
                     var TCPSSL = data.TryGetObject<object>("TCPSSL") as bool?;
                     if (TCPSSL.HasValue && TCPSSL.Value)
                     {
-                        ssl.Write(b);
-                        bytes = await ssl.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        var sslStream = ssl ?? throw new InvalidOperationException("The SSL stream was not initialized");
+                        sslStream.Write(b);
+                        bytes = await sslStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     }
                     else
                     {
-                        await net.WriteAsync(b, 0, b.Length).ConfigureAwait(false);
-                        bytes = await net.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                        var netStream = net ?? throw new InvalidOperationException("The network stream was not initialized");
+                        await netStream.WriteAsync(b, 0, b.Length).ConfigureAwait(false);
+                        bytes = await netStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     }
 
                     // Save the response as ASCII in the SOURCE variable and log it

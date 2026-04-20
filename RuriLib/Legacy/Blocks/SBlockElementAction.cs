@@ -13,8 +13,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RuriLib.Legacy.Blocks
-{
+namespace RuriLib.Legacy.Blocks;
+
     /// <summary>
     /// A block that can perform an action on an element inside an HTML page.
     /// </summary>
@@ -235,8 +235,8 @@ namespace RuriLib.Legacy.Blocks
             }
 
             // Find the element
-            IWebElement element = null;
-            ReadOnlyCollection<IWebElement> elements = null;
+            IWebElement? element = null;
+            ReadOnlyCollection<IWebElement>? elements = null;
 
             if (Action != ElementAction.WaitForElement)
             {
@@ -246,107 +246,117 @@ namespace RuriLib.Legacy.Blocks
                 {
                     throw new Exception("Cannot find the element on the page");
                 }
+
+                element = elements[ElementIndex];
             }
 
             var replacedInput = ReplaceValues(Input, ls);
             var outputs = new List<string>();
+            IWebElement GetElement()
+                => element ?? throw new InvalidOperationException("Cannot find the element on the page");
 
             switch (Action)
             {
                 case ElementAction.Clear:
-                    element.Clear();
+                    GetElement().Clear();
                     break;
 
                 case ElementAction.SendKeys:
-                    element.SendKeys(replacedInput);
+                    GetElement().SendKeys(replacedInput);
                     break;
 
                 case ElementAction.Click:
-                    element.Click();
+                    GetElement().Click();
                     UpdateSeleniumData(data);
                     break;
 
                 case ElementAction.Submit:
-                    element.Submit();
+                    GetElement().Submit();
                     UpdateSeleniumData(data);
                     break;
 
                 case ElementAction.SelectOptionByText:
-                    new SelectElement(element).SelectByText(replacedInput);
+                    new SelectElement(GetElement()).SelectByText(replacedInput);
                     break;
 
                 case ElementAction.SelectOptionByIndex:
-                    new SelectElement(element).SelectByIndex(int.Parse(replacedInput));
+                    new SelectElement(GetElement()).SelectByIndex(int.Parse(replacedInput));
                     break;
 
                 case ElementAction.SelectOptionByValue:
-                    new SelectElement(element).SelectByValue(replacedInput);
+                    new SelectElement(GetElement()).SelectByValue(replacedInput);
                     break;
 
                 case ElementAction.GetText:
                     if (Recursive)
                     {
-                        foreach (var elem in elements)
+                        if (elements != null)
                         {
-                            outputs.Add(elem.Text);
+                            foreach (var elem in elements)
+                            {
+                                outputs.Add(elem.Text);
+                            }
                         }
                     }
                     else
                     {
-                        outputs.Add(element.Text);
+                        outputs.Add(GetElement().Text);
                     }
                     break;
 
                 case ElementAction.GetAttribute:
                     if (Recursive)
                     {
-                        foreach (var elem in elements)
+                        if (elements != null)
                         {
-                            outputs.Add(elem.GetAttribute(replacedInput));
+                            foreach (var elem in elements)
+                            {
+                                outputs.Add(elem.GetAttribute(replacedInput) ?? string.Empty);
+                            }
                         }
                     }
                     else
                     {
-                        outputs.Add(element.GetAttribute(replacedInput));
+                        outputs.Add(GetElement().GetAttribute(replacedInput) ?? string.Empty);
                     }
                     break;
 
                 case ElementAction.IsDisplayed:
-                    outputs.Add(element.Displayed.ToString());
+                    outputs.Add(GetElement().Displayed.ToString());
                     break;
 
                 case ElementAction.IsEnabled:
-                    outputs.Add(element.Enabled.ToString());
+                    outputs.Add(GetElement().Enabled.ToString());
                     break;
 
                 case ElementAction.IsSelected:
-                    outputs.Add(element.Selected.ToString());
+                    outputs.Add(GetElement().Selected.ToString());
                     break;
 
                 case ElementAction.LocationX:
-                    outputs.Add(element.Location.X.ToString());
+                    outputs.Add(GetElement().Location.X.ToString());
                     break;
 
                 case ElementAction.LocationY:
-                    outputs.Add(element.Location.Y.ToString());
+                    outputs.Add(GetElement().Location.Y.ToString());
                     break;
 
                 case ElementAction.SizeX:
-                    outputs.Add(element.Size.Width.ToString());
+                    outputs.Add(GetElement().Size.Width.ToString());
                     break;
 
                 case ElementAction.SizeY:
-                    outputs.Add(element.Size.Height.ToString());
+                    outputs.Add(GetElement().Size.Height.ToString());
                     break;
 
                 case ElementAction.Screenshot:
-                    var image = TakeElementScreenshot(browser, element);
+                    var image = TakeElementScreenshot(browser, GetElement());
                     image.Save(Utils.GetScreenshotPath(data));
                     image.Dispose();
                     break;
 
                 case ElementAction.ScreenshotBase64:
-                    var img = TakeElementScreenshot(browser, element);
+                    var img = TakeElementScreenshot(browser, GetElement());
                     var ms = new MemoryStream();
                     img.Save(ms, ImageFormat.Jpeg);
                     var base64 = Convert.ToBase64String(ms.ToArray());
@@ -356,7 +366,7 @@ namespace RuriLib.Legacy.Blocks
                     break;
 
                 case ElementAction.SwitchToFrame:
-                    browser.SwitchTo().Frame(element);
+                    browser.SwitchTo().Frame(GetElement());
                     break;
 
                 case ElementAction.WaitForElement:
@@ -377,7 +387,7 @@ namespace RuriLib.Legacy.Blocks
                         try
                         {
                             FindElements(browser, ReplaceValues(ElementString, ls));
-                            element = elements[0];
+                            element = FindElements(browser, ReplaceValues(ElementString, ls))[0];
                             found = true;
                             break;
                         }
@@ -398,7 +408,7 @@ namespace RuriLib.Legacy.Blocks
                 case ElementAction.SendKeysHuman:
                     foreach (var c in replacedInput)
                     {
-                        element.SendKeys(c.ToString());
+                        GetElement().SendKeys(c.ToString());
                         await Task.Delay(data.Random.Next(100, 300));
                     }
                     break;
@@ -431,4 +441,3 @@ namespace RuriLib.Legacy.Blocks
             _ => throw new NotImplementedException()
         };
     }
-}

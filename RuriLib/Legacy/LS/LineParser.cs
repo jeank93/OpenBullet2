@@ -4,8 +4,8 @@ using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace RuriLib.Legacy.LS
-{
+namespace RuriLib.Legacy.LS;
+
     /// <summary>
     /// Contains methods used to parse tokens from a LoliScript line of code.
     /// </summary>
@@ -60,19 +60,20 @@ namespace RuriLib.Legacy.LS
         public static void SetBool(ref string input, object instance)
         {
             var result = ParseToken(ref input, TokenType.Parameter, true, true).Split('=');
-            PropertyInfo prop;
+            var prop = instance.GetType().GetProperty(result[0]);
 
-            try
-            {
-                prop = instance.GetType().GetProperty(result[0]);
-            }
-            catch
+            if (prop == null)
             {
                 return;
                 // throw new ArgumentException($"There is no property called {result[0]} in the type {instance.GetType().ToString()}");
             }
 
             var propVal = prop.GetValue(instance);
+
+            if (propVal == null)
+            {
+                throw new InvalidOperationException($"The property {result[0]} is null");
+            }
             
             if (propVal.GetType() != typeof(bool))
             {
@@ -132,13 +133,14 @@ namespace RuriLib.Legacy.LS
         /// <param name="label">Debug information about the expected literal</param>
         /// <param name="replace">Whether to perform variable replacement in the literal</param>
         /// <returns>The literal without the leading and trailing double quotes</returns>
-        public static string ParseLiteral(ref string input, string label, bool replace = false, LSGlobals ls = null)
+        public static string ParseLiteral(ref string input, string label, bool replace = false, LSGlobals? ls = null)
         {
             try
             {
-                return replace
-                    ? BlockBase.ReplaceValues(ParseToken(ref input, TokenType.Literal, true), ls)
-                    : ParseToken(ref input, TokenType.Literal, true);
+                var literal = ParseToken(ref input, TokenType.Literal, true);
+                return replace && ls is not null
+                    ? BlockBase.ReplaceValues(literal, ls)
+                    : literal;
             }
             catch
             {
@@ -169,7 +171,11 @@ namespace RuriLib.Legacy.LS
         /// </summary>
         /// <param name="input">The reference to the line of code</param>
         /// <returns>The label of the block, if defined</returns>
-        public static string ParseLabel(ref string input) => ParseToken(ref input, TokenType.Label, false).Substring(1);
+        public static string ParseLabel(ref string input)
+        {
+            var label = ParseToken(ref input, TokenType.Label, false);
+            return label.Length > 0 ? label[1..] : string.Empty;
+        }
 
         /// <summary>
         /// Makes sure that a specified identifier is present and moves past it. An exception will be thrown if the identifier is not present.
@@ -279,4 +285,3 @@ namespace RuriLib.Legacy.LS
         /// <summary>An integer value.</summary>
         Integer
     }
-}

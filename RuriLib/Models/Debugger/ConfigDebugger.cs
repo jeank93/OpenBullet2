@@ -133,7 +133,8 @@ public class ConfigDebugger : IDisposable
             RNG = RNGProvider
         };
 
-        if (!RuriLibSettings.RuriLibSettings.GeneralSettings.UseCustomUserAgentsList)
+        if (!RuriLibSettings.RuriLibSettings.GeneralSettings.UseCustomUserAgentsList
+            && RandomUAProvider is not null)
         {
             providers.RandomUA = RandomUAProvider;
         }
@@ -302,7 +303,10 @@ public class ConfigDebugger : IDisposable
 
                     Options.Variables.Clear();
                     var legacyVariables = data.TryGetObject<VariablesList>("legacyVariables");
-                    Options.Variables.AddRange(legacyVariables.Variables);
+                    if (legacyVariables is not null)
+                    {
+                        Options.Variables.AddRange(legacyVariables.Variables);
+                    }
                     Options.Variables.AddRange(lsGlobals.Globals.Variables);
                 }
                 while (loliScript.CanProceed);

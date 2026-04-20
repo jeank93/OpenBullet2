@@ -168,8 +168,8 @@ public class MultiRunJob : Job
                 {
                     lsGlobals = new LSGlobals(botData)
                     {
-                        Globals = input.LegacyGlobals,
-                        GlobalCookies = input.LegacyGlobalCookies
+                        Globals = input.LegacyGlobals ?? new(),
+                        GlobalCookies = input.LegacyGlobalCookies ?? []
                     };
 
                     var slices = new List<Variable>();
@@ -218,12 +218,15 @@ public class MultiRunJob : Job
                     // Get a hold of a proxy
                     if (botData.UseProxy)
                     {
+                        var inputProxyPool = input.ProxyPool
+                            ?? throw new InvalidOperationException("The proxy pool was not initialized");
+
                         GETPROXY:
                         token.ThrowIfCancellationRequested();
 
-                        lock (input.ProxyPool)
+                        lock (inputProxyPool)
                         {
-                            botData.Proxy = input.ProxyPool.GetProxy(input.Job.ConcurrentProxyMode,
+                            botData.Proxy = inputProxyPool.GetProxy(input.Job.ConcurrentProxyMode,
                                 input.BotData.ConfigSettings.ProxySettings.MaxUsesPerProxy);
                         }
 
@@ -233,24 +236,28 @@ public class MultiRunJob : Job
                             {
                                 try
                                 {
-                                    await input.BotData.AsyncLocker.Acquire(typeof(ProxyPool), nameof(ProxyPool.ReloadAllAsync),
+                                    var locker = input.BotData.AsyncLocker
+                                        ?? throw new InvalidOperationException("The async locker was not initialized");
+                                    await locker.Acquire(typeof(ProxyPool), nameof(ProxyPool.ReloadAllAsync),
                                         input.BotData.CancellationToken).ConfigureAwait(false);
-                                    
-                                    botData.Proxy = input.ProxyPool.GetProxy(input.Job.ConcurrentProxyMode, input.BotData.ConfigSettings.ProxySettings.MaxUsesPerProxy);
-                                    
+                                     
+                                    botData.Proxy = inputProxyPool.GetProxy(input.Job.ConcurrentProxyMode, input.BotData.ConfigSettings.ProxySettings.MaxUsesPerProxy);
+                                     
                                     if (botData.Proxy == null)
                                     {
-                                        await input.ProxyPool.ReloadAllAsync(true, token).ConfigureAwait(false);
+                                        await inputProxyPool.ReloadAllAsync(true, token).ConfigureAwait(false);
                                     }
                                 }
                                 finally
                                 {
-                                    input.BotData.AsyncLocker.Release(typeof(ProxyPool), nameof(ProxyPool.ReloadAllAsync));
+                                    var locker = input.BotData.AsyncLocker
+                                        ?? throw new InvalidOperationException("The async locker was not initialized");
+                                    locker.Release(typeof(ProxyPool), nameof(ProxyPool.ReloadAllAsync));
                                 }
                             }
                             else if (input.Job.NoValidProxyBehaviour == NoValidProxyBehaviour.Unban)
                             {
-                                input.ProxyPool.UnbanAll(input.Job.ProxyBanTime);
+                                inputProxyPool.UnbanAll(input.Job.ProxyBanTime);
                             }
                             
                             goto GETPROXY;
@@ -258,10 +265,14 @@ public class MultiRunJob : Job
                     }
 
                     var scriptGlobals = new ScriptGlobals(botData, input.Globals);
+                    var inputValues = scriptGlobals.input as IDictionary<string, object?>
+                        ?? throw new InvalidOperationException("The script input object does not support key/value access");
 
                     // Set custom inputs answers
                     foreach (var answer in input.CustomInputsAnswers ?? [])
-                        (scriptGlobals.input as IDictionary<string, object?>).Add(answer.Key, answer.Value);
+                    {
+                        inputValues.Add(answer.Key, answer.Value);
+                    }
 
                     botData.Logger.Log($"[{DateTime.Now.ToLongTimeString()}] BOT STARTED WITH DATA {botData.Line.Data} AND PROXY {botData.Proxy}");
 
@@ -342,11 +353,11 @@ public class MultiRunJob : Job
                 {
                     // If a ban status occurred, ban the proxy
                     if (input.BotData.ConfigSettings.ProxySettings.BanProxyStatuses.Contains(botData.STATUS))
-                        input.ProxyPool.ReleaseProxy(input.BotData.Proxy, !input.Job.NeverBanProxies);
+                        input.ProxyPool?.ReleaseProxy(botData.Proxy, !input.Job.NeverBanProxies);
 
                     // Otherwise set it to available
                     else if (botData.Proxy.ProxyStatus == ProxyStatus.Busy)
-                        input.ProxyPool.ReleaseProxy(input.BotData.Proxy, false);
+                        input.ProxyPool?.ReleaseProxy(botData.Proxy, false);
                 }
 
                 // If we aborted
@@ -833,19 +844,19 @@ public class MultiRunJob : Job
         #endregion
 
         #region Propagation of Parallelizer events
-        private void PropagateTaskError(object _, ErrorDetails<MultiRunInput> details)
+        private void PropagateTaskError(object? _, ErrorDetails<MultiRunInput> details)
         {
             OnTaskError?.Invoke(this, details);
             logger?.LogException(Id, details.Exception);
         }
 
-        private void PropagateError(object _, Exception ex)
+        private void PropagateError(object? _, Exception ex)
         {
             OnError?.Invoke(this, ex);
             logger?.LogException(Id, ex);
         }
 
-        private void PropagateResult(object _, ResultDetails<MultiRunInput, CheckResult> result)
+        private void PropagateResult(object? _, ResultDetails<MultiRunInput, CheckResult> result)
         {
             OnResult?.Invoke(this, result);
 
@@ -855,12 +866,12 @@ public class MultiRunJob : Job
             logger?.LogInfo(Id, $"[{data.STATUS}] {data.Line.Data} ({data.Proxy})");
         }
 
-        private void PropagateProgress(object _, float progress)
+        private void PropagateProgress(object? _, float progress)
         {
             OnProgress?.Invoke(this, progress);
         }
 
-        private void PropagateCompleted(object _, EventArgs e)
+        private void PropagateCompleted(object? _, EventArgs e)
         {
             OnCompleted?.Invoke(this, e);
             logger?.LogInfo(Id, "Execution completed");
@@ -939,7 +950,7 @@ public class MultiRunJob : Job
             OnStatusChanged?.Invoke(this, Status);
         }
 
-        private void DataProcessed(object sender, ResultDetails<MultiRunInput, CheckResult> details)
+        private void DataProcessed(object? sender, ResultDetails<MultiRunInput, CheckResult> details)
         {
             var botData = details.Result.BotData;
 
@@ -1107,7 +1118,7 @@ public struct MultiRunInput
     public MultiRunJob Job { get; set; }
     public BotData BotData { get; set; }
     public dynamic Globals { get; set; }
-    public ProxyPool ProxyPool { get; set; }
+    public ProxyPool? ProxyPool { get; set; }
     public Script? Script { get; set; }
     public bool IsDLL { get; set; }
     public bool IsLegacy { get; set; }

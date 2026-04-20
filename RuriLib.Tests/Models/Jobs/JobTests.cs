@@ -2,6 +2,7 @@ using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.StartConditions;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,6 +11,8 @@ namespace RuriLib.Tests.Models.Jobs;
 
 public class JobTests
 {
+    private static readonly global::RuriLib.Services.PluginRepository PluginRepository = CreatePluginRepository();
+
     [Fact]
     public void SkipWait_BeforeStart_DoesNotThrow()
     {
@@ -35,7 +38,7 @@ public class JobTests
     public void TinyDerivedJobs_AcceptNullLogger()
     {
         var settings = CreateSettingsService();
-        var pluginRepo = CreatePluginRepository();
+        var pluginRepo = PluginRepository;
 
         var puppeteer = new PuppeteerUnitTestJob(settings, pluginRepo);
         var rip = new RipJob(settings, pluginRepo);
@@ -47,13 +50,14 @@ public class JobTests
     }
 
     private static TestJob CreateJob()
-        => new(CreateSettingsService(), CreatePluginRepository());
+        => new(CreateSettingsService(), PluginRepository);
 
     private static global::RuriLib.Services.RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-job-tests-settings-{Guid.NewGuid():N}"));
 
     private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
-        => new(Path.Combine(Path.GetTempPath(), $"ob2-job-tests-plugins-{Guid.NewGuid():N}"));
+        => (global::RuriLib.Services.PluginRepository)RuntimeHelpers
+            .GetUninitializedObject(typeof(global::RuriLib.Services.PluginRepository));
 
     private sealed class TestJob(global::RuriLib.Services.RuriLibSettingsService settings,
         global::RuriLib.Services.PluginRepository pluginRepo) : Job(settings, pluginRepo)

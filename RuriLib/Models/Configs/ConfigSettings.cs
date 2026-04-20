@@ -1,18 +1,17 @@
 ﻿using RuriLib.Models.Configs.Settings;
 using System.Text.Json.Serialization;
 
-namespace RuriLib.Models.Configs
+namespace RuriLib.Models.Configs;
+
+public class ConfigSettings
 {
-    public class ConfigSettings
-    {
-        public GeneralSettings GeneralSettings { get; set; } = new GeneralSettings();
-        public ProxySettings ProxySettings { get; set; } = new ProxySettings();
-        public InputSettings InputSettings { get; set; } = new InputSettings();
-        public DataSettings DataSettings { get; set; } = new DataSettings();
+    public GeneralSettings GeneralSettings { get; set; } = new();
+    public ProxySettings ProxySettings { get; set; } = new();
+    public InputSettings InputSettings { get; set; } = new();
+    public DataSettings DataSettings { get; set; } = new();
 
-        [JsonPropertyName("PuppeteerSettings")] // For backwards compatibility
-        public BrowserSettings BrowserSettings { get; set; } = new BrowserSettings();
+    [JsonPropertyName("PuppeteerSettings")] // For backwards compatibility
+    public BrowserSettings BrowserSettings { get; set; } = new();
 
-        public ScriptSettings ScriptSettings { get; set; } = new ScriptSettings();
-    }
+    public ScriptSettings ScriptSettings { get; set; } = new();
 }

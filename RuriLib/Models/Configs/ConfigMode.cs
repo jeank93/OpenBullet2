@@ -1,11 +1,10 @@
-﻿namespace RuriLib.Models.Configs
+namespace RuriLib.Models.Configs;
+
+public enum ConfigMode
 {
-    public enum ConfigMode
-    {
-        Stack,
-        LoliCode,
-        CSharp,
-        DLL,
-        Legacy
-    }
+    Stack,
+    LoliCode,
+    CSharp,
+    DLL,
+    Legacy
 }

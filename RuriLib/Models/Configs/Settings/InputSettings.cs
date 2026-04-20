@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace RuriLib.Models.Configs.Settings
+namespace RuriLib.Models.Configs.Settings;
+
+public class CustomInput
 {
-    public class CustomInput
-    {
-        public string Description { get; set; } = "";
-        public string VariableName { get; set; } = "";
-        public string DefaultAnswer { get; set; } = "";
-    }
+    public string Description { get; set; } = string.Empty;
+    public string VariableName { get; set; } = string.Empty;
+    public string DefaultAnswer { get; set; } = string.Empty;
+}
 
-    public class InputSettings
-    {
-        public List<CustomInput> CustomInputs { get; set; } = new List<CustomInput>();
-    }
+public class InputSettings
+{
+    public List<CustomInput> CustomInputs { get; set; } = [];
 }

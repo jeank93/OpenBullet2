@@ -1,23 +1,22 @@
-﻿using RuriLib.Models.Proxies;
+using RuriLib.Models.Proxies;
 
-namespace RuriLib.Models.Configs.Settings
+namespace RuriLib.Models.Configs.Settings;
+
+public class ProxySettings
 {
-    public class ProxySettings
-    {
-        public bool UseProxies { get; set; } = false;
+    public bool UseProxies { get; set; }
 
-        public int MaxUsesPerProxy { get; set; } = 0;
+    public int MaxUsesPerProxy { get; set; }
 
-        public int BanLoopEvasion { get; set; } = 100;
+    public int BanLoopEvasion { get; set; } = 100;
 
-        public string[] BanProxyStatuses { get; set; } = new string[] { "BAN", "ERROR" };
+    public string[] BanProxyStatuses { get; set; } = ["BAN", "ERROR"];
 
-        public ProxyType[] AllowedProxyTypes { get; set; } = new ProxyType[]
-        {
-            ProxyType.Http,
-            ProxyType.Socks4,
-            ProxyType.Socks4a,
-            ProxyType.Socks5
-        };
-    }
+    public ProxyType[] AllowedProxyTypes { get; set; } =
+    [
+        ProxyType.Http,
+        ProxyType.Socks4,
+        ProxyType.Socks4a,
+        ProxyType.Socks5
+    ];
 }

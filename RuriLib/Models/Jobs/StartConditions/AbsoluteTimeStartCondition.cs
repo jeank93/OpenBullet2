@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace RuriLib.Models.Jobs.StartConditions
+namespace RuriLib.Models.Jobs.StartConditions;
+
+public class AbsoluteTimeStartCondition : StartCondition
 {
-    public class AbsoluteTimeStartCondition : StartCondition
-    {
-        public DateTime StartAt { get; set; } = DateTime.Now + TimeSpan.FromMinutes(1);
+    public DateTime StartAt { get; set; } = DateTime.Now + TimeSpan.FromMinutes(1);
 
-        public override bool Verify(Job job)
-            => StartAt < DateTime.Now;
-    }
+    public override bool Verify(Job job)
+        => StartAt < DateTime.Now;
 }

@@ -5,6 +5,7 @@ using CaptchaSharp.Exceptions;
 using CaptchaSharp.Models;
 using RuriLib.Legacy.LS;
 using RuriLib.Legacy.Models;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using CaptchaSharp.Models.CaptchaOptions;
 using CaptchaSharp.Models.CaptchaResponses;
@@ -379,9 +380,12 @@ public class BlockSolveCaptcha : BlockBase
                 }
                 catch (Exception ex) // This unwraps aggregate exceptions
                 {
-                    throw ex is AggregateException { InnerException: not null } aggEx
-                        ? aggEx.InnerException
-                        : ex;
+                    if (ex is AggregateException { InnerException: not null } aggEx)
+                    {
+                        ExceptionDispatchInfo.Capture(aggEx.InnerException).Throw();
+                    }
+
+                    throw;
                 }
             }
             catch (BadAuthenticationException ex)
@@ -425,9 +429,12 @@ public class BlockSolveCaptcha : BlockBase
             }
             catch (Exception ex) // This unwraps aggregate exceptions
             {
-                throw ex is AggregateException { InnerException: not null } aggEx
-                    ? aggEx.InnerException
-                    : ex;
+                if (ex is AggregateException { InnerException: not null } aggEx)
+                {
+                    ExceptionDispatchInfo.Capture(aggEx.InnerException).Throw();
+                }
+
+                throw;
             }
         }
         catch (NotSupportedException ex)

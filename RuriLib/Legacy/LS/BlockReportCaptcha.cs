@@ -4,6 +4,7 @@ using RuriLib.Legacy.LS;
 using RuriLib.Legacy.Models;
 using RuriLib.Logging;
 using System;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace RuriLib.Legacy.Blocks;
@@ -75,7 +76,7 @@ public class BlockReportCaptcha : BlockBase
             {
                 if (ex is AggregateException { InnerException: not null } aggEx)
                 {
-                    throw aggEx.InnerException;
+                    ExceptionDispatchInfo.Capture(aggEx.InnerException).Throw();
                 }
 
                 throw;

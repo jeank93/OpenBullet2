@@ -424,9 +424,12 @@ namespace RuriLib.Legacy.Blocks;
 
         private static Bitmap TakeElementScreenshot(IWebDriver driver, IWebElement element)
         {
-            var sc = (driver as ITakesScreenshot).GetScreenshot();
+            var screenshotDriver = driver as ITakesScreenshot
+                ?? throw new InvalidOperationException("The driver does not support taking screenshots");
+            var sc = screenshotDriver.GetScreenshot();
             using var ms = new MemoryStream(sc.AsByteArray);
-            using var img = Image.FromStream(ms) as Bitmap;
+            using var img = Image.FromStream(ms) as Bitmap
+                ?? throw new InvalidOperationException("Could not convert the screenshot to a bitmap");
             return img.Clone(new Rectangle(element.Location, element.Size), img.PixelFormat);
         }
 

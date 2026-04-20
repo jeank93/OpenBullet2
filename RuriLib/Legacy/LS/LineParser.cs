@@ -6,11 +6,11 @@ using System.Text.RegularExpressions;
 
 namespace RuriLib.Legacy.LS;
 
-    /// <summary>
-    /// Contains methods used to parse tokens from a LoliScript line of code.
-    /// </summary>
-    public static class LineParser
-    {
+/// <summary>
+/// Contains methods used to parse tokens from a LoliScript line of code.
+/// </summary>
+public static class LineParser
+{
         /// <summary>
         /// Parses a token of a given type from a line.
         /// </summary>
@@ -260,13 +260,13 @@ namespace RuriLib.Legacy.LS;
                 TokenType.Arrow => "^->",
                 _ => ""
             };
-    }
+}
 
-    /// <summary>
-    /// The allowed types of tokens that can be parsed from a line.
-    /// </summary>
-    public enum TokenType
-    {
+/// <summary>
+/// The allowed types of tokens that can be parsed from a line.
+/// </summary>
+public enum TokenType
+{
         /// <summary>A block label.</summary>
         Label,
 
@@ -283,5 +283,5 @@ namespace RuriLib.Legacy.LS;
         Boolean,
 
         /// <summary>An integer value.</summary>
-        Integer
-    }
+    Integer
+}

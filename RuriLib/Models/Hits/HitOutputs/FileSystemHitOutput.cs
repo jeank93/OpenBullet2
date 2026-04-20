@@ -1,34 +1,33 @@
-﻿using RuriLib.Extensions;
+using RuriLib.Extensions;
 using RuriLib.Functions.Files;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace RuriLib.Models.Hits.HitOutputs
+namespace RuriLib.Models.Hits.HitOutputs;
+
+public class FileSystemHitOutput : IHitOutput
 {
-    public class FileSystemHitOutput : IHitOutput
+    public string BaseDir { get; set; }
+
+    public FileSystemHitOutput(string baseDir = "Hits")
     {
-        public string BaseDir { get; set; }
+        BaseDir = baseDir;
+    }
 
-        public FileSystemHitOutput(string baseDir = "Hits")
+    public Task Store(Hit hit)
+    {
+        Directory.CreateDirectory(BaseDir);
+
+        var folderName = Path.Combine(BaseDir, hit.Config.Metadata.Name.ToValidFileName());
+        Directory.CreateDirectory(folderName);
+
+        var fileName = Path.Combine(folderName, $"{hit.Type.ToValidFileName()}.txt");
+
+        lock (FileLocker.GetHandle(fileName))
         {
-            BaseDir = baseDir;
+            File.AppendAllText(fileName, $"{hit}{System.Environment.NewLine}");
         }
 
-        public Task Store(Hit hit)
-        {
-            Directory.CreateDirectory(BaseDir);
-
-            var folderName = Path.Combine(BaseDir, hit.Config.Metadata.Name.ToValidFileName());
-            Directory.CreateDirectory(folderName);
-            
-            var fileName = Path.Combine(folderName, $"{hit.Type.ToValidFileName()}.txt");
-
-            lock (FileLocker.GetHandle(fileName))
-            {
-                File.AppendAllTextAsync(fileName, $"{hit}\r\n");
-            }
-
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

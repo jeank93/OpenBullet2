@@ -1,9 +1,8 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
-namespace RuriLib.Models.Hits
+namespace RuriLib.Models.Hits;
+
+public interface IHitOutput
 {
-    public interface IHitOutput
-    {
-        Task Store(Hit hit);
-    }
+    Task Store(Hit hit);
 }

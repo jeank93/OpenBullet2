@@ -76,7 +76,8 @@ public class BlockReportCaptcha : BlockBase
             {
                 if (ex is AggregateException { InnerException: not null } aggEx)
                 {
-                    ExceptionDispatchInfo.Capture(aggEx.InnerException).Throw();
+                    var innerException = aggEx.InnerException ?? ex;
+                    ExceptionDispatchInfo.Capture(innerException).Throw();
                 }
 
                 throw;

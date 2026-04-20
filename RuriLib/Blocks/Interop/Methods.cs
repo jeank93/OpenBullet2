@@ -54,7 +54,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
         
-        T result;
+        T? result;
 
         if (isScript)
         {

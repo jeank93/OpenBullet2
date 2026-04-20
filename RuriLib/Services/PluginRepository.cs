@@ -5,10 +5,10 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 
-namespace RuriLib.Services
+namespace RuriLib.Services;
+
+public class PluginRepository
 {
-    public class PluginRepository
-    {
         // AppDomains other than AppDomain.CurrentDomain aren't supported in .NET core
         private readonly AppDomain _domain = AppDomain.CurrentDomain;
         private readonly List<string> _toDelete = new();
@@ -67,8 +67,8 @@ namespace RuriLib.Services
         /// </summary>
         public IEnumerable<string> GetPluginNames()
             => Directory.GetFiles(BaseFolder, "*.dll")
-                .Where(p => !_toDelete.Contains(Path.GetFileNameWithoutExtension(p)))
-                .Select(Path.GetFileNameWithoutExtension);
+                .Select(Path.GetFileNameWithoutExtension)
+                .Where(name => !string.IsNullOrWhiteSpace(name) && !_toDelete.Contains(name))!;
 
         /// <summary>
         /// Retrieves the assemblies of all plugins and their references.
@@ -180,7 +180,7 @@ namespace RuriLib.Services
             => _domain.GetAssemblies().Any(a => a.FullName == assembly.FullName);
 
         // Handler that resolves assemblies from the Plugins folder and its subdirectories
-        private Assembly ResolveHandler(object sender, ResolveEventArgs args)
+        private Assembly? ResolveHandler(object? sender, ResolveEventArgs args)
         {
             // Check if the requested assembly is part of the loaded assemblies
             var loadedAssembly = _domain.GetAssemblies().FirstOrDefault(a => a.FullName == args.Name);
@@ -195,14 +195,14 @@ namespace RuriLib.Services
 
             var n = new AssemblyName(args.Name);
 
-            if (n.Name.EndsWith(".xmlserializers", StringComparison.OrdinalIgnoreCase))
+            if (n.Name?.EndsWith(".xmlserializers", StringComparison.OrdinalIgnoreCase) == true)
             {
                 return null;
             }
 
             // http://stackoverflow.com/questions/4368201/appdomain-currentdomain-assemblyresolve-asking-for-a-appname-resources-assembl
 
-            if (n.Name.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
+            if (n.Name?.EndsWith(".resources", StringComparison.OrdinalIgnoreCase) == true)
             {
                 return null;
             }
@@ -211,14 +211,14 @@ namespace RuriLib.Services
             var folders = GetDependencyFolders().ToList();
             folders.Add(BaseFolder);
 
-            string assy = null;
+            string? assy = null;
 
             // Find the corresponding assembly file
             foreach (var dir in folders)
             {
                 assy = new[] { "*.dll", "*.exe" }.SelectMany(g => Directory.EnumerateFiles(dir, g)).FirstOrDefault(f =>
                 {
-                    try { return n.Name.Equals(AssemblyName.GetAssemblyName(f).Name, StringComparison.OrdinalIgnoreCase); }
+                    try { return string.Equals(n.Name, AssemblyName.GetAssemblyName(f).Name, StringComparison.OrdinalIgnoreCase); }
                     catch (BadImageFormatException) { return false; /* Bypass assembly is not a .net exe */ }
                     catch (Exception ex) { throw new ApplicationException($"Error loading assembly {f}", ex); }
                 });
@@ -231,5 +231,4 @@ namespace RuriLib.Services
 
             throw new ApplicationException($"Assembly {args.Name} not found");
         }
-    }
 }

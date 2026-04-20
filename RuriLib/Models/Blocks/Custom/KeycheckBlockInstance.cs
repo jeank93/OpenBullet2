@@ -227,7 +227,7 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
         // The whole purpose of this is to make the code a bit prettier
         if (banIfNoMatch.InputMode == SettingInputMode.Fixed)
         {
-            if (((BoolSetting)banIfNoMatch.FixedSetting).Value)
+            if (banIfNoMatch.FixedSetting is BoolSetting banIfNoMatchSetting && banIfNoMatchSetting.Value)
             {
                 writer.WriteLine("else");
 

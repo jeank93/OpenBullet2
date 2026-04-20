@@ -8,6 +8,9 @@ public class StringHttpContentSettingsGroup : HttpContentSettingsGroup
 
     public StringHttpContentSettingsGroup()
     {
-        ((StringSetting)ContentType.FixedSetting).Value = "text/plain";
+        if (ContentType.FixedSetting is StringSetting contentTypeSetting)
+        {
+            contentTypeSetting.Value = "text/plain";
+        }
     }
 }

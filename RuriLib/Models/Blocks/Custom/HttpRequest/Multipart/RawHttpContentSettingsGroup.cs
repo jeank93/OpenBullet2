@@ -8,6 +8,9 @@ public class RawHttpContentSettingsGroup : HttpContentSettingsGroup
 
     public RawHttpContentSettingsGroup()
     {
-        ((StringSetting)ContentType.FixedSetting).Value = "application/octet-stream";
+        if (ContentType.FixedSetting is StringSetting contentTypeSetting)
+        {
+            contentTypeSetting.Value = "application/octet-stream";
+        }
     }
 }

@@ -395,9 +395,9 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iterations">The number of times the algorithm should be executed</param>
         /// <param name="type">The hashing algorithm to use</param>
         /// <param name="keyLength">The generated key length in bytes</param>
-        public static byte[] PBKDF2PKCS5(byte[] password, byte[] salt = null, int saltSize = 8, int iterations = 1, int keyLength = 16, HashFunction type = HashFunction.SHA1)
+        public static byte[] PBKDF2PKCS5(byte[] password, byte[]? salt = null, int saltSize = 8, int iterations = 1, int keyLength = 16, HashFunction type = HashFunction.SHA1)
         {
-            if (salt.Length > 0)
+            if (salt is { Length: > 0 })
             {
                 using var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterations, type.ToHashAlgorithmName());
                 return deriveBytes.GetBytes(keyLength);
@@ -423,7 +423,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
-        public static byte[] AESEncrypt(byte[] plainText, byte[] key, byte[] iv = null,
+        public static byte[] AESEncrypt(byte[] plainText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
             // If no IV was provided, use the first 16 bytes of the key
@@ -465,7 +465,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
-        public static byte[] AESEncryptString(string plainText, byte[] key, byte[] iv = null,
+        public static byte[] AESEncryptString(string plainText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
             // If no IV was provided, use the first 16 bytes of the key
@@ -520,7 +520,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
-        public static byte[] AESDecrypt(byte[] cipherText, byte[] key, byte[] iv = null,
+        public static byte[] AESDecrypt(byte[] cipherText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
             // If no IV was provided, use the first 16 bytes of the key
@@ -562,7 +562,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
-        public static string AESDecryptString(byte[] cipherText, byte[] key, byte[] iv = null,
+        public static string AESDecryptString(byte[] cipherText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
             // If no IV was provided, use the first 16 bytes of the key

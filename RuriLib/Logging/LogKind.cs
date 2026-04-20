@@ -1,11 +1,10 @@
-﻿namespace RuriLib.Logging
+namespace RuriLib.Logging;
+
+public enum LogKind
 {
-    public enum LogKind
-    {
-        Custom,
-        Info,
-        Success,
-        Warning,
-        Error
-    }
+    Custom,
+    Info,
+    Success,
+    Warning,
+    Error
 }

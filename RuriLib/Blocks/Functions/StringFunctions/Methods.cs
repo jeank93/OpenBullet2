@@ -71,6 +71,9 @@ public static class Methods
         return reversed;
     }
 
+    /// <summary>
+    /// Removes leading or trailing whitespace from the input string.
+    /// </summary>
     [Block("Removes leading or trailing whitespace from the input string")]
     public static string Trim(BotData data, [Variable] string input)
     {
@@ -81,6 +84,9 @@ public static class Methods
         return trimmed;
     }
 
+    /// <summary>
+    /// Gets the length of a string.
+    /// </summary>
     [Block("Gets the length of a string")]
     public static int Length(BotData data, [Variable] string input)
     {
@@ -91,6 +97,9 @@ public static class Methods
         return length;
     }
 
+    /// <summary>
+    /// Changes all letters of a string to uppercase.
+    /// </summary>
     [Block("Changes all letters of a string to uppercase")]
     public static string ToUppercase(BotData data, [Variable] string input)
     {
@@ -101,6 +110,9 @@ public static class Methods
         return upper;
     }
 
+    /// <summary>
+    /// Changes all letters of a string to lowercase.
+    /// </summary>
     [Block("Changes all letters of a string to lowercase")]
     public static string ToLowercase(BotData data, [Variable] string input)
     {
@@ -111,6 +123,9 @@ public static class Methods
         return lower;
     }
 
+    /// <summary>
+    /// Replaces all occurrences of some text in a string.
+    /// </summary>
     [Block("Replaces all occurrences of some text in a string")]
     public static string Replace(BotData data, [Variable] string original, string toReplace, string replacement)
     {
@@ -121,6 +136,9 @@ public static class Methods
         return replaced;
     }
 
+    /// <summary>
+    /// Replaces all regex matches with a given text.
+    /// </summary>
     [Block("Replaces all regex matches with a given text",
         extraInfo = "The replacement can contain regex groups with syntax like $1$2")]
     public static string RegexReplace(BotData data, [Variable] string original, string pattern, string replacement)
@@ -132,6 +150,9 @@ public static class Methods
         return replaced;
     }
 
+    /// <summary>
+    /// Translates text in a string based on a dictionary.
+    /// </summary>
     [Block("Translates text in a string basing on a dictionary")]
     public static string Translate(BotData data, [Variable] string input, Dictionary<string, string> translations,
         bool replaceOne = false)
@@ -157,6 +178,9 @@ public static class Methods
         return translated;
     }
 
+    /// <summary>
+    /// URL encodes a string.
+    /// </summary>
     [Block("URL encodes a string")]
     public static string UrlEncode(BotData data, [Variable] string input)
     {
@@ -168,6 +192,9 @@ public static class Methods
         return encoded;
     }
 
+    /// <summary>
+    /// URL decodes a string.
+    /// </summary>
     [Block("URL decodes a string")]
     public static string UrlDecode(BotData data, [Variable] string input)
     {
@@ -178,6 +205,9 @@ public static class Methods
         return decoded;
     }
 
+    /// <summary>
+    /// Encodes HTML entities in a string.
+    /// </summary>
     [Block("Encodes HTML entities in a string")]
     public static string EncodeHTMLEntities(BotData data, [Variable] string input)
     {
@@ -188,6 +218,9 @@ public static class Methods
         return encoded;
     }
 
+    /// <summary>
+    /// Decodes HTML entities in a string.
+    /// </summary>
     [Block("Decodes HTML entities in a string")]
     public static string DecodeHTMLEntities(BotData data, [Variable] string input)
     {
@@ -198,6 +231,9 @@ public static class Methods
         return decoded;
     }
 
+    /// <summary>
+    /// Generates a random string given a mask.
+    /// </summary>
     [Block("Generates a random string given a mask",
         extraInfo = "?l = Lowercase, ?u = Uppercase, ?d = Digit, ?f = Uppercase + Lowercase, ?s = Symbol, ?h = Hex (Lowercase), ?H = Hex (Uppercase), ?m = Upper + Digits, ?n = Lower + Digits, ?i = Lower + Upper + Digits, ?a = Any, ?c = Custom")]
     public static string RandomString(BotData data, string input, string customCharset = "0123456789")
@@ -221,6 +257,9 @@ public static class Methods
         return input;
     }
 
+    /// <summary>
+    /// Unescapes characters in a string.
+    /// </summary>
     [Block("Unescapes characters in a string")]
     public static string Unescape(BotData data, [Variable] string input)
     {
@@ -231,6 +270,9 @@ public static class Methods
         return unescaped;
     }
 
+    /// <summary>
+    /// Splits a string into a list.
+    /// </summary>
     [Block("Splits a string into a list")]
     public static List<string> Split(BotData data, [Variable] string input, string separator)
     {
@@ -241,6 +283,9 @@ public static class Methods
         return split;
     }
 
+    /// <summary>
+    /// Gets the character at a specific index.
+    /// </summary>
     [Block("Gets the character at a specific index")]
     public static string CharAt(BotData data, [Variable] string input, int index)
     {

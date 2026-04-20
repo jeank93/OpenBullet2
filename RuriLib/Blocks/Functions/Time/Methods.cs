@@ -5,6 +5,9 @@ using System;
 
 namespace RuriLib.Blocks.Functions.Time;
 
+/// <summary>
+/// Blocks for working with dates and times.
+/// </summary>
 [BlockCategory("Time", "Blocks for working with dates and times", "#9acd32")]
 public static class Methods
 {

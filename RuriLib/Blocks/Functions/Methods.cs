@@ -4,6 +4,9 @@ using RuriLib.Providers.UserAgents;
 
 namespace RuriLib.Blocks.Functions;
 
+/// <summary>
+/// General purpose function blocks.
+/// </summary>
 [BlockCategory("Functions", "General purpose functions", "#9acd32")]
 public static class Methods
 {

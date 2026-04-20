@@ -1,8 +1,7 @@
-﻿namespace RuriLib.Models.Conditions.Comparisons
+namespace RuriLib.Models.Conditions.Comparisons;
+
+public enum CompositeConditionOperator
 {
-    public enum CompositeConditionOperator
-    {
-        OR,
-        AND
-    }
+    OR,
+    AND
 }

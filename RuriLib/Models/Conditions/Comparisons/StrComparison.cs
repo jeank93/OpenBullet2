@@ -1,14 +1,13 @@
-﻿namespace RuriLib.Models.Conditions.Comparisons
+namespace RuriLib.Models.Conditions.Comparisons;
+
+public enum StrComparison
 {
-    public enum StrComparison
-    {
-        EqualTo,
-        NotEqualTo,
-        Contains,
-        DoesNotContain,
-        Exists,
-        DoesNotExist,
-        MatchesRegex,
-        DoesNotMatchRegex
-    }
+    EqualTo,
+    NotEqualTo,
+    Contains,
+    DoesNotContain,
+    Exists,
+    DoesNotExist,
+    MatchesRegex,
+    DoesNotMatchRegex
 }

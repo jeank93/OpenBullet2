@@ -1,12 +1,11 @@
-﻿namespace RuriLib.Models.Conditions.Comparisons
+namespace RuriLib.Models.Conditions.Comparisons;
+
+public enum DictComparison
 {
-    public enum DictComparison
-    {
-        HasKey,
-        DoesNotHaveKey,
-        HasValue,
-        DoesNotHaveValue,
-        Exists,
-        DoesNotExist
-    }
+    HasKey,
+    DoesNotHaveKey,
+    HasValue,
+    DoesNotHaveValue,
+    Exists,
+    DoesNotExist
 }

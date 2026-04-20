@@ -1,10 +1,9 @@
-﻿namespace RuriLib.Models.Conditions.Comparisons
+namespace RuriLib.Models.Conditions.Comparisons;
+
+public enum ListComparison
 {
-    public enum ListComparison
-    {
-        Contains,
-        DoesNotContain,
-        Exists,
-        DoesNotExist
-    }
+    Contains,
+    DoesNotContain,
+    Exists,
+    DoesNotExist
 }

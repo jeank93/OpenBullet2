@@ -1,8 +1,7 @@
-﻿namespace RuriLib.Models.Conditions.Comparisons
+namespace RuriLib.Models.Conditions.Comparisons;
+
+public enum BoolComparison
 {
-    public enum BoolComparison
-    {
-        Is,
-        IsNot
-    }
+    Is,
+    IsNot
 }

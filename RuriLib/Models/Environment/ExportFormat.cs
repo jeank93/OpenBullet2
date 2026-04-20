@@ -1,7 +1,6 @@
-﻿namespace RuriLib.Models.Environment
+namespace RuriLib.Models.Environment;
+
+public class ExportFormat
 {
-    public class ExportFormat
-    {
-        public string Format { get; set; } = "";
-    }
+    public string Format { get; set; } = string.Empty;
 }

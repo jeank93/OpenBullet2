@@ -1,11 +1,10 @@
-﻿using RuriLib.Models.Settings;
+using RuriLib.Models.Settings;
 
-namespace RuriLib.Providers.Selenium
+namespace RuriLib.Providers.Selenium;
+
+public interface ISeleniumBrowserProvider
 {
-    public interface ISeleniumBrowserProvider
-    {
-        string ChromeBinaryLocation { get; }
-        string FirefoxBinaryLocation { get; }
-        SeleniumBrowserType BrowserType { get; }
-    }
+    string ChromeBinaryLocation { get; }
+    string FirefoxBinaryLocation { get; }
+    SeleniumBrowserType BrowserType { get; }
 }

@@ -1,10 +1,9 @@
-﻿using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates;
 
-namespace RuriLib.Providers.Security
+namespace RuriLib.Providers.Security;
+
+public interface ISecurityProvider
 {
-    public interface ISecurityProvider
-    {
-        bool RestrictBlocksToCWD { get; }
-        X509RevocationMode X509RevocationMode { get; set; }
-    }
+    bool RestrictBlocksToCWD { get; }
+    X509RevocationMode X509RevocationMode { get; set; }
 }

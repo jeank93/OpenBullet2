@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 
-namespace RuriLib.Providers.RandomNumbers
+namespace RuriLib.Providers.RandomNumbers;
+
+public interface IRNGProvider
 {
-    public interface IRNGProvider
-    {
-        Random GetNew();
-    }
+    Random GetNew();
 }

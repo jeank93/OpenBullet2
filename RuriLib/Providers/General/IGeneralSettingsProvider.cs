@@ -1,8 +1,7 @@
-﻿namespace RuriLib.Providers.Proxies
+namespace RuriLib.Providers.Proxies;
+
+public interface IGeneralSettingsProvider
 {
-    public interface IGeneralSettingsProvider
-    {
-        bool VerboseMode { get; }
-        bool LogAllResults { get; }
-    }
+    bool VerboseMode { get; }
+    bool LogAllResults { get; }
 }

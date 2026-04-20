@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 
-namespace RuriLib.Providers.RandomNumbers
+namespace RuriLib.Providers.RandomNumbers;
+
+public class DefaultRNGProvider : IRNGProvider
 {
-    public class DefaultRNGProvider : IRNGProvider
-    {
-        private readonly Random random = new();
+    private readonly Random random = new();
 
-        public Random GetNew()
-            => new(random.Next(0, int.MaxValue));
-    }
+    public Random GetNew()
+        => new(random.Next(0, int.MaxValue));
 }

@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace RuriLib.Legacy.LS;
 
+/// <summary>
+/// Represents the legacy variable collection used by the LoliScript runtime.
+/// </summary>
 public class VariablesList
 {
     /// <summary>

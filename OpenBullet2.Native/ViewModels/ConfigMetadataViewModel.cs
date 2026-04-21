@@ -8,68 +8,70 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
-namespace OpenBullet2.Native.ViewModels
+namespace OpenBullet2.Native.ViewModels;
+
+public class ConfigMetadataViewModel : ViewModelBase
 {
-    public class ConfigMetadataViewModel : ViewModelBase
+    private readonly ConfigService configService;
+    private Config Config => configService.SelectedConfig
+        ?? throw new InvalidOperationException("No config selected");
+
+    public string Name
     {
-        private readonly ConfigService configService;
-        private Config Config => configService.SelectedConfig;
-
-        public string Name
+        get => Config.Metadata.Name;
+        set
         {
-            get => Config?.Metadata.Name;
-            set
-            {
-                Config.Metadata.Name = value;
-                OnPropertyChanged();
-            }
+            Config.Metadata.Name = value;
+            OnPropertyChanged();
         }
+    }
 
-        public string Author
+    public string Author
+    {
+        get => Config.Metadata.Author;
+        set
         {
-            get => Config?.Metadata.Author;
-            set
-            {
-                Config.Metadata.Author = value;
-                OnPropertyChanged();
-            }
+            Config.Metadata.Author = value;
+            OnPropertyChanged();
         }
+    }
 
-        public string Category
+    public string Category
+    {
+        get => Config.Metadata.Category;
+        set
         {
-            get => Config?.Metadata.Category;
-            set
-            {
-                Config.Metadata.Category = value;
-                OnPropertyChanged();
-            }
+            Config.Metadata.Category = value;
+            OnPropertyChanged();
         }
+    }
 
-        public BitmapImage Icon => Config is null ? null : Images.Base64ToBitmapImage(Config.Metadata.Base64Image);
+    public BitmapImage? Icon => string.IsNullOrEmpty(Config.Metadata.Base64Image)
+        ? null
+        : Images.Base64ToBitmapImage(Config.Metadata.Base64Image);
 
-        public ConfigMetadataViewModel()
-        {
-            configService = SP.GetService<ConfigService>();
-        }
+    public ConfigMetadataViewModel()
+    {
+        configService = SP.GetService<ConfigService>();
+    }
 
-        public void SetIconFromFile(string fileName)
-        {
-            var bytes = ImageEditor.ToCompatibleFormat(File.ReadAllBytes(fileName));
+    public void SetIconFromFile(string fileName)
+    {
+        var bytes = ImageEditor.ToCompatibleFormat(File.ReadAllBytes(fileName));
 
-            var base64 = Convert.ToBase64String(bytes);
-            Config.Metadata.Base64Image = base64;
-            OnPropertyChanged(nameof(Icon));
-        }
+        var base64 = Convert.ToBase64String(bytes);
+        Config.Metadata.Base64Image = base64;
+        OnPropertyChanged(nameof(Icon));
+    }
 
-        public async Task SetIconFromUrlAsync(string url)
-        {
-            using var client = new HttpClient();
-            using var response = await client.GetAsync(url);
-            var bytes = ImageEditor.ToCompatibleFormat(await response.Content.ReadAsByteArrayAsync());
+    public async Task SetIconFromUrlAsync(string url)
+    {
+        using var client = new HttpClient();
+        using var response = await client.GetAsync(url);
+        var bytes = ImageEditor.ToCompatibleFormat(await response.Content.ReadAsByteArrayAsync());
 
-            var base64 = Convert.ToBase64String(bytes);
-            Config.Metadata.Base64Image = base64;
-            OnPropertyChanged(nameof(Icon));
-        }
+        var base64 = Convert.ToBase64String(bytes);
+        Config.Metadata.Base64Image = base64;
+        OnPropertyChanged(nameof(Icon));
     }
 }

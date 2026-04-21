@@ -29,6 +29,8 @@ public partial class MultiRunJobViewer : Page
     private SortAdorner? listViewSortAdorner;
 
     private IEnumerable<HitViewModel> SelectedHits => hitsListView.SelectedItems.Cast<HitViewModel>().ToList();
+    private MultiRunJobViewerViewModel ViewModel => vm
+        ?? throw new InvalidOperationException("The job viewer has not been bound yet");
 
     public MultiRunJobViewer()
     {
@@ -63,7 +65,7 @@ public partial class MultiRunJobViewer : Page
         {
             Application.Current.Dispatcher.Invoke(() => jobLog.Clear());
             jobLog.BufferSize = obSettingsService.Settings.GeneralSettings.LogBufferSize;
-            await vm.StartAsync();
+            await ViewModel.StartAsync();
         }
         catch (Exception ex)
         {
@@ -75,7 +77,7 @@ public partial class MultiRunJobViewer : Page
     {
         try
         {
-            await vm.StopAsync();
+            await ViewModel.StopAsync();
         }
         catch (Exception ex)
         {
@@ -87,7 +89,7 @@ public partial class MultiRunJobViewer : Page
     {
         try
         {
-            await vm.PauseAsync();
+            await ViewModel.PauseAsync();
         }
         catch (Exception ex)
         {
@@ -99,7 +101,7 @@ public partial class MultiRunJobViewer : Page
     {
         try
         {
-            await vm.ResumeAsync();
+            await ViewModel.ResumeAsync();
         }
         catch (Exception ex)
         {
@@ -111,7 +113,7 @@ public partial class MultiRunJobViewer : Page
     {
         try
         {
-            await vm.AbortAsync();
+            await ViewModel.AbortAsync();
         }
         catch (Exception ex)
         {
@@ -123,7 +125,7 @@ public partial class MultiRunJobViewer : Page
     {
         try
         {
-            vm.SkipWait();
+            ViewModel.SkipWait();
         }
         catch (Exception ex)
         {
@@ -131,16 +133,16 @@ public partial class MultiRunJobViewer : Page
         }
     }
 
-    private void ChangeOptions(object sender, RoutedEventArgs e) => mainWindow.EditJob(vm.Job);
+    private void ChangeOptions(object sender, RoutedEventArgs e) => mainWindow.EditJob(ViewModel.Job);
 
     private void ChangeBots(object sender, MouseButtonEventArgs e)
-        => new MainDialog(new ChangeBotsDialog(this, vm.Job.Bots), "Change bots").ShowDialog();
+        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
 
     public async void ChangeBots(int newValue)
     {
         try
         {
-            await vm.ChangeBotsAsync(newValue);
+            await ViewModel.ChangeBotsAsync(newValue);
         }
         catch (Exception ex)
         {
@@ -197,24 +199,29 @@ public partial class MultiRunJobViewer : Page
     private void ColumnHeaderClicked(object sender, RoutedEventArgs e)
     {
         var column = sender as GridViewColumnHeader;
-        var sortBy = column.Tag.ToString();
+        var sortBy = column?.Tag?.ToString();
+
+        if (string.IsNullOrEmpty(sortBy) || column is null)
+        {
+            return;
+        }
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             botsListView.Items.SortDescriptions.Clear();
         }
 
         var newDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         botsListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
     }
 
@@ -222,7 +229,7 @@ public partial class MultiRunJobViewer : Page
     {
     }
 
-    private void OnResultMessage(object sender, string message, Color color)
+    private void OnResultMessage(object? sender, string message, Color color)
         => Application.Current.Dispatcher.Invoke(() =>
         {
             if (obSettingsService.Settings.GeneralSettings.EnableJobLogging)

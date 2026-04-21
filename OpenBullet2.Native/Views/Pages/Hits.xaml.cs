@@ -132,24 +132,29 @@ public partial class Hits : Page
     private void ColumnHeaderClicked(object sender, RoutedEventArgs e)
     {
         var column = sender as GridViewColumnHeader;
-        var sortBy = column.Tag.ToString();
+        var sortBy = column?.Tag?.ToString();
+
+        if (string.IsNullOrEmpty(sortBy) || column is null)
+        {
+            return;
+        }
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             hitsListView.Items.SortDescriptions.Clear();
         }
 
         var newDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         hitsListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
     }
 
@@ -225,7 +230,12 @@ public partial class Hits : Page
 
     private void CopySelectedCustom(object sender, RoutedEventArgs e)
     {
-        var format = (sender as MenuItem).Header.ToString().Unescape();
+        if (sender is not MenuItem { Header: string header })
+        {
+            return;
+        }
+
+        var format = header.Unescape();
         SelectedHits.CopyToClipboard(h => ApplyCustomFormat(h, format));
     }
 
@@ -251,7 +261,12 @@ public partial class Hits : Page
 
     private void SaveSelectedCustom(object sender, RoutedEventArgs e)
     {
-        var format = (sender as MenuItem).Header.ToString().Unescape();
+        if (sender is not MenuItem { Header: string header })
+        {
+            return;
+        }
+
+        var format = header.Unescape();
         TrySave(h => ApplyCustomFormat(h, format));
     }
 

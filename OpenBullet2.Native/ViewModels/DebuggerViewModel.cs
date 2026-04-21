@@ -22,9 +22,9 @@ public class DebuggerViewModel : ViewModelBase
     private readonly IRNGProvider rngProvider;
     private readonly PluginRepository pluginRepo;
 
-    private DebuggerOptions options;
-    private BotLogger logger;
-    private ConfigDebugger debugger;
+    private DebuggerOptions options = new();
+    private BotLogger logger = new();
+    private ConfigDebugger? debugger;
 
     public event EventHandler<BotLoggerEntry>? NewLogEntry;
     public event EventHandler? LogCleared;
@@ -40,7 +40,7 @@ public class DebuggerViewModel : ViewModelBase
         }
     }
 
-    private string wordlistType;
+    private string wordlistType = string.Empty;
     public string WordlistType
     {
         get => wordlistType;
@@ -232,6 +232,6 @@ public class DebuggerViewModel : ViewModelBase
         LogCleared?.Invoke(this, EventArgs.Empty);
     }
 
-    private void OnStatusChanged(object sender, ConfigDebuggerStatus status) => Status = status;
-    private void OnNewLogEntry(object sender, BotLoggerEntry e) => NewLogEntry?.Invoke(this, e);
+    private void OnStatusChanged(object? sender, ConfigDebuggerStatus status) => Status = status;
+    private void OnNewLogEntry(object? sender, BotLoggerEntry e) => NewLogEntry?.Invoke(this, e);
 }

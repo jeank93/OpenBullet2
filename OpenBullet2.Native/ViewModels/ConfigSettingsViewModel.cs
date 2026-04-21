@@ -10,356 +10,356 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace OpenBullet2.Native.ViewModels
+namespace OpenBullet2.Native.ViewModels;
+
+public class ConfigSettingsViewModel : ViewModelBase
 {
-    public class ConfigSettingsViewModel : ViewModelBase
+    private readonly RuriLibSettingsService rlSettingsService;
+    private readonly ConfigService configService;
+    private Config Config => configService.SelectedConfig
+        ?? throw new InvalidOperationException("No config selected");
+    private GeneralSettings General => Config.Settings.GeneralSettings;
+    private ProxySettings Proxy => Config.Settings.ProxySettings;
+    private DataSettings Data => Config.Settings.DataSettings;
+    private InputSettings Input => Config.Settings.InputSettings;
+    private BrowserSettings Puppeteer => Config.Settings.BrowserSettings;
+
+    public int SuggestedBots
     {
-        private readonly RuriLibSettingsService rlSettingsService;
-        private readonly ConfigService configService;
-        private Config Config => configService.SelectedConfig;
-        private GeneralSettings General => Config.Settings.GeneralSettings;
-        private ProxySettings Proxy => Config.Settings.ProxySettings;
-        private DataSettings Data => Config.Settings.DataSettings;
-        private InputSettings Input => Config.Settings.InputSettings;
-        private BrowserSettings Puppeteer => Config.Settings.BrowserSettings;
-
-        public int SuggestedBots
+        get => General.SuggestedBots;
+        set
         {
-            get => General.SuggestedBots;
-            set
-            {
-                General.SuggestedBots = value;
-                OnPropertyChanged();
-            }
+            General.SuggestedBots = value;
+            OnPropertyChanged();
         }
+    }
 
-        public int MaximumCPM
+    public int MaximumCPM
+    {
+        get => General.MaximumCPM;
+        set
         {
-            get => General.MaximumCPM;
-            set
-            {
-                General.MaximumCPM = value;
-                OnPropertyChanged();
-            }
+            General.MaximumCPM = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool SaveEmptyCaptures
+    public bool SaveEmptyCaptures
+    {
+        get => General.SaveEmptyCaptures;
+        set
         {
-            get => General.SaveEmptyCaptures;
-            set
-            {
-                General.SaveEmptyCaptures = value;
-                OnPropertyChanged();
-            }
+            General.SaveEmptyCaptures = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool ReportLastCaptchaOnRetry
+    public bool ReportLastCaptchaOnRetry
+    {
+        get => General.ReportLastCaptchaOnRetry;
+        set
         {
-            get => General.ReportLastCaptchaOnRetry;
-            set
-            {
-                General.ReportLastCaptchaOnRetry = value;
-                OnPropertyChanged();
-            }
+            General.ReportLastCaptchaOnRetry = value;
+            OnPropertyChanged();
         }
+    }
 
-        public IEnumerable<string> AllStatuses => rlSettingsService.GetStatuses();
-        public IEnumerable<string> ProxyTypes => Enum.GetNames(typeof(ProxyType));
-        public IEnumerable<string> WordlistTypes => rlSettingsService.Environment.WordlistTypes.Select(w => w.Name);
+    public IEnumerable<string> AllStatuses => rlSettingsService.GetStatuses();
+    public IEnumerable<string> ProxyTypes => Enum.GetNames(typeof(ProxyType));
+    public IEnumerable<string> WordlistTypes => rlSettingsService.Environment.WordlistTypes.Select(w => w.Name);
 
-        private ObservableCollection<string> continueStatuses;
-        public ObservableCollection<string> ContinueStatuses
+    private ObservableCollection<string> continueStatuses = [];
+    public ObservableCollection<string> ContinueStatuses
+    {
+        get => continueStatuses;
+        set
         {
-            get => continueStatuses;
-            set
-            {
-                continueStatuses = value;
-                General.ContinueStatuses = continueStatuses.ToArray();
-                OnPropertyChanged();
-            }
+            continueStatuses = value;
+            General.ContinueStatuses = [.. continueStatuses];
+            OnPropertyChanged();
         }
+    }
 
-        public bool UseProxies
+    public bool UseProxies
+    {
+        get => Proxy.UseProxies;
+        set
         {
-            get => Proxy.UseProxies;
-            set
-            {
-                Proxy.UseProxies = value;
-                OnPropertyChanged();
-            }
+            Proxy.UseProxies = value;
+            OnPropertyChanged();
         }
+    }
 
-        public int MaxUsesPerProxy
+    public int MaxUsesPerProxy
+    {
+        get => Proxy.MaxUsesPerProxy;
+        set
         {
-            get => Proxy.MaxUsesPerProxy;
-            set
-            {
-                Proxy.MaxUsesPerProxy = value;
-                OnPropertyChanged();
-            }
+            Proxy.MaxUsesPerProxy = value;
+            OnPropertyChanged();
         }
+    }
 
-        public int BanLoopEvasion
+    public int BanLoopEvasion
+    {
+        get => Proxy.BanLoopEvasion;
+        set
         {
-            get => Proxy.BanLoopEvasion;
-            set
-            {
-                Proxy.BanLoopEvasion = value;
-                OnPropertyChanged();
-            }
+            Proxy.BanLoopEvasion = value;
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<string> proxyBanStatuses;
-        public ObservableCollection<string> ProxyBanStatuses
+    private ObservableCollection<string> proxyBanStatuses = [];
+    public ObservableCollection<string> ProxyBanStatuses
+    {
+        get => proxyBanStatuses;
+        set
         {
-            get => proxyBanStatuses;
-            set
-            {
-                proxyBanStatuses = value;
-                Proxy.BanProxyStatuses = proxyBanStatuses.ToArray();
-                OnPropertyChanged();
-            }
+            proxyBanStatuses = value;
+            Proxy.BanProxyStatuses = [.. proxyBanStatuses];
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<string> allowedProxyTypes;
-        public ObservableCollection<string> AllowedProxyTypes
+    private ObservableCollection<string> allowedProxyTypes = [];
+    public ObservableCollection<string> AllowedProxyTypes
+    {
+        get => allowedProxyTypes;
+        set
         {
-            get => allowedProxyTypes;
-            set
-            {
-                allowedProxyTypes = value;
-                Proxy.AllowedProxyTypes = allowedProxyTypes
-                    .Select(t => (ProxyType)Enum.Parse(typeof(ProxyType), t, true)).ToArray();
-                OnPropertyChanged();
-            }
+            allowedProxyTypes = value;
+            Proxy.AllowedProxyTypes = allowedProxyTypes
+                .Select(t => (ProxyType)Enum.Parse(typeof(ProxyType), t, true)).ToArray();
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<string> allowedWordlistTypes;
-        public ObservableCollection<string> AllowedWordlistTypes
+    private ObservableCollection<string> allowedWordlistTypes = [];
+    public ObservableCollection<string> AllowedWordlistTypes
+    {
+        get => allowedWordlistTypes;
+        set
         {
-            get => allowedWordlistTypes;
-            set
-            {
-                allowedWordlistTypes = value;
-                Data.AllowedWordlistTypes = allowedWordlistTypes.ToArray();
-                OnPropertyChanged();
-            }
+            allowedWordlistTypes = value;
+            Data.AllowedWordlistTypes = [.. allowedWordlistTypes];
+            OnPropertyChanged();
         }
+    }
 
-        public bool UrlEncodeDataAfterSlicing
+    public bool UrlEncodeDataAfterSlicing
+    {
+        get => Data.UrlEncodeDataAfterSlicing;
+        set
         {
-            get => Data.UrlEncodeDataAfterSlicing;
-            set
-            {
-                Data.UrlEncodeDataAfterSlicing = value;
-                OnPropertyChanged();
-            }
+            Data.UrlEncodeDataAfterSlicing = value;
+            OnPropertyChanged();
         }
+    }
 
-        public IEnumerable<StringRule> StringRules => Enum.GetValues(typeof(StringRule)).Cast<StringRule>();
+    public IEnumerable<StringRule> StringRules => Enum.GetValues(typeof(StringRule)).Cast<StringRule>();
 
-        private ObservableCollection<DataRule> dataRulesCollection;
-        public ObservableCollection<DataRule> DataRulesCollection
+    private ObservableCollection<DataRule> dataRulesCollection = [];
+    public ObservableCollection<DataRule> DataRulesCollection
+    {
+        get => dataRulesCollection;
+        set
         {
-            get => dataRulesCollection;
-            set
-            {
-                dataRulesCollection = value;
-                OnPropertyChanged();
-            }
+            dataRulesCollection = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string testDataForRules = string.Empty;
-        public string TestDataForRules
+    private string testDataForRules = string.Empty;
+    public string TestDataForRules
+    {
+        get => testDataForRules;
+        set
         {
-            get => testDataForRules;
-            set
-            {
-                testDataForRules = value;
-                OnPropertyChanged();
-            }
+            testDataForRules = value;
+            OnPropertyChanged();
         }
+    }
 
-        private string testWordlistTypeForRules;
-        public string TestWordlistTypeForRules
+    private string testWordlistTypeForRules = string.Empty;
+    public string TestWordlistTypeForRules
+    {
+        get => testWordlistTypeForRules;
+        set
         {
-            get => testWordlistTypeForRules;
-            set
-            {
-                testWordlistTypeForRules = value;
-                OnPropertyChanged();
-            }
+            testWordlistTypeForRules = value;
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<ConfigResourceOptions> resourcesCollection;
-        public ObservableCollection<ConfigResourceOptions> ResourcesCollection
+    private ObservableCollection<ConfigResourceOptions> resourcesCollection = [];
+    public ObservableCollection<ConfigResourceOptions> ResourcesCollection
+    {
+        get => resourcesCollection;
+        set
         {
-            get => resourcesCollection;
-            set
-            {
-                resourcesCollection = value;
-                OnPropertyChanged();
-            }
+            resourcesCollection = value;
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<CustomInput> customInputsCollection;
-        public ObservableCollection<CustomInput> CustomInputsCollection
+    private ObservableCollection<CustomInput> customInputsCollection = [];
+    public ObservableCollection<CustomInput> CustomInputsCollection
+    {
+        get => customInputsCollection;
+        set
         {
-            get => customInputsCollection;
-            set
-            {
-                customInputsCollection = value;
-                OnPropertyChanged();
-            }
+            customInputsCollection = value;
+            OnPropertyChanged();
         }
+    }
 
-        private ObservableCollection<string> quitBrowserStatuses;
-        public ObservableCollection<string> QuitBrowserStatuses
+    private ObservableCollection<string> quitBrowserStatuses = [];
+    public ObservableCollection<string> QuitBrowserStatuses
+    {
+        get => quitBrowserStatuses;
+        set
         {
-            get => quitBrowserStatuses;
-            set
-            {
-                quitBrowserStatuses = value;
-                Puppeteer.QuitBrowserStatuses = quitBrowserStatuses.ToArray();
-                OnPropertyChanged();
-            }
+            quitBrowserStatuses = value;
+            Puppeteer.QuitBrowserStatuses = [.. quitBrowserStatuses];
+            OnPropertyChanged();
         }
+    }
 
-        public bool Headless
+    public bool Headless
+    {
+        get => Puppeteer.Headless;
+        set
         {
-            get => Puppeteer.Headless;
-            set
-            {
-                Puppeteer.Headless = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.Headless = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool IgnoreHttpsErrors
+    public bool IgnoreHttpsErrors
+    {
+        get => Puppeteer.IgnoreHttpsErrors;
+        set
         {
-            get => Puppeteer.IgnoreHttpsErrors;
-            set
-            {
-                Puppeteer.IgnoreHttpsErrors = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.IgnoreHttpsErrors = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool LoadOnlyDocumentAndScript
+    public bool LoadOnlyDocumentAndScript
+    {
+        get => Puppeteer.LoadOnlyDocumentAndScript;
+        set
         {
-            get => Puppeteer.LoadOnlyDocumentAndScript;
-            set
-            {
-                Puppeteer.LoadOnlyDocumentAndScript = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.LoadOnlyDocumentAndScript = value;
+            OnPropertyChanged();
         }
+    }
 
-        public bool DismissDialogs
+    public bool DismissDialogs
+    {
+        get => Puppeteer.DismissDialogs;
+        set
         {
-            get => Puppeteer.DismissDialogs;
-            set
-            {
-                Puppeteer.DismissDialogs = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.DismissDialogs = value;
+            OnPropertyChanged();
         }
+    }
 
-        public string CommandLineArgs
+    public string CommandLineArgs
+    {
+        get => Puppeteer.CommandLineArgs;
+        set
         {
-            get => Puppeteer.CommandLineArgs;
-            set
-            {
-                Puppeteer.CommandLineArgs = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.CommandLineArgs = value;
+            OnPropertyChanged();
         }
+    }
 
-        public List<string> BlockedUrls
+    public List<string> BlockedUrls
+    {
+        get => Puppeteer.BlockedUrls;
+        set
         {
-            get => Puppeteer.BlockedUrls;
-            set
-            {
-                Puppeteer.BlockedUrls = value;
-                OnPropertyChanged();
-            }
+            Puppeteer.BlockedUrls = value;
+            OnPropertyChanged();
         }
+    }
 
-        public ConfigSettingsViewModel()
-        {
-            configService = SP.GetService<ConfigService>();
-            rlSettingsService = SP.GetService<RuriLibSettingsService>();
-            TestWordlistTypeForRules = WordlistTypes.First();
-        }
+    public ConfigSettingsViewModel()
+    {
+        configService = SP.GetService<ConfigService>();
+        rlSettingsService = SP.GetService<RuriLibSettingsService>();
+        TestWordlistTypeForRules = WordlistTypes.FirstOrDefault() ?? string.Empty;
+    }
 
-        public override void UpdateViewModel()
-        {
-            CreateCollections();
-            base.UpdateViewModel();
-        }
+    public override void UpdateViewModel()
+    {
+        CreateCollections();
+        base.UpdateViewModel();
+    }
 
-        public void AddCustomInput()
-        {
-            CustomInputsCollection.Add(new CustomInput());
-            Input.CustomInputs = CustomInputsCollection.ToList();
-        }
+    public void AddCustomInput()
+    {
+        CustomInputsCollection.Add(new CustomInput());
+        Input.CustomInputs = [.. CustomInputsCollection];
+    }
 
-        public void RemoveCustomInput(CustomInput input)
-        {
-            CustomInputsCollection.Remove(input);
-            Input.CustomInputs = CustomInputsCollection.ToList();
-        }
+    public void RemoveCustomInput(CustomInput input)
+    {
+        CustomInputsCollection.Remove(input);
+        Input.CustomInputs = [.. CustomInputsCollection];
+    }
 
-        public void AddLinesFromFileResource()
-        {
-            ResourcesCollection.Add(new LinesFromFileResourceOptions());
-            SaveResources();
-        }
+    public void AddLinesFromFileResource()
+    {
+        ResourcesCollection.Add(new LinesFromFileResourceOptions());
+        SaveResources();
+    }
 
-        public void AddRandomLinesFromFileResource()
-        {
-            ResourcesCollection.Add(new RandomLinesFromFileResourceOptions());
-            SaveResources();
-        }
+    public void AddRandomLinesFromFileResource()
+    {
+        ResourcesCollection.Add(new RandomLinesFromFileResourceOptions());
+        SaveResources();
+    }
 
-        public void RemoveResource(ConfigResourceOptions resource)
-        {
-            ResourcesCollection.Remove(resource);
-            SaveResources();
-        }
+    public void RemoveResource(ConfigResourceOptions resource)
+    {
+        ResourcesCollection.Remove(resource);
+        SaveResources();
+    }
 
-        public void AddSimpleDataRule()
-        {
-            DataRulesCollection.Add(new SimpleDataRule());
-            SaveDataRules();
-        }
+    public void AddSimpleDataRule()
+    {
+        DataRulesCollection.Add(new SimpleDataRule());
+        SaveDataRules();
+    }
 
-        public void AddRegexDataRule()
-        {
-            DataRulesCollection.Add(new RegexDataRule());
-            SaveDataRules();
-        }
+    public void AddRegexDataRule()
+    {
+        DataRulesCollection.Add(new RegexDataRule());
+        SaveDataRules();
+    }
 
-        public void RemoveDataRule(DataRule rule)
-        {
-            DataRulesCollection.Remove(rule);
-            SaveDataRules();
-        }
+    public void RemoveDataRule(DataRule rule)
+    {
+        DataRulesCollection.Remove(rule);
+        SaveDataRules();
+    }
 
-        private void SaveResources() => Data.Resources = ResourcesCollection.ToList();
-        private void SaveDataRules() => Data.DataRules = DataRulesCollection.ToList();
+    private void SaveResources() => Data.Resources = [.. ResourcesCollection];
+    private void SaveDataRules() => Data.DataRules = [.. DataRulesCollection];
 
-        private void CreateCollections()
-        {
-            ContinueStatuses = new ObservableCollection<string>(General.ContinueStatuses);
-            ProxyBanStatuses = new ObservableCollection<string>(Proxy.BanProxyStatuses);
-            AllowedProxyTypes = new ObservableCollection<string>(Proxy.AllowedProxyTypes.Select(t => t.ToString()));
-            AllowedWordlistTypes = new ObservableCollection<string>(Data.AllowedWordlistTypes);
-            QuitBrowserStatuses = new ObservableCollection<string>(Puppeteer.QuitBrowserStatuses);
+    private void CreateCollections()
+    {
+        ContinueStatuses = new ObservableCollection<string>(General.ContinueStatuses);
+        ProxyBanStatuses = new ObservableCollection<string>(Proxy.BanProxyStatuses);
+        AllowedProxyTypes = new ObservableCollection<string>(Proxy.AllowedProxyTypes.Select(t => t.ToString()));
+        AllowedWordlistTypes = new ObservableCollection<string>(Data.AllowedWordlistTypes);
+        QuitBrowserStatuses = new ObservableCollection<string>(Puppeteer.QuitBrowserStatuses);
 
-            CustomInputsCollection = new ObservableCollection<CustomInput>(Input.CustomInputs);
-            ResourcesCollection = new ObservableCollection<ConfigResourceOptions>(Data.Resources);
-            DataRulesCollection = new ObservableCollection<DataRule>(Data.DataRules);
-        }
+        CustomInputsCollection = new ObservableCollection<CustomInput>(Input.CustomInputs);
+        ResourcesCollection = new ObservableCollection<ConfigResourceOptions>(Data.Resources);
+        DataRulesCollection = new ObservableCollection<DataRule>(Data.DataRules);
     }
 }

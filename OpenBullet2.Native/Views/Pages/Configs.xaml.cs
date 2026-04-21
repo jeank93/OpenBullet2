@@ -30,7 +30,7 @@ public partial class Configs : Page
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
 
-    private ConfigViewModel HoveredItem => (ConfigViewModel)configsListView.SelectedItem;
+    private ConfigViewModel? HoveredItem => configsListView.SelectedItem as ConfigViewModel;
     
     private string ListViewSortBy
     {
@@ -127,6 +127,12 @@ public partial class Configs : Page
 
     private void NavigateToConfigSection()
     {
+        if (vm.SelectedConfig is null)
+        {
+            ShowNoConfigSelectedError();
+            return;
+        }
+
         var mode = vm.SelectedConfig.Config.Mode;
         var page = obSettingsService.Settings.GeneralSettings.ConfigSectionOnLoad switch
         {
@@ -178,11 +184,9 @@ public partial class Configs : Page
 
     private void ItemHovered(object sender, SelectionChangedEventArgs e)
     {
-        var items = e.AddedItems as IList<object>;
-
-        if (items.Count == 1)
+        if (e.AddedItems.Count == 1)
         {
-            vm.HoveredConfig = items[0] as ConfigViewModel;
+            vm.HoveredConfig = e.AddedItems[0] as ConfigViewModel;
         }
     }
 
@@ -220,24 +224,31 @@ public partial class Configs : Page
     private void ColumnHeaderClicked(object sender, RoutedEventArgs e)
     {
         var column = sender as GridViewColumnHeader;
-        ListViewSortBy = column.Tag.ToString();
+        var sortBy = column?.Tag?.ToString();
+
+        if (string.IsNullOrEmpty(sortBy) || column is null)
+        {
+            return;
+        }
+
+        ListViewSortBy = sortBy;
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             configsListView.Items.SortDescriptions.Clear();
         }
 
         ListViewSortDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == ListViewSortDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == ListViewSortDir)
         {
             ListViewSortDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, ListViewSortDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         configsListView.Items.SortDescriptions.Add(new SortDescription(ListViewSortBy, ListViewSortDir));
     }
 }

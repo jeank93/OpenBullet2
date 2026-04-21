@@ -8,6 +8,7 @@ using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace RuriLib.Tests.Blocks.Requests;
@@ -55,6 +56,113 @@ public class MailRequestBlocksTests
         Assert.Equal("imap-log", global::RuriLib.Blocks.Requests.Imap.Methods.ImapGetLog(data));
         Assert.Equal("pop3-log", global::RuriLib.Blocks.Requests.Pop3.Methods.Pop3GetLog(data));
         Assert.Equal("smtp-log", global::RuriLib.Blocks.Requests.Smtp.Methods.SmtpGetLog(data));
+    }
+
+    [Fact]
+    public async Task ImapOpenFolder_WithoutFolderCache_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Imap.Methods.ImapOpenFolder(data, "Inbox"));
+
+        Assert.Equal("Get the list of folders first!", ex.Message);
+    }
+
+    [Fact]
+    public async Task Pop3DeleteMail_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Pop3.Methods.Pop3DeleteMail(data, 0));
+
+        Assert.Equal("Connect the POP3 client first!", ex.Message);
+    }
+
+    [Fact]
+    public async Task SmtpSendMail_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Smtp.Methods.SmtpSendMail(
+                data,
+                "Sender",
+                "sender@example.com",
+                "Recipient",
+                "recipient@example.com",
+                "Subject",
+                "Text body",
+                "<p>Html body</p>"));
+
+        Assert.Equal("Connect the SMTP client first!", ex.Message);
+    }
+
+    [Fact]
+    public void SshRunCommand_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Ssh.Methods.SshRunCommand(data, "ls"));
+
+        Assert.Equal("The SSH client is not initialized", ex.Message);
+    }
+
+    [Fact]
+    public async Task TcpRead_WithoutConnection_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Tcp.Methods.TcpRead(data));
+
+        Assert.Equal("You have to create a connection first!", ex.Message);
+    }
+
+    [Fact]
+    public async Task WsRead_WithoutConnection_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.WebSocket.Methods.WsRead(data));
+
+        Assert.Equal("You must open a websocket connection first", ex.Message);
+    }
+
+    [Fact]
+    public void WsSend_WithoutConnection_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.WebSocket.Methods.WsSend(data, "ping"));
+
+        Assert.Equal("You must open a websocket connection first", ex.Message);
+    }
+
+    [Fact]
+    public void FtpGetLog_WithoutLogger_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpGetLog(data));
+
+        Assert.Equal("No log available. Make sure to connect to a server first!", ex.Message);
+    }
+
+    [Fact]
+    public async Task FtpListItems_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data));
+
+        Assert.Equal("Connect to a server first!", ex.Message);
     }
 
     private static ProtocolLogger CreateLogger(string content)

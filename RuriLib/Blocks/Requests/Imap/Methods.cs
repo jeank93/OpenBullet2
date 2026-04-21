@@ -214,7 +214,7 @@ public static class Methods
             }
         }
 
-        throw new Exception("Exhausted all possibilities, failed to connect!");
+        throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
 
     private static async Task<bool> TryConnect(BotData data, ImapClient client, string domain, HostEntry entry)
@@ -248,7 +248,10 @@ public static class Methods
         request.Uri = new Uri(url);
 
         using var response = await httpClient.SendAsync(request, data.CancellationToken).ConfigureAwait(false);
-        return await response.Content!.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
+        var content = response.Content
+                      ?? throw new BlockExecutionException("The autoconfig response content is not available");
+
+        return await content.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -498,7 +501,7 @@ public static class Methods
 
         var folders = GetFolders(data);
         var folder = folders.Find(f => f.FullName.Equals(folderName, StringComparison.OrdinalIgnoreCase))
-                     ?? throw new Exception($"Folder '{folderName}' not found");
+                     ?? throw new BlockExecutionException($"Folder '{folderName}' not found");
 
         await folder.OpenAsync(folderAccess, data.CancellationToken).ConfigureAwait(false);
         data.Logger.Log(folder.IsOpen 
@@ -562,7 +565,8 @@ public static class Methods
     }
 
     private static ImapClient GetClient(BotData data)
-        => data.TryGetObject<ImapClient>("imapClient") ?? throw new Exception("Connect the IMAP client first!");
+        => data.TryGetObject<ImapClient>("imapClient")
+           ?? throw new BlockExecutionException("Connect the IMAP client first!");
 
     private static ImapClient GetAuthenticatedClient(BotData data)
     {
@@ -570,17 +574,19 @@ public static class Methods
 
         if (!client.IsAuthenticated)
         {
-            throw new Exception("Authenticate the IMAP client first!");
+            throw new BlockExecutionException("Authenticate the IMAP client first!");
         }
 
         return client;
     }
 
     private static List<IMailFolder> GetFolders(BotData data)
-        => data.TryGetObject<List<IMailFolder>>("imapFolders") ?? throw new Exception("Get the list of folders first!");
+        => data.TryGetObject<List<IMailFolder>>("imapFolders")
+           ?? throw new BlockExecutionException("Get the list of folders first!");
         
     private static IMailFolder GetCurrentFolder(BotData data)
-        => data.TryGetObject<IMailFolder>("imapCurrentFolder") ?? throw new Exception("Open a folder first!");
+        => data.TryGetObject<IMailFolder>("imapCurrentFolder")
+           ?? throw new BlockExecutionException("Open a folder first!");
         
     private static void SetCurrentFolder(BotData data, IMailFolder? folder)
         => data.SetObject("imapCurrentFolder", folder);

@@ -8,6 +8,9 @@ using RuriLib.Exceptions;
 
 namespace RuriLib.Blocks.Requests.Ssh;
 
+/// <summary>
+/// Blocks for working with the SSH protocol.
+/// </summary>
 [BlockCategory("SSH", "Blocks for SSH", "#6699ff")]
 public static class Methods
 {
@@ -120,7 +123,7 @@ public static class Methods
     }
 
     /// <summary>
-    /// Executes a command via SSH", name = "Run Command.
+    /// Executes a command via SSH.
     /// </summary>
     [Block("Executes a command via SSH", name = "Run Command")]
     public static string SshRunCommand(BotData data, string command)

@@ -14,6 +14,9 @@ using Websocket.Client;
 
 namespace RuriLib.Blocks.Requests.WebSocket;
 
+/// <summary>
+/// Blocks for sending and receiving messages through web sockets.
+/// </summary>
 [BlockCategory("Web Sockets", "Blocks to send and receive messages through websockets", "#addfad")]
 public static class Methods
 {
@@ -80,13 +83,13 @@ public static class Methods
                 switch (msg.MessageType)
                 {
                     case WebSocketMessageType.Text:
-                        wsMessages.Add(msg.Text!);
+                        wsMessages.Add(msg.Text ?? string.Empty);
                         break;
 
                     case WebSocketMessageType.Binary:
                         // Binary responses will be encoded as base64 since there is no support for the
                         // List<byte[]> type at the moment.
-                        wsMessages.Add(Base64Converter.ToBase64String(msg.Binary!));
+                        wsMessages.Add(Base64Converter.ToBase64String(msg.Binary ?? Array.Empty<byte>()));
                         break;
                 }
             }
@@ -105,7 +108,7 @@ public static class Methods
 
         if (!ws.IsRunning)
         {
-            throw new Exception("Failed to connect to the websocket");
+            throw new BlockExecutionException("Failed to connect to the websocket");
         }
 
         data.SetObject("webSocket", ws);

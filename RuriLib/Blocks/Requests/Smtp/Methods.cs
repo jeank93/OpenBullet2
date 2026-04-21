@@ -215,7 +215,7 @@ public static class Methods
             }
         }
 
-        throw new Exception("Exhausted all possibilities, failed to connect!");
+        throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
 
     private static async Task<bool> TryConnect(BotData data, SmtpClient client, string domain, HostEntry entry)
@@ -257,7 +257,10 @@ public static class Methods
         request.Uri = new Uri(url);
 
         using var response = await httpClient.SendAsync(request, data.CancellationToken).ConfigureAwait(false);
-        return await response.Content!.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
+        var content = response.Content
+                      ?? throw new BlockExecutionException("The autoconfig response content is not available");
+
+        return await content.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -413,7 +416,8 @@ public static class Methods
     }
 
     private static SmtpClient GetClient(BotData data)
-        => data.TryGetObject<SmtpClient>("smtpClient") ?? throw new Exception("Connect the SMTP client first!");
+        => data.TryGetObject<SmtpClient>("smtpClient")
+           ?? throw new BlockExecutionException("Connect the SMTP client first!");
 
     private static IProxyClient MapProxyClient(Proxy proxy)
     {

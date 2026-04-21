@@ -1,4 +1,5 @@
 ﻿using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Functions.Tcp;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -14,6 +15,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Requests.Tcp;
 
+/// <summary>
+/// Blocks for sending and receiving data over TCP.
+/// </summary>
 [BlockCategory("TCP", "Blocks to send data over TCP", "#e0b0ff")]
 public static class Methods
 {
@@ -298,7 +302,8 @@ public static class Methods
             return sslStream;
         }
 
-        return data.TryGetObject<NetworkStream>("netStream") ?? throw new NullReferenceException("You have to create a connection first!");
+        return data.TryGetObject<NetworkStream>("netStream")
+               ?? throw new BlockExecutionException("You have to create a connection first!");
     }
 
     private static int BinaryMatch(byte[] input, byte[] pattern)

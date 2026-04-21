@@ -211,7 +211,7 @@ public static class Methods
             }
         }
 
-        throw new Exception("Exhausted all possibilities, failed to connect!");
+        throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
 
     private static async Task<bool> TryConnect(BotData data, Pop3Client client, string domain, HostEntry entry)
@@ -245,7 +245,10 @@ public static class Methods
         request.Uri = new Uri(url);
 
         using var response = await httpClient.SendAsync(request, data.CancellationToken).ConfigureAwait(false);
-        return await response.Content!.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
+        var content = response.Content
+                      ?? throw new BlockExecutionException("The autoconfig response content is not available");
+
+        return await content.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
     }
 
     [Block("Connects to a POP3 server")]
@@ -387,7 +390,8 @@ Body:
     }
 
     private static Pop3Client GetClient(BotData data)
-        => data.TryGetObject<Pop3Client>("pop3Client") ?? throw new Exception("Connect the POP3 client first!");
+        => data.TryGetObject<Pop3Client>("pop3Client")
+           ?? throw new BlockExecutionException("Connect the POP3 client first!");
 
     private static Pop3Client GetAuthenticatedClient(BotData data)
     {
@@ -395,7 +399,7 @@ Body:
 
         if (!client.IsAuthenticated)
         {
-            throw new Exception("Authenticate the POP3 client first!");
+            throw new BlockExecutionException("Authenticate the POP3 client first!");
         }
 
         return client;

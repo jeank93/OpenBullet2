@@ -13,6 +13,9 @@ using RuriLib.Models.Proxies;
 
 namespace RuriLib.Blocks.Requests.Ftp;
 
+/// <summary>
+/// Blocks for working with the FTP protocol.
+/// </summary>
 [BlockCategory("FTP", "Blocks to work with the FTP protocol", "#fbec5d")]
 public static class Methods
 {
@@ -50,7 +53,7 @@ public static class Methods
                 ProxyType.Socks4 => new AsyncFtpClientSocks4Proxy(proxyInfo),
                 ProxyType.Socks4a => new AsyncFtpClientSocks4aProxy(proxyInfo),
                 ProxyType.Socks5 => new AsyncFtpClientSocks5Proxy(proxyInfo),
-                _ => throw new Exception($"Unsupported proxy type: {data.Proxy.Type}")
+                _ => throw new BlockExecutionException($"Unsupported proxy type: {data.Proxy.Type}")
             };
         }
         else
@@ -69,7 +72,7 @@ public static class Methods
             
         if (!client.IsConnected)
         {
-            throw new Exception("Failed to connect to the FTP server with the given credentials");
+            throw new BlockExecutionException("Failed to connect to the FTP server with the given credentials");
         }
 
         data.Logger.Log($"Connected to {host}:{port}", LogColors.Maize);
@@ -163,7 +166,7 @@ public static class Methods
     }
 
     /// <summary>
-    /// Gets the protocol log", name = "Get FTP Log.
+    /// Gets the protocol log.
     /// </summary>
     [Block("Gets the protocol log", name = "Get FTP Log")]
     public static string FtpGetLog(BotData data)
@@ -193,12 +196,27 @@ public static class Methods
     }
 
     private static AsyncFtpClient GetClient(BotData data)
-        => data.TryGetObject<AsyncFtpClient>("ftpClient") ?? throw new Exception("Connect to a server first!");
+        => data.TryGetObject<AsyncFtpClient>("ftpClient")
+           ?? throw new BlockExecutionException("Connect to a server first!");
 }
 
+/// <summary>
+/// Controls which FTP entries are returned by <see cref="Methods.FtpListItems"/>.
+/// </summary>
 public enum FtpItemKind
 {
+    /// <summary>
+    /// Return only folders.
+    /// </summary>
     Folder,
+
+    /// <summary>
+    /// Return only files.
+    /// </summary>
     File,
+
+    /// <summary>
+    /// Return both files and folders.
+    /// </summary>
     FilesAndFolders
 }

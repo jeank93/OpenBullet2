@@ -205,7 +205,7 @@ public class ProxyController(IProxyRepository proxyRepo,
             .Include(p => p.Group)
             .Where(p => p.Status == ProxyWorkingStatus.Working)
             .Where(p => p.Ping > maxPing)
-            .Where(p => p.Group.Id == proxyGroupId)
+            .Where(p => p.Group != null && p.Group.Id == proxyGroupId)
             .ToListAsync();
 
         await _proxyRepo.DeleteAsync(toDelete);
@@ -247,8 +247,10 @@ public class ProxyController(IProxyRepository proxyRepo,
                 .Include(p => p.Group)
             : _proxyRepo.GetAll()
                 .Include(p => p.Group)
-                .ThenInclude(g => g.Owner)
-                .Where(p => p.Group.Owner.Id == apiUser.Id);
+                .ThenInclude(g => g!.Owner)
+                .Where(p => p.Group != null
+                    && p.Group.Owner != null
+                    && p.Group.Owner.Id == apiUser.Id);
 
         if (!string.IsNullOrEmpty(dto.SearchTerm))
         {
@@ -271,7 +273,7 @@ public class ProxyController(IProxyRepository proxyRepo,
 
         if (dto.ProxyGroupId != -1)
         {
-            query = query.Where(p => p.Group.Id == dto.ProxyGroupId);
+            query = query.Where(p => p.Group != null && p.Group.Id == dto.ProxyGroupId);
         }
         
         if (dto.SortBy is not null)

@@ -99,7 +99,9 @@ internal class AutoMapperProfile : Profile
 
         CreateMap<GuestEntity, GuestDto>()
             .ForMember(dto => dto.AllowedAddresses, e => e.MapFrom(entity =>
-                entity.AllowedAddresses.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()));
+                (entity.AllowedAddresses ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .ToList()));
 
         CreateMap<GuestEntity, OwnerDto>();
 
@@ -140,8 +142,8 @@ internal class AutoMapperProfile : Profile
             .ForMember(entity => entity.Type, e => e.MapFrom(dto => dto.WordlistType));
 
         CreateMap<ProxyEntity, ProxyDto>()
-            .ForMember(dto => dto.GroupId, e => e.MapFrom(entity => entity.Group.Id))
-            .ForMember(dto => dto.GroupName, e => e.MapFrom(entity => entity.Group.Name))
+            .ForMember(dto => dto.GroupId, e => e.MapFrom(entity => entity.Group != null ? entity.Group.Id : -1))
+            .ForMember(dto => dto.GroupName, e => e.MapFrom(entity => entity.Group != null ? entity.Group.Name : string.Empty))
             .ForMember(dto => dto.LastChecked, e => e.MapFrom(entity =>
                 entity.LastChecked == default ? null : (DateTime?)entity.LastChecked));
 

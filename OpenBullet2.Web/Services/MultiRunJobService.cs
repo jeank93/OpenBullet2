@@ -20,7 +20,7 @@ namespace OpenBullet2.Web.Services;
 public sealed class MultiRunJobService : IJobService, IDisposable
 {
     // Maps jobs to connections
-    private readonly Dictionary<MultiRunJob, List<string>> _connections = new();
+    private readonly Dictionary<MultiRunJob, List<string>> _connections = [];
     private readonly IHubContext<MultiRunJobHub> _hub;
     private readonly JobManagerService _jobManager;
     private readonly ILogger<MultiRunJobService> _logger;
@@ -94,14 +94,8 @@ public sealed class MultiRunJobService : IJobService, IDisposable
     /// <inheritdoc />
     public void RegisterConnection(string connectionId, int jobId)
     {
-        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == jobId);
-
-        if (job is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.JobNotFound,
+        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == jobId) ?? throw new EntryNotFoundException(ErrorCode.JobNotFound,
                 $"Job with id {jobId} not found");
-        }
-
         if (job is not MultiRunJob mrJob)
         {
             throw new BadRequestException(ErrorCode.InvalidJobType,
@@ -110,7 +104,7 @@ public sealed class MultiRunJobService : IJobService, IDisposable
 
         if (!_connections.ContainsKey(mrJob))
         {
-            _connections[mrJob] = new List<string>();
+            _connections[mrJob] = [];
 
             // Hook the event handlers to the job
             mrJob.OnStatusChanged += _onStatusChanged;
@@ -315,7 +309,7 @@ public sealed class MultiRunJobService : IJobService, IDisposable
                 Banned = job.DataBanned,
                 Errors = job.DataErrors,
                 ToCheck = job.DataToCheck,
-                Total = job.DataPool.Size,
+                Total = job.DataPool?.Size ?? 0,
                 Tested = job.DataTested
             },
             ProxyStats =

@@ -19,30 +19,20 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage proxy groups.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/proxy-group")]
-public class ProxyGroupController : ApiController
+public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
+    IProxyRepository proxyRepo, IGuestRepository guestRepo, IMapper mapper,
+    JobManagerService jobManagerService, ILogger<ProxyGroupController> logger) : ApiController
 {
-    private readonly IGuestRepository _guestRepo;
-    private readonly JobManagerService _jobManagerService;
-    private readonly ILogger<ProxyGroupController> _logger;
-    private readonly IMapper _mapper;
-    private readonly IProxyGroupRepository _proxyGroupRepo;
-    private readonly IProxyRepository _proxyRepo;
-
-    /// <summary></summary>
-    public ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
-        IProxyRepository proxyRepo, IGuestRepository guestRepo, IMapper mapper,
-        JobManagerService jobManagerService, ILogger<ProxyGroupController> logger)
-    {
-        _proxyGroupRepo = proxyGroupRepo;
-        _proxyRepo = proxyRepo;
-        _guestRepo = guestRepo;
-        _mapper = mapper;
-        _jobManagerService = jobManagerService;
-        _logger = logger;
-    }
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly JobManagerService _jobManagerService = jobManagerService;
+    private readonly ILogger<ProxyGroupController> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
+    private readonly IProxyRepository _proxyRepo = proxyRepo;
 
     /// <summary>
     /// List all of the available proxy groups.
@@ -56,7 +46,7 @@ public class ProxyGroupController : ApiController
         var entities = apiUser.Role is UserRole.Admin
             ? await _proxyGroupRepo.GetAll().Include(g => g.Owner).ToListAsync()
             : await _proxyGroupRepo.GetAll().Include(g => g.Owner)
-                .Where(g => g.Owner.Id == apiUser.Id).ToListAsync();
+                .Where(g => g.Owner != null && g.Owner.Id == apiUser.Id).ToListAsync();
 
         return Ok(_mapper.Map<IEnumerable<ProxyGroupDto>>(entities));
     }
@@ -127,8 +117,11 @@ public class ProxyGroupController : ApiController
 
         // Get the first proxy of the group
         var proxies = await _proxyRepo.GetAll()
-            .Include(p => p.Group).Where(g => g.Id == id)
+            .Include(p => p.Group)
+            .Where(p => p.Group != null && p.Group.Id == id)
             .ToListAsync();
+
+        var firstProxyId = proxies.FirstOrDefault()?.Id;
 
         foreach (var job in _jobManagerService.Jobs)
         {
@@ -136,7 +129,7 @@ public class ProxyGroupController : ApiController
             // ProxyCheckJob, throw
             if (job is ProxyCheckJob pcJob)
             {
-                if (pcJob.Proxies.Any(p => p.Id == proxies.FirstOrDefault()?.Id))
+                if (firstProxyId is not null && pcJob.Proxies?.Any(p => p.Id == firstProxyId) == true)
                 {
                     throw new ResourceInUseException(
                         ErrorCode.ProxyGroupInUse,
@@ -169,14 +162,8 @@ public class ProxyGroupController : ApiController
 
     private async Task<ProxyGroupEntity> GetEntityAsync(int id)
     {
-        var entity = await _proxyGroupRepo.GetAsync(id);
-
-        if (entity is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
+        var entity = await _proxyGroupRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
                 id, nameof(IProxyGroupRepository));
-        }
-
         return entity;
     }
 

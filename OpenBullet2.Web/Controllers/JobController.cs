@@ -30,34 +30,22 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage jobs.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
-public class JobController : ApiController
+public class JobController(IJobRepository jobRepo, ILogger<JobController> logger,
+    IGuestRepository guestRepo, IMapper mapper, JobManagerService jobManager,
+    JobFactoryService jobFactory, IProxyGroupRepository proxyGroupRepo,
+    IRecordRepository recordRepo) : ApiController
 {
-    private readonly IGuestRepository _guestRepo;
-    private readonly JobFactoryService _jobFactory;
-    private readonly JobManagerService _jobManager;
-    private readonly IJobRepository _jobRepo;
-    private readonly ILogger<JobController> _logger;
-    private readonly IMapper _mapper;
-    private readonly IProxyGroupRepository _proxyGroupRepo;
-    private readonly IRecordRepository _recordRepo;
-
-    /// <summary></summary>
-    public JobController(IJobRepository jobRepo, ILogger<JobController> logger,
-        IGuestRepository guestRepo, IMapper mapper, JobManagerService jobManager,
-        JobFactoryService jobFactory, IProxyGroupRepository proxyGroupRepo,
-        IRecordRepository recordRepo)
-    {
-        _jobRepo = jobRepo;
-        _logger = logger;
-        _guestRepo = guestRepo;
-        _mapper = mapper;
-        _jobManager = jobManager;
-        _jobFactory = jobFactory;
-        _proxyGroupRepo = proxyGroupRepo;
-        _recordRepo = recordRepo;
-    }
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly JobFactoryService _jobFactory = jobFactory;
+    private readonly JobManagerService _jobManager = jobManager;
+    private readonly IJobRepository _jobRepo = jobRepo;
+    private readonly ILogger<JobController> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
+    private readonly IRecordRepository _recordRepo = recordRepo;
 
     /// <summary>
     /// Get overview information about all jobs.
@@ -203,16 +191,7 @@ public class JobController : ApiController
         var entity = await GetEntityAsync(id);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not MultiRunJobOptions mrjJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -241,16 +220,7 @@ public class JobController : ApiController
         var entity = await GetEntityAsync(id);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not ProxyCheckJobOptions pcJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -529,7 +499,7 @@ public class JobController : ApiController
         {
             var entities = await _jobRepo.GetAll()
                 .Include(j => j.Owner)
-                .Where(j => j.Owner.Id == apiUser.Id)
+                .Where(j => j.Owner != null && j.Owner.Id == apiUser.Id)
                 .ToListAsync();
 
             deletedCount = entities.Count;
@@ -566,14 +536,8 @@ public class JobController : ApiController
                 $"The job with id {jobId} is not a multi run job");
         }
 
-        var hit = mrJob.Hits.Find(h => h.Id == hitId);
-
-        if (hit is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.HitNotFound,
+        var hit = mrJob.Hits.Find(h => h.Id == hitId) ?? throw new EntryNotFoundException(ErrorCode.HitNotFound,
                 hitId, nameof(MultiRunJob.Hits));
-        }
-
         return new MrjHitLogDto { Log = hit.BotLogger?.Entries.ToList() };
     }
 
@@ -802,14 +766,8 @@ public class JobController : ApiController
 
     private Job GetJob(int id)
     {
-        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == id);
-
-        if (job is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.JobNotFound,
+        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == id) ?? throw new EntryNotFoundException(ErrorCode.JobNotFound,
                 id, nameof(JobManagerService));
-        }
-
         return job;
     }
 
@@ -830,14 +788,8 @@ public class JobController : ApiController
 
     private async Task<JobEntity> GetEntityAsync(int id)
     {
-        var entity = await _jobRepo.GetAsync(id);
-
-        if (entity is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.JobNotFound,
+        var entity = await _jobRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.JobNotFound,
                 id, nameof(IJobRepository));
-        }
-
         return entity;
     }
 
@@ -898,16 +850,7 @@ public class JobController : ApiController
         var entity = await GetEntityAsync(job.Id);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not ProxyCheckJobOptions pcjJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -921,7 +864,7 @@ public class JobController : ApiController
 
             if (proxyGroup is not null)
             {
-                groupName = proxyGroup.Name;
+                groupName = proxyGroup.Name ?? "Invalid";
             }
         }
 
@@ -937,7 +880,10 @@ public class JobController : ApiController
             GroupId = pcjJobOptions.GroupId,
             GroupName = groupName,
             CheckOnlyUntested = job.CheckOnlyUntested,
-            Target = new ProxyCheckTargetDto { Url = job.Url, SuccessKey = job.SuccessKey },
+            Target = new ProxyCheckTargetDto {
+                Url = job.Url ?? string.Empty,
+                SuccessKey = job.SuccessKey ?? string.Empty
+            },
             CheckOutput = checkOutput,
             Tested = job.Tested,
             Working = job.Working,
@@ -1012,7 +958,7 @@ public class JobController : ApiController
             Bots = job.Bots,
             Skip = job.Skip,
             ProxyMode = job.ProxyMode,
-            ProxySources = proxySources.ToList(),
+            ProxySources = [.. proxySources],
             HitOutputs = hitOutputs,
             DataStats =
                 new MrjDataStatsDto {
@@ -1064,7 +1010,20 @@ public class JobController : ApiController
         }
 
         var proxyGroup = await _proxyGroupRepo.GetAsync(id);
-        return proxyGroup is null ? "Invalid" : proxyGroup.Name;
+        return proxyGroup?.Name ?? "Invalid";
+    }
+
+    private static JobOptionsWrapper DeserializeJobOptions(JobEntity entity)
+    {
+        if (string.IsNullOrWhiteSpace(entity.JobOptions))
+        {
+            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
+        }
+
+        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+
+        return JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings)
+            ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
     }
 
     private static JobType GetJobType(Job job) =>

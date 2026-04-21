@@ -18,25 +18,17 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Get info about the server.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
-public class InfoController : ApiController
+public class InfoController(IAnnouncementService announcementService,
+    HttpClient httpClient,
+    IUpdateService updateService, IServiceProvider serviceProvider) : ApiController
 {
-    private readonly IAnnouncementService _announcementService;
-    private readonly HttpClient _httpClient;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IUpdateService _updateService;
-
-    /// <summary></summary>
-    public InfoController(IAnnouncementService announcementService,
-        HttpClient httpClient,
-        IUpdateService updateService, IServiceProvider serviceProvider)
-    {
-        _announcementService = announcementService;
-        _httpClient = httpClient;
-        _updateService = updateService;
-        _serviceProvider = serviceProvider;
-    }
+    private readonly IAnnouncementService _announcementService = announcementService;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly IUpdateService _updateService = updateService;
 
     /// <summary>
     /// Get information about the server and the environment.
@@ -159,19 +151,23 @@ public class InfoController : ApiController
             ? await _serviceProvider.GetRequiredService<IProxyRepository>()
                 .GetAll().CountAsync()
             : await _serviceProvider.GetRequiredService<IProxyRepository>()
-                .GetAll().CountAsync(p => p.Group.Owner.Id == apiUser.Id);
+                .GetAll().CountAsync(p => p.Group != null
+                    && p.Group.Owner != null
+                    && p.Group.Owner.Id == apiUser.Id);
 
         var wordlistCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
                 .GetAll().CountAsync()
             : await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().CountAsync(w => w.Owner.Id == apiUser.Id);
+                .GetAll().CountAsync(w => w.Owner != null && w.Owner.Id == apiUser.Id);
 
         var wordlistLines = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
                 .GetAll().SumAsync(w => (long)w.Total)
             : await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().Where(w => w.Owner.Id == apiUser.Id).SumAsync(w => (long)w.Total);
+                .GetAll()
+                .Where(w => w.Owner != null && w.Owner.Id == apiUser.Id)
+                .SumAsync(w => (long)w.Total);
 
         var hitCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IHitRepository>()

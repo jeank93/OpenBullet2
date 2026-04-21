@@ -18,30 +18,20 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage wordlists.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
-public class WordlistController : ApiController
+public class WordlistController(IWordlistRepository wordlistRepo,
+    IConfiguration config,
+    IGuestRepository guestRepo, IMapper mapper,
+    ILogger<WordlistController> logger) : ApiController
 {
-    private readonly string _baseDir;
-    private readonly IGuestRepository _guestRepo;
-    private readonly ILogger<WordlistController> _logger;
-    private readonly IMapper _mapper;
-    private readonly IWordlistRepository _wordlistRepo;
-
-    /// <summary></summary>
-    public WordlistController(IWordlistRepository wordlistRepo,
-        IConfiguration config,
-        IGuestRepository guestRepo, IMapper mapper,
-        ILogger<WordlistController> logger)
-    {
-        _wordlistRepo = wordlistRepo;
-        _guestRepo = guestRepo;
-        _mapper = mapper;
-        _logger = logger;
-
-        _baseDir = config.GetSection("Settings")
+    private readonly string _baseDir = config.GetSection("Settings")
             .GetValue<string>("UserDataFolder") ?? "UserData";
-    }
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly ILogger<WordlistController> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly IWordlistRepository _wordlistRepo = wordlistRepo;
 
     /// <summary>
     /// Get a wordlist by id.
@@ -50,19 +40,8 @@ public class WordlistController : ApiController
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<WordlistDto>> Get(int id)
     {
-        var apiUser = HttpContext.GetApiUser();
-
-        var wordlist = await _wordlistRepo.GetAsync(id);
-
-        if (apiUser.Role is UserRole.Guest && wordlist.Owner.Id != apiUser.Id)
-        {
-            _logger.LogWarning("Guest user {Username} tried to access a wordlist not owned by them",
-                apiUser.Username);
-
-            throw new EntryNotFoundException(ErrorCode.WordlistNotFound,
-                id, nameof(IWordlistRepository));
-        }
-
+        var wordlist = await GetEntityAsync(id);
+        EnsureOwnership(wordlist);
         return _mapper.Map<WordlistDto>(wordlist);
     }
 
@@ -78,7 +57,7 @@ public class WordlistController : ApiController
         var entities = apiUser.Role is UserRole.Admin
             ? await _wordlistRepo.GetAll().Include(w => w.Owner).ToListAsync()
             : await _wordlistRepo.GetAll().Include(w => w.Owner)
-                .Where(w => w.Owner.Id == apiUser.Id).ToListAsync();
+                .Where(w => w.Owner != null && w.Owner.Id == apiUser.Id).ToListAsync();
 
         return Ok(_mapper.Map<IEnumerable<WordlistDto>>(entities));
     }
@@ -99,18 +78,21 @@ public class WordlistController : ApiController
 
         if (!System.IO.File.Exists(entity.FileName))
         {
+            var fileName = entity.FileName ?? string.Empty;
+
             _logger.LogWarning("The wordlist with id {Id} references a file that was moved or deleted from {FileName}",
-                id, entity.FileName);
+                id, fileName);
 
             throw new ResourceNotFoundException(
                 ErrorCode.FileNotFound,
-                Path.GetFileName(entity.FileName), entity.FileName);
+                Path.GetFileName(fileName), fileName);
         }
 
-        var firstLines = System.IO.File.ReadLines(entity.FileName)
+        var wordlistPath = entity.FileName ?? string.Empty;
+        var firstLines = System.IO.File.ReadLines(wordlistPath)
             .Take(lineCount).ToArray();
 
-        var size = new FileInfo(entity.FileName).Length;
+        var size = new FileInfo(wordlistPath).Length;
 
         return new WordlistPreviewDto { FirstLines = firstLines, SizeInBytes = size };
     }
@@ -231,7 +213,7 @@ public class WordlistController : ApiController
         var entities = apiUser.Role is UserRole.Admin
             ? await _wordlistRepo.GetAll().Include(w => w.Owner).ToListAsync()
             : await _wordlistRepo.GetAll().Include(w => w.Owner)
-                .Where(w => w.Owner.Id == apiUser.Id).ToListAsync();
+                .Where(w => w.Owner != null && w.Owner.Id == apiUser.Id).ToListAsync();
 
         var deletedCount = 0;
 
@@ -278,14 +260,8 @@ public class WordlistController : ApiController
 
     private async Task<WordlistEntity> GetEntityAsync(int id)
     {
-        var entity = await _wordlistRepo.GetAsync(id);
-
-        if (entity is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.WordlistNotFound,
+        var entity = await _wordlistRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.WordlistNotFound,
                 id, nameof(IWordlistRepository));
-        }
-
         return entity;
     }
 

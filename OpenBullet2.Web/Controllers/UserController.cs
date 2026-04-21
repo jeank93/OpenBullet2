@@ -15,24 +15,16 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage user sessions.
 /// </summary>
+/// <remarks></remarks>
 [ApiVersion("1.0")]
-public class UserController : ApiController
+public class UserController(OpenBulletSettingsService obSettingsService,
+    IAuthTokenService authService, IGuestRepository guestRepo,
+    ILogger<UserController> logger) : ApiController
 {
-    private readonly IAuthTokenService _authService;
-    private readonly IGuestRepository _guestRepo;
-    private readonly ILogger<UserController> _logger;
-    private readonly OpenBulletSettingsService _obSettingsService;
-
-    /// <summary></summary>
-    public UserController(OpenBulletSettingsService obSettingsService,
-        IAuthTokenService authService, IGuestRepository guestRepo,
-        ILogger<UserController> logger)
-    {
-        _obSettingsService = obSettingsService;
-        _authService = authService;
-        _guestRepo = guestRepo;
-        _logger = logger;
-    }
+    private readonly IAuthTokenService _authService = authService;
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly ILogger<UserController> _logger = logger;
+    private readonly OpenBulletSettingsService _obSettingsService = obSettingsService;
 
     /// <summary>
     /// Log in as an admin or guest user and get an
@@ -83,15 +75,10 @@ public class UserController : ApiController
 
     private async Task<LoggedInUserDto> LoginGuestUser(UserLoginDto dto)
     {
-        var entity = await _guestRepo.GetAll().FirstOrDefaultAsync(g => g.Username.ToLower() == dto.Username.ToLower());
-
-        if (entity == null)
-        {
-            // Invalid username
-            throw new UnauthorizedException(ErrorCode.InvalidCredentials,
+        var normalizedUsername = dto.Username.ToLower();
+        var entity = await _guestRepo.GetAll()
+            .FirstOrDefaultAsync(g => g.Username != null && g.Username.ToLower() == normalizedUsername) ?? throw new UnauthorizedException(ErrorCode.InvalidCredentials,
                 "Invalid username or password");
-        }
-
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, entity.PasswordHash))
         {
             throw new UnauthorizedException(ErrorCode.InvalidCredentials,
@@ -111,7 +98,7 @@ public class UserController : ApiController
             ip = ip.MapToIPv4();
         }
 
-        if (entity.AllowedAddresses.Length > 0)
+        if (!string.IsNullOrEmpty(entity.AllowedAddresses))
         {
             var isValid = await Firewall.CheckIpValidityAsync(ip,
                 entity.AllowedAddresses.Split(',', StringSplitOptions.RemoveEmptyEntries));

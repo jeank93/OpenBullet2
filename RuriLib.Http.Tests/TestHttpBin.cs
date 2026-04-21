@@ -1,21 +1,132 @@
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace RuriLib.Http.Tests;
 
 internal static class TestHttpBin
 {
-    private static readonly string DefaultBaseUrl = "https://httpbin.org";
-    private static string BaseUrl => Environment.GetEnvironmentVariable("OB2_HTTPBIN_BASE_URL") ?? DefaultBaseUrl;
+    private const ushort ContainerPort = 80;
+    private const string ContainerImage = "kennethreitz/httpbin:latest";
+    private static readonly SemaphoreSlim SyncLock = new(1, 1);
+    private static IContainer? container;
+    private static string? baseUrl;
+    private static string? skipReason;
 
-    public static Uri BuildUri(string relativePath)
-        => new($"{BaseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}");
+    public static async Task<Uri> BuildUri(string relativePath)
+        => new($"{(await GetBaseUrl()).TrimEnd('/')}/{relativePath.TrimStart('/')}");
 
-    public static Uri BuildHttpUri(string relativePath)
+    public static Task<Uri> BuildHttpUri(string relativePath)
         => BuildUri(relativePath);
 
-    public static Uri BuildCompressedUri(string relativePath)
+    public static Task<Uri> BuildCompressedUri(string relativePath)
         => BuildUri(relativePath);
 
-    public static Uri HttpCookieScopeUri()
-        => new(BaseUrl);
+    public static async Task<Uri> HttpCookieScopeUri()
+        => new(await GetBaseUrl());
+
+    private static async Task<string> GetBaseUrl()
+    {
+        await EnsureInitialized();
+        Skip.If(skipReason is not null, skipReason);
+        return baseUrl!;
+    }
+
+    private static async Task EnsureInitialized()
+    {
+        if (baseUrl is not null || skipReason is not null)
+        {
+            return;
+        }
+
+        await SyncLock.WaitAsync();
+        try
+        {
+            if (baseUrl is not null || skipReason is not null)
+            {
+                return;
+            }
+
+            var configuredBaseUrl = Environment.GetEnvironmentVariable("OB2_HTTPBIN_BASE_URL");
+            if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
+            {
+                baseUrl = configuredBaseUrl;
+                return;
+            }
+
+            try
+            {
+                container = new ContainerBuilder(ContainerImage)
+                    .WithPortBinding(ContainerPort, true)
+                    .Build();
+
+                await container.StartAsync();
+
+                var mappedPort = container.GetMappedPublicPort(ContainerPort);
+                var candidateBaseUrl = $"http://127.0.0.1:{mappedPort}";
+                await WaitUntilReady(candidateBaseUrl);
+
+                baseUrl = candidateBaseUrl;
+                AppDomain.CurrentDomain.ProcessExit += DisposeContainerOnProcessExit;
+            }
+            catch (Exception ex)
+            {
+                await DisposeContainer();
+                skipReason = $"Docker is unavailable for {ContainerImage}: {ex.GetType().Name}";
+            }
+        }
+        finally
+        {
+            SyncLock.Release();
+        }
+    }
+
+    private static async Task WaitUntilReady(string candidateBaseUrl)
+    {
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            try
+            {
+                using var response = await httpClient.GetAsync($"{candidateBaseUrl}/anything");
+                if (response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+            }
+            catch
+            {
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+
+        throw new TimeoutException("Timed out waiting for the local httpbin container");
+    }
+
+    private static void DisposeContainerOnProcessExit(object? sender, EventArgs e)
+        => DisposeContainer().GetAwaiter().GetResult();
+
+    private static async Task DisposeContainer()
+    {
+        if (container is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await container.DisposeAsync();
+        }
+        finally
+        {
+            AppDomain.CurrentDomain.ProcessExit -= DisposeContainerOnProcessExit;
+            container = null;
+        }
+    }
 }

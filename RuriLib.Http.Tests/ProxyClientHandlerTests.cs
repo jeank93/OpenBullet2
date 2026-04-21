@@ -12,7 +12,7 @@ namespace RuriLib.Http.Tests;
 
 public class ProxyClientHandlerTests
 {
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Headers()
     {
         const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36";
@@ -20,7 +20,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("user-agent")
+            RequestUri = await TestHttpBin.BuildHttpUri("user-agent")
         };
 
         message.Headers.Add("User-Agent", userAgent);
@@ -32,7 +32,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(userAgent, userAgentActual);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Query()
     {
         const string key = "key";
@@ -41,7 +41,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri($"get?{key}={value}")
+            RequestUri = await TestHttpBin.BuildHttpUri($"get?{key}={value}")
         };
 
         var response = await RequestAsync(message);
@@ -52,7 +52,7 @@ public class ProxyClientHandlerTests
         Assert.True(actual.ContainsValue(value));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_UTF8()
     {
         const string expected = "∮";
@@ -60,7 +60,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("encoding/utf8")
+            RequestUri = await TestHttpBin.BuildHttpUri("encoding/utf8")
         };
 
 
@@ -70,7 +70,7 @@ public class ProxyClientHandlerTests
         Assert.Contains(expected, actual);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_HTML()
     {
         const long expectedLength = 3741;
@@ -80,7 +80,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("html")
+            RequestUri = await TestHttpBin.BuildHttpUri("html")
         };
 
         var response = await RequestAsync(message);
@@ -98,13 +98,13 @@ public class ProxyClientHandlerTests
         Assert.Equal(charSet, headers.ContentType.CharSet);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Delay()
     {
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("delay/4")
+            RequestUri = await TestHttpBin.BuildHttpUri("delay/4")
         };
 
         var response = await RequestAsync(message);
@@ -114,13 +114,13 @@ public class ProxyClientHandlerTests
         Assert.NotNull(source);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Stream()
     {
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("stream/20")
+            RequestUri = await TestHttpBin.BuildHttpUri("stream/20")
         };
 
         var response = await RequestAsync(message);
@@ -130,7 +130,7 @@ public class ProxyClientHandlerTests
         Assert.NotNull(source);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Gzip()
     {
         const string expected = "gzip, deflate";
@@ -138,7 +138,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri("gzip")
+            RequestUri = await TestHttpBin.BuildHttpUri("gzip")
         };
 
         message.Headers.TryAddWithoutValidation("Accept-Encoding", expected);
@@ -150,7 +150,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(expected, actual["Accept-Encoding"]);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Cookies()
     {
         const string name = "name";
@@ -159,7 +159,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri($"cookies/set?{name}={value}")
+            RequestUri = await TestHttpBin.BuildHttpUri($"cookies/set?{name}={value}")
         };
 
         var settings = new ProxySettings();
@@ -173,7 +173,7 @@ public class ProxyClientHandlerTests
         using var client = new HttpClient(proxyClientHandler);
         await client.SendAsync(message);
 
-        var cookies = cookieContainer.GetCookies(TestHttpBin.HttpCookieScopeUri());
+        var cookies = cookieContainer.GetCookies(await TestHttpBin.HttpCookieScopeUri());
 
         Assert.Single(cookies);
         var cookie = cookies[name];
@@ -182,7 +182,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(value, cookie.Value);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_StatusCode()
     {
         const string code = "404";
@@ -191,7 +191,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = TestHttpBin.BuildHttpUri($"status/{code}")
+            RequestUri = await TestHttpBin.BuildHttpUri($"status/{code}")
         };
 
         var response = await RequestAsync(message);
@@ -200,10 +200,10 @@ public class ProxyClientHandlerTests
         Assert.Equal(expected, response.StatusCode.ToString());
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_ExplicitHostHeader()
     {
-        var message = new HttpRequestMessage(HttpMethod.Get, TestHttpBin.BuildHttpUri("headers"));
+        var message = new HttpRequestMessage(HttpMethod.Get, await TestHttpBin.BuildHttpUri("headers"));
         message.Headers.Host = message.RequestUri!.Host;
 
         var response = await RequestAsync(message);

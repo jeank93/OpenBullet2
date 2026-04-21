@@ -3,7 +3,7 @@ using Xunit;
 
 namespace RuriLib.Tests.Utils;
 
-public sealed class WindowsFactAttribute : FactAttribute
+public sealed class WindowsFactAttribute : SkippableFactAttribute
 {
     public WindowsFactAttribute()
     {

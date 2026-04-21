@@ -13,7 +13,7 @@ namespace RuriLib.Http.Tests;
 
 public class RLHttpClientTests
 {
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Headers()
     {
         const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36";
@@ -21,7 +21,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("user-agent")
+            Uri = await TestHttpBin.BuildUri("user-agent")
         };
 
         message.Headers.Add("User-Agent", userAgent);
@@ -34,7 +34,7 @@ public class RLHttpClientTests
         Assert.Equal(userAgent, userAgentActual);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Query()
     {
         const string key = "key";
@@ -43,7 +43,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri($"get?{key}={value}")
+            Uri = await TestHttpBin.BuildUri($"get?{key}={value}")
         };
 
         var response = await RequestAsync(message);
@@ -54,7 +54,7 @@ public class RLHttpClientTests
         Assert.True(actual.ContainsValue(value));
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_UTF8()
     {
         const string expected = "∮";
@@ -62,7 +62,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("encoding/utf8")
+            Uri = await TestHttpBin.BuildUri("encoding/utf8")
         };
 
         var response = await RequestAsync(message);
@@ -72,7 +72,7 @@ public class RLHttpClientTests
         Assert.Contains(expected, actual);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_HTML()
     {
         const long expectedLength = 3741;
@@ -82,7 +82,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("html")
+            Uri = await TestHttpBin.BuildUri("html")
         };
 
         var response = await RequestAsync(message);
@@ -100,13 +100,13 @@ public class RLHttpClientTests
         Assert.Equal(charSet, headers.ContentType.CharSet);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Delay()
     {
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("delay/4")
+            Uri = await TestHttpBin.BuildUri("delay/4")
         };
 
         var response = await RequestAsync(message);
@@ -117,13 +117,13 @@ public class RLHttpClientTests
         Assert.NotNull(source);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Stream()
     {
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("stream/20")
+            Uri = await TestHttpBin.BuildUri("stream/20")
         };
 
         var response = await RequestAsync(message);
@@ -134,7 +134,7 @@ public class RLHttpClientTests
         Assert.NotNull(source);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Gzip()
     {
         const string expected = "gzip, deflate";
@@ -142,7 +142,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("gzip")
+            Uri = await TestHttpBin.BuildUri("gzip")
         };
 
         message.Headers["Accept-Encoding"] = expected;
@@ -154,7 +154,7 @@ public class RLHttpClientTests
         Assert.Equal(expected, actual["Accept-Encoding"]);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_Cookies()
     {
         const string name = "name";
@@ -165,7 +165,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri($"cookies/set?{name}={value}"),
+            Uri = await TestHttpBin.BuildUri($"cookies/set?{name}={value}"),
             Cookies = cookies
         };
 
@@ -179,7 +179,7 @@ public class RLHttpClientTests
         Assert.Equal(value, cookies[name]);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_StatusCode()
     {
         const string code = "404";
@@ -188,7 +188,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri($"status/{code}")
+            Uri = await TestHttpBin.BuildUri($"status/{code}")
         };
 
         var response = await RequestAsync(message);
@@ -197,13 +197,13 @@ public class RLHttpClientTests
         Assert.Equal(expected, response.StatusCode.ToString());
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Get_ExplicitHostHeader()
     {
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildUri("headers")
+            Uri = await TestHttpBin.BuildUri("headers")
         };
         message.Headers["Host"] = message.Uri.Host;
 
@@ -213,13 +213,13 @@ public class RLHttpClientTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_GZip_Decompress()
     {
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildCompressedUri("gzip")
+            Uri = await TestHttpBin.BuildCompressedUri("gzip")
         };
 
         var response = await RequestAsync(message);
@@ -228,13 +228,13 @@ public class RLHttpClientTests
         Assert.True(actual);
     }
 
-    [Fact]
+    [SkippableFact]
     public async Task SendAsync_Brotli_Decompress()
     {
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = TestHttpBin.BuildCompressedUri("brotli")
+            Uri = await TestHttpBin.BuildCompressedUri("brotli")
         };
 
         var response = await RequestAsync(message);

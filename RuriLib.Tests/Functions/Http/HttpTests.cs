@@ -35,13 +35,12 @@ public class HttpTests
         null,
         false);
 
-    private readonly string httpBin = TestHttpBin.BuildUrl("anything");
-
-    [Theory]
+    [SkippableTheory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestStandard_Get_Verify(HttpLibrary library)
     {
+        var httpBin = await TestHttpBin.BuildUrl("anything");
         var data = NewBotData();
 
         var cookies = new Dictionary<string, string>
@@ -78,11 +77,12 @@ public class HttpTests
         Assert.Equal(expectedUri.AbsolutePath, actualUri.AbsolutePath);
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestStandard_Post_Verify(HttpLibrary library)
     {
+        var httpBin = await TestHttpBin.BuildUrl("anything");
         var data = NewBotData();
 
         var options = new StandardHttpRequestOptions
@@ -103,11 +103,12 @@ public class HttpTests
         Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestRaw_Post_Verify(HttpLibrary library)
     {
+        var httpBin = await TestHttpBin.BuildUrl("anything");
         var data = NewBotData();
 
         var options = new RawHttpRequestOptions
@@ -128,11 +129,12 @@ public class HttpTests
         Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestBasicAuth_Normal_Verify(HttpLibrary library)
     {
+        var httpBin = await TestHttpBin.BuildUrl("anything");
         var data = NewBotData();
 
         var options = new BasicAuthHttpRequestOptions
@@ -153,11 +155,12 @@ public class HttpTests
             response.Headers["Authorization"]);
     }
 
-    [Theory]
+    [SkippableTheory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestMultipart_Post_Verify(HttpLibrary library)
     {
+        var httpBin = await TestHttpBin.BuildUrl("anything");
         var data = NewBotData();
 
         var tempFile = Path.GetTempFileName();

@@ -5,10 +5,15 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Jobs.Monitor.Actions;
 
+/// <summary>
+/// Base class for actions that target a <see cref="MultiRunJob"/>.
+/// </summary>
 public class MultiRunJobAction : Action
 {
+    /// <summary>Gets or sets the target job identifier.</summary>
     public int TargetJobId { get; set; }
 
+    /// <inheritdoc />
     public override Task Execute(int currentJobId, IEnumerable<Job> jobs)
     {
         var job = jobs.FirstOrDefault(j => j.Id == TargetJobId) as MultiRunJob;
@@ -21,14 +26,24 @@ public class MultiRunJobAction : Action
         return Execute(job);
     }
 
+    /// <summary>
+    /// Executes the action against a <see cref="MultiRunJob"/>.
+    /// </summary>
+    /// <param name="job">The target job.</param>
+    /// <returns>A task that completes when the action finishes.</returns>
     public virtual Task Execute(MultiRunJob job)
         => throw new NotImplementedException();
 }
 
+/// <summary>
+/// Changes the bot count of a target multi-run job.
+/// </summary>
 public class SetBotsAction : MultiRunJobAction
 {
+    /// <summary>Gets or sets the new bot count.</summary>
     public int Amount { get; set; }
 
+    /// <inheritdoc />
     public override Task Execute(MultiRunJob job)
     {
         if (Amount is > 0 and <= 200)
@@ -40,7 +55,11 @@ public class SetBotsAction : MultiRunJobAction
     }
 }
 
+/// <summary>
+/// Reloads the proxies of a target multi-run job.
+/// </summary>
 public class ReloadProxiesAction : MultiRunJobAction
 {
+    /// <inheritdoc />
     public override Task Execute(MultiRunJob job) => job.FetchProxiesFromSources();
 }

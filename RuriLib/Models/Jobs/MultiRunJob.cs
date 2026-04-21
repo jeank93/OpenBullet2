@@ -35,33 +35,59 @@ using RuriLib.Models.Variables;
 
 namespace RuriLib.Models.Jobs;
 
+/// <summary>
+/// Represents a multi-run job that executes a config against many data lines.
+/// </summary>
 public class MultiRunJob : Job
 {
         // Options
+        /// <summary>Gets or sets the number of worker bots.</summary>
         public int Bots { get; set; } = 1;
+        /// <summary>Gets the maximum allowed number of worker bots.</summary>
         public int BotLimit { get; init; } = 200;
+        /// <summary>Gets or sets the number of lines to skip before processing.</summary>
         public int Skip { get; set; }
+        /// <summary>Gets or sets the config to execute.</summary>
         public Config? Config { get; set; }
+        /// <summary>Gets or sets the data pool to consume.</summary>
         public DataPool? DataPool { get; set; }
+        /// <summary>Gets or sets the proxy sources used by the job.</summary>
         public List<ProxySource> ProxySources { get; set; } = [];
+        /// <summary>Gets or sets how proxies should be used.</summary>
         public JobProxyMode ProxyMode { get; set; } = JobProxyMode.Default;
+        /// <summary>Gets or sets a value indicating whether proxies should be shuffled after reload.</summary>
         public bool ShuffleProxies { get; set; } = true;
+        /// <summary>Gets or sets the behavior to apply when no valid proxy is available.</summary>
         public NoValidProxyBehaviour NoValidProxyBehaviour { get; set; } = NoValidProxyBehaviour.Reload;
+        /// <summary>Gets or sets the ban duration used when unbanning proxies.</summary>
         public TimeSpan ProxyBanTime { get; set; } = TimeSpan.Zero;
+        /// <summary>Gets or sets a value indicating whether aborted lines should be marked as to-check.</summary>
         public bool MarkAsToCheckOnAbort { get; set; }
+        /// <summary>Gets or sets a value indicating whether proxies should never be banned.</summary>
         public bool NeverBanProxies { get; set; }
+        /// <summary>Gets or sets a value indicating whether busy proxies may be reused concurrently.</summary>
         public bool ConcurrentProxyMode { get; set; }
+        /// <summary>Gets or sets the periodic proxy reload interval.</summary>
         public TimeSpan PeriodicReloadInterval { get; set; } = TimeSpan.Zero;
+        /// <summary>Gets or sets the hit outputs used to persist results.</summary>
         public List<IHitOutput> HitOutputs { get; set; } = [];
+        /// <summary>Gets or sets the runtime providers used by worker bots.</summary>
         public Bots.Providers? Providers { get; set; }
+        /// <summary>Gets or sets the timer tick interval.</summary>
         public TimeSpan TickInterval = TimeSpan.FromSeconds(1);
+        /// <summary>Gets or sets the answers for configured custom inputs.</summary>
         public Dictionary<string, string> CustomInputsAnswers { get; set; } = [];
+        /// <summary>Gets or sets the current bot snapshots.</summary>
         public BotData[] CurrentBotDatas { get; set; } = [];
 
         // Getters
+        /// <inheritdoc />
         public override float Progress => parallelizer?.Progress ?? -1;
+        /// <inheritdoc />
         public override TimeSpan Elapsed => parallelizer?.Elapsed ?? TimeSpan.Zero;
+        /// <inheritdoc />
         public override TimeSpan Remaining => parallelizer?.Remaining ?? Timeout.InfiniteTimeSpan;
+        /// <summary>Gets the current checks per minute.</summary>
         public int CPM => parallelizer?.CPM ?? 0;
 
         // Private fields
@@ -79,17 +105,27 @@ public class MultiRunJob : Job
         private CancellationTokenSource? startCts;
 
         // Instance properties and stats
+        /// <summary>Gets the hits collected during the current run.</summary>
         public List<Hit> Hits { get; private set; } = [];
 
         // Events
+        /// <summary>Raised when a worker task fails.</summary>
         public event EventHandler<ErrorDetails<MultiRunInput>>? OnTaskError;
+        /// <summary>Raised when a worker result is produced.</summary>
         public event EventHandler<ResultDetails<MultiRunInput, CheckResult>>? OnResult;
+        /// <summary>Raised when the job encounters an error.</summary>
         public event EventHandler<Exception>? OnError;
+        /// <summary>Raised when progress changes.</summary>
         public event EventHandler<float>? OnProgress;
+        /// <summary>Raised when the job status changes.</summary>
         public event EventHandler<JobStatus>? OnStatusChanged;
+        /// <summary>Raised when the bot count changes.</summary>
         public event EventHandler? OnBotsChanged;
+        /// <summary>Raised when the job completes.</summary>
         public event EventHandler? OnCompleted;
+        /// <summary>Raised on each timer tick.</summary>
         public event EventHandler? OnTimerTick;
+        /// <summary>Raised when a hit is registered.</summary>
         public event EventHandler<Hit>? OnHit;
 
         /*********
@@ -98,42 +134,62 @@ public class MultiRunJob : Job
 
         // -- Data
         private int dataTested;
+        /// <summary>Gets the number of processed data lines.</summary>
         public int DataTested => dataTested;
 
         private int dataHits;
+        /// <summary>Gets the number of successful lines.</summary>
         public int DataHits => dataHits;
 
         private int dataCustom;
+        /// <summary>Gets the number of custom-status lines.</summary>
         public int DataCustom => dataCustom;
 
         private int dataFails;
+        /// <summary>Gets the number of failed lines.</summary>
         public int DataFails => dataFails;
 
         private int dataRetried;
+        /// <summary>Gets the number of retried lines.</summary>
         public int DataRetried => dataRetried;
 
         private int dataBanned;
+        /// <summary>Gets the number of banned lines.</summary>
         public int DataBanned => dataBanned;
 
         private int dataToCheck;
+        /// <summary>Gets the number of lines marked as to-check.</summary>
         public int DataToCheck => dataToCheck;
 
         private int dataInvalid;
+        /// <summary>Gets the number of invalid lines.</summary>
         public int DataInvalid => dataInvalid;
 
         private int dataErrors;
+        /// <summary>Gets the number of errored lines.</summary>
         public int DataErrors => dataErrors;
 
         // -- Proxies
+        /// <summary>Gets the total number of proxies in the pool.</summary>
         public int ProxiesTotal => proxyPool == null ? 0 : proxyPool.Proxies.Count();
+        /// <summary>Gets the number of available or busy proxies.</summary>
         public int ProxiesAlive => proxyPool == null ? 0 : proxyPool.Proxies
             .Count(p => p.ProxyStatus == ProxyStatus.Available || p.ProxyStatus == ProxyStatus.Busy);
+        /// <summary>Gets the number of banned proxies.</summary>
         public int ProxiesBanned => proxyPool == null ? 0 : proxyPool.Proxies.Count(p => p.ProxyStatus == ProxyStatus.Banned);
+        /// <summary>Gets the number of bad proxies.</summary>
         public int ProxiesBad => proxyPool == null ? 0 : proxyPool.Proxies.Count(p => p.ProxyStatus == ProxyStatus.Bad);
 
         // -- Misc
+        /// <summary>Gets the latest available captcha credit.</summary>
         public decimal CaptchaCredit { get; private set; }
 
+        /// <summary>
+        /// Creates a multi-run job.
+        /// </summary>
+        /// <param name="settings">The RuriLib settings service.</param>
+        /// <param name="pluginRepo">The plugin repository.</param>
+        /// <param name="logger">The optional job logger.</param>
         public MultiRunJob(RuriLibSettingsService settings, PluginRepository pluginRepo, IJobLogger? logger = null)
             : base(settings, pluginRepo, logger)
         {
@@ -471,6 +527,7 @@ public class MultiRunJob : Job
         #endregion
 
         #region Controls
+        /// <inheritdoc />
         public override async Task Start(CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -719,6 +776,7 @@ public class MultiRunJob : Job
             }
         }
 
+        /// <inheritdoc />
         public override async Task Stop()
         {
             try
@@ -741,6 +799,7 @@ public class MultiRunJob : Job
             }
         }
 
+        /// <inheritdoc />
         public override async Task Abort()
         {
             try
@@ -768,6 +827,7 @@ public class MultiRunJob : Job
             }
         }
 
+        /// <inheritdoc />
         public override async Task Pause()
         {
             try
@@ -789,6 +849,7 @@ public class MultiRunJob : Job
             }
         }
 
+        /// <inheritdoc />
         public override async Task Resume()
         {
             try
@@ -810,6 +871,11 @@ public class MultiRunJob : Job
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Reloads proxies from the configured sources.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that completes when the reload finishes.</returns>
         public async Task FetchProxiesFromSources(CancellationToken cancellationToken = default)
         {
             var locker = asyncLocker ?? throw new InvalidOperationException("The job has not been initialized yet");
@@ -830,6 +896,11 @@ public class MultiRunJob : Job
         #endregion
 
         #region Wrappers for Parallelizer methods
+        /// <summary>
+        /// Changes the number of worker bots used by the job.
+        /// </summary>
+        /// <param name="amount">The new worker count.</param>
+        /// <returns>A task that completes when the change has been applied.</returns>
         public async Task ChangeBots(int amount)
         {
             if (parallelizer is not null)
@@ -1042,6 +1113,10 @@ public class MultiRunJob : Job
             _ => throw new NotImplementedException()
         };
         
+        /// <summary>
+        /// Determines whether the current config should use proxies.
+        /// </summary>
+        /// <returns><see langword="true"/> if proxies should be used.</returns>
         public bool ShouldUseProxies()
         {
             var proxySettings = this.Config?.Settings.ProxySettings;
@@ -1113,25 +1188,46 @@ public class MultiRunJob : Job
         #endregion
 }
 
+/// <summary>
+/// Represents the input payload processed by a multi-run worker.
+/// </summary>
 public struct MultiRunInput
 {
+    /// <summary>Gets or sets the owning job.</summary>
     public MultiRunJob Job { get; set; }
+    /// <summary>Gets or sets the bot data instance.</summary>
     public BotData BotData { get; set; }
+    /// <summary>Gets or sets the globals object exposed to scripts.</summary>
     public dynamic Globals { get; set; }
+    /// <summary>Gets or sets the proxy pool.</summary>
     public ProxyPool? ProxyPool { get; set; }
+    /// <summary>Gets or sets the compiled script.</summary>
     public Script? Script { get; set; }
+    /// <summary>Gets or sets a value indicating whether the config is a DLL.</summary>
     public bool IsDLL { get; set; }
+    /// <summary>Gets or sets a value indicating whether the config uses the legacy engine.</summary>
     public bool IsLegacy { get; set; }
+    /// <summary>Gets or sets the legacy LoliScript payload.</summary>
     public string? LegacyLoliScript { get; set; }
+    /// <summary>Gets or sets the legacy global variables.</summary>
     public VariablesList? LegacyGlobals { get; set; }
+    /// <summary>Gets or sets the legacy global cookies.</summary>
     public Dictionary<string, string>? LegacyGlobalCookies { get; set; }
+    /// <summary>Gets or sets the DLL entry method.</summary>
     public MethodInfo? DLLMethod { get; set; }
+    /// <summary>Gets or sets the custom input answers.</summary>
     public Dictionary<string, string>? CustomInputsAnswers { get; set; }
+    /// <summary>Gets or sets the worker index.</summary>
     public long Index { get; set; }
 }
 
+/// <summary>
+/// Represents the result produced by a multi-run worker.
+/// </summary>
 public struct CheckResult
 {
+    /// <summary>Gets or sets the resulting bot data.</summary>
     public BotData BotData { get; set; }
+    /// <summary>Gets or sets the captured output variables.</summary>
     public Dictionary<string, object> OutputVariables { get; set; }
 }

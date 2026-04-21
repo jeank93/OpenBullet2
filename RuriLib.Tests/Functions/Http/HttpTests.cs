@@ -35,7 +35,7 @@ public class HttpTests
         null,
         false);
 
-    private readonly string httpBin = "https://httpbin.org/anything";
+    private readonly string httpBin = TestHttpBin.BuildUrl("anything");
 
     [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
@@ -67,11 +67,15 @@ public class HttpTests
         await Methods.HttpRequestStandard(data, options);
 
         var response = DeserializeHttpBinResponse(data.SOURCE);
+        var expectedUri = new Uri(httpBin);
+        var actualUri = new Uri(response.Url);
         Assert.Equal("value", response.Headers["Custom"]);
-        Assert.Equal("httpbin.org", response.Headers["Host"]);
+        Assert.True(response.Headers["Host"] == expectedUri.Host || response.Headers["Host"] == expectedUri.Authority);
         Assert.Equal("name1=value1; name2=value2", response.Headers["Cookie"]);
         Assert.Equal("GET", response.Method);
-        Assert.Equal(httpBin, response.Url);
+        Assert.Equal(expectedUri.Scheme, actualUri.Scheme);
+        Assert.Equal(expectedUri.Host, actualUri.Host);
+        Assert.Equal(expectedUri.AbsolutePath, actualUri.AbsolutePath);
     }
 
     [Theory]

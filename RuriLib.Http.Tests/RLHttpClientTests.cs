@@ -21,7 +21,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/user-agent")
+            Uri = TestHttpBin.BuildUri("user-agent")
         };
 
         message.Headers.Add("User-Agent", userAgent);
@@ -43,7 +43,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri($"https://httpbin.org/get?{key}={value}")
+            Uri = TestHttpBin.BuildUri($"get?{key}={value}")
         };
 
         var response = await RequestAsync(message);
@@ -62,7 +62,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/encoding/utf8")
+            Uri = TestHttpBin.BuildUri("encoding/utf8")
         };
 
         var response = await RequestAsync(message);
@@ -82,7 +82,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/html")
+            Uri = TestHttpBin.BuildUri("html")
         };
 
         var response = await RequestAsync(message);
@@ -106,7 +106,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/delay/4")
+            Uri = TestHttpBin.BuildUri("delay/4")
         };
 
         var response = await RequestAsync(message);
@@ -123,7 +123,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/stream/20")
+            Uri = TestHttpBin.BuildUri("stream/20")
         };
 
         var response = await RequestAsync(message);
@@ -142,7 +142,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/gzip")
+            Uri = TestHttpBin.BuildUri("gzip")
         };
 
         message.Headers["Accept-Encoding"] = expected;
@@ -165,7 +165,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri($"https://httpbin.org/cookies/set?{name}={value}"),
+            Uri = TestHttpBin.BuildUri($"cookies/set?{name}={value}"),
             Cookies = cookies
         };
 
@@ -188,7 +188,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri($"https://httpbin.org/status/{code}")
+            Uri = TestHttpBin.BuildUri($"status/{code}")
         };
 
         var response = await RequestAsync(message);
@@ -203,7 +203,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://httpbin.org/headers")
+            Uri = TestHttpBin.BuildUri("headers")
         };
         message.Headers["Host"] = message.Uri.Host;
 
@@ -219,7 +219,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://nghttp2.org/httpbin/gzip")
+            Uri = TestHttpBin.BuildCompressedUri("gzip")
         };
 
         var response = await RequestAsync(message);
@@ -234,7 +234,7 @@ public class RLHttpClientTests
         var message = new HttpRequest
         {
             Method = HttpMethod.Get,
-            Uri = new Uri("https://nghttp2.org/httpbin/brotli")
+            Uri = TestHttpBin.BuildCompressedUri("brotli")
         };
 
         var response = await RequestAsync(message);

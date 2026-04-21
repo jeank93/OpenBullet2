@@ -20,7 +20,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/user-agent")
+            RequestUri = TestHttpBin.BuildHttpUri("user-agent")
         };
 
         message.Headers.Add("User-Agent", userAgent);
@@ -41,7 +41,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri($"http://httpbin.org/get?{key}={value}")
+            RequestUri = TestHttpBin.BuildHttpUri($"get?{key}={value}")
         };
 
         var response = await RequestAsync(message);
@@ -60,7 +60,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/encoding/utf8")
+            RequestUri = TestHttpBin.BuildHttpUri("encoding/utf8")
         };
 
 
@@ -80,7 +80,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/html")
+            RequestUri = TestHttpBin.BuildHttpUri("html")
         };
 
         var response = await RequestAsync(message);
@@ -104,7 +104,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/delay/4")
+            RequestUri = TestHttpBin.BuildHttpUri("delay/4")
         };
 
         var response = await RequestAsync(message);
@@ -120,7 +120,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/stream/20")
+            RequestUri = TestHttpBin.BuildHttpUri("stream/20")
         };
 
         var response = await RequestAsync(message);
@@ -138,7 +138,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("http://httpbin.org/gzip")
+            RequestUri = TestHttpBin.BuildHttpUri("gzip")
         };
 
         message.Headers.TryAddWithoutValidation("Accept-Encoding", expected);
@@ -159,7 +159,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri($"http://httpbin.org/cookies/set?{name}={value}")
+            RequestUri = TestHttpBin.BuildHttpUri($"cookies/set?{name}={value}")
         };
 
         var settings = new ProxySettings();
@@ -173,7 +173,7 @@ public class ProxyClientHandlerTests
         using var client = new HttpClient(proxyClientHandler);
         await client.SendAsync(message);
 
-        var cookies = cookieContainer.GetCookies(new Uri("http://httpbin.org/"));
+        var cookies = cookieContainer.GetCookies(TestHttpBin.HttpCookieScopeUri());
 
         Assert.Single(cookies);
         var cookie = cookies[name];
@@ -191,7 +191,7 @@ public class ProxyClientHandlerTests
         var message = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri($"http://httpbin.org/status/{code}")
+            RequestUri = TestHttpBin.BuildHttpUri($"status/{code}")
         };
 
         var response = await RequestAsync(message);
@@ -203,7 +203,7 @@ public class ProxyClientHandlerTests
     [Fact]
     public async Task SendAsync_Get_ExplicitHostHeader()
     {
-        var message = new HttpRequestMessage(HttpMethod.Get, "https://httpbin.org/headers");
+        var message = new HttpRequestMessage(HttpMethod.Get, TestHttpBin.BuildHttpUri("headers"));
         message.Headers.Host = message.RequestUri!.Host;
 
         var response = await RequestAsync(message);

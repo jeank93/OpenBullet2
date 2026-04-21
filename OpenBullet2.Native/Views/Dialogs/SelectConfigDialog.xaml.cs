@@ -66,11 +66,9 @@ public partial class SelectConfigDialog : Page
 
     private void ItemHovered(object sender, SelectionChangedEventArgs e)
     {
-        var items = e.AddedItems as IList<object>;
-
-        if (items?.Count == 1)
+        if (e.AddedItems.Count == 1)
         {
-            vm.HoveredConfig = items[0] as ConfigViewModel;
+            vm.HoveredConfig = e.AddedItems[0] as ConfigViewModel;
         }
     }
 
@@ -107,20 +105,20 @@ public partial class SelectConfigDialog : Page
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             configsListView.Items.SortDescriptions.Clear();
         }
 
         ListViewSortDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == ListViewSortDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == ListViewSortDir)
         {
             ListViewSortDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, ListViewSortDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         configsListView.Items.SortDescriptions.Add(new SortDescription(ListViewSortBy, ListViewSortDir));
     }
 
@@ -151,10 +149,7 @@ public class SelectConfigDialogViewModel : ViewModelBase
         {
             searchString = value;
 
-            if (configsViewModel is not null)
-            {
-                configsViewModel.SearchString = value;
-            }
+            configsViewModel.SearchString = value;
 
             OnPropertyChanged();
             CollectionViewSource.GetDefaultView(ConfigsCollection).Refresh();

@@ -52,7 +52,12 @@ public partial class MultiRunJobOptionsDialog : Page
     private void AddRemoteProxySource(object sender, RoutedEventArgs e) => vm.AddRemoteProxySource();
 
     private void RemoveProxySource(object sender, RoutedEventArgs e)
-        => vm.RemoveProxySource((ProxySourceOptionsViewModel)(sender as Button).Tag);
+    {
+        if (sender is Button { Tag: ProxySourceOptionsViewModel proxySource })
+        {
+            vm.RemoveProxySource(proxySource);
+        }
+    }
 
     private void AddDatabaseHitOutput(object sender, RoutedEventArgs e) => vm.AddDatabaseHitOutput();
     private void AddFileSystemHitOutput(object sender, RoutedEventArgs e) => vm.AddFileSystemHitOutput();
@@ -61,7 +66,12 @@ public partial class MultiRunJobOptionsDialog : Page
     private void AddCustomWebhookHitOutput(object sender, RoutedEventArgs e) => vm.AddCustomWebhookHitOutput();
 
     private void RemoveHitOutput(object sender, RoutedEventArgs e)
-        => vm.RemoveHitOutput((HitOutputOptions)(sender as Button).Tag);
+    {
+        if (sender is Button { Tag: HitOutputOptions hitOutput })
+        {
+            vm.RemoveHitOutput(hitOutput);
+        }
+    }
 
     public async void SelectConfig(ConfigViewModel config)
     {
@@ -71,7 +81,11 @@ public partial class MultiRunJobOptionsDialog : Page
 
     public async void SelectWordlist(WordlistEntity entity)
     {
-        (vm.DataPoolOptions as WordlistDataPoolOptionsViewModel).SelectWordlist(entity);
+        if (vm.DataPoolOptions is WordlistDataPoolOptionsViewModel wordlistOptions)
+        {
+            wordlistOptions.SelectWordlist(entity);
+        }
+
         await vm.TrySetRecordAsync();
     }
 
@@ -94,7 +108,7 @@ public partial class MultiRunJobOptionsDialog : Page
             return;
         }
 
-        if (vm.SelectedConfig.HasCSharpCode())
+        if (vm.SelectedConfig is not null && vm.SelectedConfig.HasCSharpCode())
         {
             Alert.Warning("Potentially dangerous config", "The Config you selected might have some C# code in it" +
                 " (or blocks that call external programs). Although C# can be helpful for config makers who want to" +
@@ -116,7 +130,11 @@ public partial class MultiRunJobOptionsDialog : Page
         };
 
         ofd.ShowDialog();
-        ((FileProxySourceOptionsViewModel)(sender as Button).Tag).FileName = ofd.FileName;
+
+        if (sender is Button { Tag: FileProxySourceOptionsViewModel fileProxySource })
+        {
+            fileProxySource.FileName = ofd.FileName;
+        }
     }
 
     private void SelectFileForDataPool(object sender, RoutedEventArgs e)
@@ -128,7 +146,11 @@ public partial class MultiRunJobOptionsDialog : Page
         };
 
         ofd.ShowDialog();
-        (vm.DataPoolOptions as FileDataPoolOptionsViewModel).FileName = ofd.FileName;
+
+        if (vm.DataPoolOptions is FileDataPoolOptionsViewModel fileDataPoolOptions)
+        {
+            fileDataPoolOptions.FileName = ofd.FileName;
+        }
     }
 }
 
@@ -262,12 +284,14 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     private void SetConfigData()
     {
         SelectedConfig = configService.Configs.FirstOrDefault(c => c.Id == Options.ConfigId);
+        ConfigIcon = null;
+        ConfigNameAndAuthor = string.Empty;
+        OnPropertyChanged(nameof(IsConfigSelected));
 
         if (SelectedConfig is not null)
         {
             ConfigIcon = Images.Base64ToBitmapImage(SelectedConfig.Metadata.Base64Image);
             ConfigNameAndAuthor = $"{SelectedConfig.Metadata.Name} by {SelectedConfig.Metadata.Author}";
-            OnPropertyChanged(nameof(IsConfigSelected));
         }
     }
 
@@ -527,7 +551,7 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     #endregion
 
     #region Data Pool
-    private DataPoolOptionsViewModel dataPoolOptions = null!;
+    private DataPoolOptionsViewModel dataPoolOptions = new FileDataPoolOptionsViewModel(new FileDataPoolOptions());
     public DataPoolOptionsViewModel DataPoolOptions
     {
         get => dataPoolOptions;
@@ -669,7 +693,7 @@ public class FileDataPoolOptionsViewModel(FileDataPoolOptions options) : DataPoo
 
     public string FileName
     {
-        get => FileOptions.FileName;
+        get => FileOptions.FileName ?? string.Empty;
         set
         {
             FileOptions.FileName = value;
@@ -679,7 +703,7 @@ public class FileDataPoolOptionsViewModel(FileDataPoolOptions options) : DataPoo
 
     public string WordlistType
     {
-        get => FileOptions.WordlistType;
+        get => FileOptions.WordlistType ?? string.Empty;
         set
         {
             FileOptions.WordlistType = value;
@@ -690,7 +714,7 @@ public class FileDataPoolOptionsViewModel(FileDataPoolOptions options) : DataPoo
 
 public class RangeDataPoolOptionsViewModel(RangeDataPoolOptions options) : DataPoolOptionsViewModel(options)
 {
-    private RangeDataPoolOptions RangeOptions => Options as RangeDataPoolOptions;
+    private RangeDataPoolOptions RangeOptions => (RangeDataPoolOptions)Options;
 
     public long Start
     {
@@ -734,7 +758,7 @@ public class RangeDataPoolOptionsViewModel(RangeDataPoolOptions options) : DataP
 
     public string WordlistType
     {
-        get => RangeOptions.WordlistType;
+        get => RangeOptions.WordlistType ?? string.Empty;
         set
         {
             RangeOptions.WordlistType = value;
@@ -745,11 +769,11 @@ public class RangeDataPoolOptionsViewModel(RangeDataPoolOptions options) : DataP
 
 public class CombinationsDataPoolOptionsViewModel(CombinationsDataPoolOptions options) : DataPoolOptionsViewModel(options)
 {
-    private CombinationsDataPoolOptions CombinationsOptions => Options as CombinationsDataPoolOptions;
+    private CombinationsDataPoolOptions CombinationsOptions => (CombinationsDataPoolOptions)Options;
 
     public string CharSet
     {
-        get => CombinationsOptions.CharSet;
+        get => CombinationsOptions.CharSet ?? string.Empty;
         set
         {
             CombinationsOptions.CharSet = value;
@@ -771,7 +795,7 @@ public class CombinationsDataPoolOptionsViewModel(CombinationsDataPoolOptions op
 
     public string WordlistType
     {
-        get => CombinationsOptions.WordlistType;
+        get => CombinationsOptions.WordlistType ?? string.Empty;
         set
         {
             CombinationsOptions.WordlistType = value;
@@ -784,11 +808,11 @@ public class CombinationsDataPoolOptionsViewModel(CombinationsDataPoolOptions op
 
 public class InfiniteDataPoolOptionsViewModel(InfiniteDataPoolOptions options) : DataPoolOptionsViewModel(options)
 {
-    private InfiniteDataPoolOptions InfiniteOptions => Options as InfiniteDataPoolOptions;
+    private InfiniteDataPoolOptions InfiniteOptions => (InfiniteDataPoolOptions)Options;
 
     public string WordlistType
     {
-        get => InfiniteOptions.WordlistType;
+        get => InfiniteOptions.WordlistType ?? string.Empty;
         set
         {
             InfiniteOptions.WordlistType = value;
@@ -807,13 +831,15 @@ public class ProxySourceOptionsViewModel(ProxySourceOptions options) : ViewModel
 public class GroupProxySourceOptionsViewModel(GroupProxySourceOptions options,
     IEnumerable<ProxyGroupEntity> proxyGroups) : ProxySourceOptionsViewModel(options)
 {
-    private GroupProxySourceOptions GroupOptions => Options as GroupProxySourceOptions;
+    private GroupProxySourceOptions GroupOptions => (GroupProxySourceOptions)Options;
 
     private readonly IEnumerable<ProxyGroupEntity> proxyGroups = proxyGroups;
 
     public string GroupName
     {
-        get => GroupOptions.GroupId == -1 ? "All" : proxyGroups.First(g => g.Id == GroupOptions.GroupId).Name;
+        get => GroupOptions.GroupId == -1
+            ? "All"
+            : proxyGroups.First(g => g.Id == GroupOptions.GroupId).Name ?? string.Empty;
         set
         {
             GroupOptions.GroupId = value == "All" ? -1 : proxyGroups.First(g => g.Name == value).Id;
@@ -824,11 +850,11 @@ public class GroupProxySourceOptionsViewModel(GroupProxySourceOptions options,
 
 public class FileProxySourceOptionsViewModel(FileProxySourceOptions options) : ProxySourceOptionsViewModel(options)
 {
-    private FileProxySourceOptions FileOptions => Options as FileProxySourceOptions;
+    private FileProxySourceOptions FileOptions => (FileProxySourceOptions)Options;
 
     public string FileName
     {
-        get => FileOptions.FileName;
+        get => FileOptions.FileName ?? string.Empty;
         set
         {
             FileOptions.FileName = value;
@@ -849,11 +875,11 @@ public class FileProxySourceOptionsViewModel(FileProxySourceOptions options) : P
 
 public class RemoteProxySourceOptionsViewModel(RemoteProxySourceOptions options) : ProxySourceOptionsViewModel(options)
 {
-    private RemoteProxySourceOptions RemoteOptions => Options as RemoteProxySourceOptions;
+    private RemoteProxySourceOptions RemoteOptions => (RemoteProxySourceOptions)Options;
 
     public string Url
     {
-        get => RemoteOptions.Url;
+        get => RemoteOptions.Url ?? string.Empty;
         set
         {
             RemoteOptions.Url = value;

@@ -110,7 +110,7 @@ public class WordlistsViewModel : ViewModelBase
         {
             var wordlist = WordlistsCollection[i];
 
-            if (!File.Exists(wordlist.FileName))
+            if (string.IsNullOrEmpty(wordlist.FileName) || !File.Exists(wordlist.FileName))
             {
                 await DeleteAsync(wordlist);
                 deleted++;

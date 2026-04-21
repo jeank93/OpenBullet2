@@ -72,6 +72,7 @@ public class ProxiesViewModel : ViewModelBase
             allGroup
         ];
         ProxiesCollection = [];
+        selectedGroup = allGroup;
         SelectedGroupId = allGroup.Id;
     }
 

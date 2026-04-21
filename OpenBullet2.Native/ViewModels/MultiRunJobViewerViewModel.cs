@@ -40,7 +40,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     public event Action<object, string, Color>? NewMessage;
 
     public MultiRunJobViewModel Job { get; set; }
-    private MultiRunJob MultiRunJob => Job.Job as MultiRunJob;
+    private MultiRunJob MultiRunJob => (MultiRunJob)Job.Job;
 
     #region Properties that don't need to be updated during the run
     private BitmapImage? configIcon;
@@ -68,7 +68,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     public string DataPoolInfo => MultiRunJob.DataPool switch
     {
         WordlistDataPool w => $"Wordlist ({w.Wordlist.Name})",
-        FileDataPool f => $"File ({f.FileName})",
+        FileDataPool f => $"File ({f.FileName ?? string.Empty})",
         InfiniteDataPool => "Infinite",
         RangeDataPool r => $"Range (start: {r.Start}, amount: {r.Amount}, step: {r.Step}, pad: {r.Pad})",
         CombinationsDataPool c => $"Combinations (charset: {c.CharSet}, length: {c.Length})",
@@ -98,7 +98,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     }
 
     public string CustomInputsInfo => string.Join(", ", MultiRunJob.CustomInputsAnswers.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
-    public bool HasCustomInputs => MultiRunJob.Config != null && MultiRunJob.Config.Settings.InputSettings.CustomInputs.Any();
+    public bool HasCustomInputs => MultiRunJob.Config?.Settings.InputSettings.CustomInputs.Any() == true;
 
     public bool EnableJobLog => obSettingsService.Settings.GeneralSettings.EnableJobLogging;
     #endregion
@@ -191,8 +191,8 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
             var info = MultiRunJob.ProxySources[i] switch
             {
                 GroupProxySource g => $"Group ({GetProxyGroupName(g.GroupId)})",
-                FileProxySource f => $"File ({f.FileName})",
-                RemoteProxySource r => $"Remote ({r.Url})",
+                FileProxySource f => $"File ({f.FileName ?? string.Empty})",
+                RemoteProxySource r => $"Remote ({r.Url ?? string.Empty})",
                 _ => throw new NotImplementedException()
             };
 
@@ -212,10 +212,10 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
             var info = MultiRunJob.HitOutputs[i] switch
             {
                 DatabaseHitOutput => "Database",
-                FileSystemHitOutput fs => $"File System ({fs.BaseDir})",
-                DiscordWebhookHitOutput d => $"Discord ({d.Webhook.TruncatePretty(70)})",
-                TelegramBotHitOutput t => $"Telegram ({t.Token.Split(':')[0]})",
-                CustomWebhookHitOutput c => $"Custom Webhook ({c.Url.TruncatePretty(70)})",
+                FileSystemHitOutput fs => $"File System ({fs.BaseDir ?? string.Empty})",
+                DiscordWebhookHitOutput d => $"Discord ({(d.Webhook ?? string.Empty).TruncatePretty(70)})",
+                TelegramBotHitOutput t => $"Telegram ({(t.Token ?? string.Empty).Split(':')[0]})",
+                CustomWebhookHitOutput c => $"Custom Webhook ({(c.Url ?? string.Empty).TruncatePretty(70)})",
                 _ => throw new NotImplementedException()
             };
 
@@ -319,7 +319,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
         if ((HitsFilter == HitsFilter.Hits && hit.Type == "SUCCESS") || (HitsFilter == HitsFilter.ToCheck && hit.Type == "NONE")
             || (HitsFilter == HitsFilter.Custom && hit.Type != "SUCCESS" && hit.Type != "NONE"))
         {
-            Application.Current.Dispatcher.Invoke(() => HitsCollection?.Add(new HitViewModel(hit)));
+            Application.Current.Dispatcher.Invoke(() => HitsCollection.Add(new HitViewModel(hit)));
         }
     }
 
@@ -425,7 +425,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     {
         if (MultiRunJob.Status is JobStatus.Starting or JobStatus.Waiting)
         {
-            startCTS.Cancel();
+            startCTS?.Cancel();
             return;
         }
 
@@ -449,6 +449,11 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     #region Utils
     private void AskCustomInputs()
     {
+        if (MultiRunJob.Config is null)
+        {
+            return;
+        }
+
         MultiRunJob.CustomInputsAnswers.Clear();
 
         foreach (var input in MultiRunJob.Config.Settings.InputSettings.CustomInputs)
@@ -466,7 +471,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
                 return "All";
             }
 
-            return proxyGroups.First(g => g.Id == id).Name;
+            return proxyGroups.First(g => g.Id == id).Name ?? "Invalid";
         }
         catch
         {
@@ -507,12 +512,12 @@ public class BotViewModel(int index, BotData[] datas) : ViewModelBase
     private readonly int index = index;
     private readonly BotData[] datas = datas;
 
-    private BotData BotData => datas.Length > index ? datas[index] : null;
+    private BotData? BotData => datas.Length > index ? datas[index] : null;
 
     public int Id => index + 1;
-    public string Data => BotData?.Line?.Data;
-    public string Proxy => BotData?.Proxy?.ToString();
-    public string Info => BotData?.ExecutionInfo;
+    public string Data => BotData?.Line?.Data ?? string.Empty;
+    public string Proxy => BotData?.Proxy?.ToString() ?? string.Empty;
+    public string Info => BotData?.ExecutionInfo ?? string.Empty;
 
     public override void UpdateViewModel()
     {
@@ -528,7 +533,7 @@ public class HitViewModel(Hit hit) : ViewModelBase
 
     public DateTime Time => Hit.Date;
     public string Data => Hit.Data.Data;
-    public string Proxy => Hit.Proxy?.ToString();
+    public string Proxy => Hit.Proxy?.ToString() ?? string.Empty;
     public string Type => Hit.Type;
     public string Capture => Hit.CapturedDataString;
 }

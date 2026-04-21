@@ -18,6 +18,8 @@ public partial class ProxyCheckJobViewer : Page
 {
     private readonly OpenBulletSettingsService obSettingsService;
     private ProxyCheckJobViewerViewModel? vm;
+    private ProxyCheckJobViewerViewModel ViewModel => vm
+        ?? throw new InvalidOperationException("The job viewer has not been bound yet");
 
     public ProxyCheckJobViewer()
     {
@@ -52,7 +54,7 @@ public partial class ProxyCheckJobViewer : Page
         {
             Application.Current.Dispatcher.Invoke(() => jobLog.Clear());
             jobLog.BufferSize = obSettingsService.Settings.GeneralSettings.LogBufferSize;
-            await vm.Start();
+            await ViewModel.Start();
         }
         catch (Exception ex)
         {
@@ -64,7 +66,7 @@ public partial class ProxyCheckJobViewer : Page
     {
         try
         {
-            await vm.Stop();
+            await ViewModel.Stop();
         }
         catch (Exception ex)
         {
@@ -76,7 +78,7 @@ public partial class ProxyCheckJobViewer : Page
     {
         try
         {
-            await vm.Pause();
+            await ViewModel.Pause();
         }
         catch (Exception ex)
         {
@@ -88,7 +90,7 @@ public partial class ProxyCheckJobViewer : Page
     {
         try
         {
-            await vm.Resume();
+            await ViewModel.Resume();
         }
         catch (Exception ex)
         {
@@ -100,7 +102,7 @@ public partial class ProxyCheckJobViewer : Page
     {
         try
         {
-            await vm.Abort();
+            await ViewModel.Abort();
         }
         catch (Exception ex)
         {
@@ -112,7 +114,7 @@ public partial class ProxyCheckJobViewer : Page
     {
         try
         {
-            vm.SkipWait();
+            ViewModel.SkipWait();
         }
         catch (Exception ex)
         {
@@ -121,13 +123,13 @@ public partial class ProxyCheckJobViewer : Page
     }
 
     private void ChangeBots(object sender, MouseButtonEventArgs e)
-        => new MainDialog(new ChangeBotsDialog(this, vm.Job.Bots), "Change bots").ShowDialog();
+        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
 
     public async void ChangeBots(int newValue)
     {
         try
         {
-            await vm.ChangeBotsAsync(newValue);
+            await ViewModel.ChangeBotsAsync(newValue);
         }
         catch (Exception ex)
         {
@@ -135,7 +137,7 @@ public partial class ProxyCheckJobViewer : Page
         }
     }
 
-    private void OnResultMessage(object sender, string message, Color color)
+    private void OnResultMessage(object? sender, string message, Color color)
         => Application.Current.Dispatcher.Invoke(() =>
         {
             if (obSettingsService.Settings.GeneralSettings.EnableJobLogging)

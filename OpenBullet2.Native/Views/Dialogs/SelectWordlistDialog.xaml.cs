@@ -49,11 +49,9 @@ public partial class SelectWordlistDialog : Page
 
     private void ItemHovered(object sender, SelectionChangedEventArgs e)
     {
-        var items = e.AddedItems as IList<object>;
-
-        if (items?.Count == 1)
+        if (e.AddedItems.Count == 1)
         {
-            vm.HoveredWordlist = items[0] as WordlistEntity;
+            vm.HoveredWordlist = e.AddedItems[0] as WordlistEntity;
         }
     }
 
@@ -88,20 +86,20 @@ public partial class SelectWordlistDialog : Page
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             wordlistListView.Items.SortDescriptions.Clear();
         }
 
         var newDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         wordlistListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
     }
 
@@ -132,10 +130,7 @@ public class SelectWordlistDialogViewModel : ViewModelBase
         {
             searchString = value;
 
-            if (wordlistsViewModel is not null)
-            {
-                wordlistsViewModel.SearchString = value;
-            }
+            wordlistsViewModel.SearchString = value;
             
             OnPropertyChanged();
             CollectionViewSource.GetDefaultView(WordlistsCollection).Refresh();

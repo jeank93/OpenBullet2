@@ -5,15 +5,24 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Hits.HitOutputs;
 
+/// <summary>
+/// Stores hits on the local filesystem.
+/// </summary>
 public class FileSystemHitOutput : IHitOutput
 {
+    /// <summary>Gets or sets the base output directory.</summary>
     public string BaseDir { get; set; }
 
+    /// <summary>
+    /// Creates a filesystem hit output.
+    /// </summary>
+    /// <param name="baseDir">The base output directory.</param>
     public FileSystemHitOutput(string baseDir = "Hits")
     {
         BaseDir = baseDir;
     }
 
+    /// <inheritdoc />
     public Task Store(Hit hit)
     {
         Directory.CreateDirectory(BaseDir);

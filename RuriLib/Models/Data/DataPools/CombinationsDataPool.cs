@@ -3,11 +3,24 @@ using System.Linq;
 
 namespace RuriLib.Models.Data.DataPools;
 
+/// <summary>
+/// Generates all fixed-length combinations from a character set.
+/// </summary>
 public class CombinationsDataPool : DataPool
 {
+    /// <summary>
+    /// The character set used to generate combinations.
+    /// </summary>
     public string CharSet { get; }
+
+    /// <summary>
+    /// The length of each generated combination.
+    /// </summary>
     public int Length { get; }
 
+    /// <summary>
+    /// The legacy pool code used when serializing this pool type.
+    /// </summary>
     public readonly int POOL_CODE = -4;
 
     /// <summary>
@@ -15,6 +28,7 @@ public class CombinationsDataPool : DataPool
     /// </summary>
     /// <param name="charSet">The allowed character set (one after the other like in the string "abcdef")</param>
     /// <param name="length">The length of the output combinations</param>
+    /// <param name="wordlistType">The associated wordlist type name.</param>
     public CombinationsDataPool(string charSet, int length, string wordlistType = "Default")
     {
         ArgumentNullException.ThrowIfNull(charSet);

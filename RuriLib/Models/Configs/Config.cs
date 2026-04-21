@@ -11,6 +11,9 @@ using System.Text;
 
 namespace RuriLib.Models.Configs;
 
+/// <summary>
+/// Represents a full OpenBullet config in any supported mode.
+/// </summary>
 public class Config
 {
     /// <summary>
@@ -86,9 +89,16 @@ public class Config
     private string cSharpHash = string.Empty;
     private string dllHash = string.Empty;
 
+    /// <summary>
+    /// Keeps track of deleted blocks for editor history operations.
+    /// </summary>
     [JsonIgnore]
     public List<(BlockInstance, int)> DeletedBlocksHistory { get; set; } = [];
 
+    /// <summary>
+    /// Converts the config to a different representation when a supported mapping exists.
+    /// </summary>
+    /// <param name="newMode">The target config mode.</param>
     public void ChangeMode(ConfigMode newMode)
     {
         if (newMode == Mode)
@@ -118,6 +128,7 @@ public class Config
     /// <summary>
     /// Checks if the config has only blocks or also additional C# code.
     /// </summary>
+    /// <returns><see langword="true"/> if the config contains custom C# execution paths.</returns>
     public bool HasCSharpCode()
     {
         try
@@ -162,6 +173,7 @@ public class Config
     /// <summary>
     /// Checks if the config's code has been edited since the last call of <see cref="UpdateHashes"/>.
     /// </summary>
+    /// <returns><see langword="true"/> if the config has unsaved changes; otherwise <see langword="false"/>.</returns>
     public bool HasUnsavedChanges()
         => Mode switch
         {

@@ -3,6 +3,9 @@ using RuriLib.Helpers.CSharp;
 
 namespace RuriLib.Models.Configs.Settings;
 
+/// <summary>
+/// Controls how C# scripts are built before execution.
+/// </summary>
 public class ScriptSettings
 {
     /// <summary>

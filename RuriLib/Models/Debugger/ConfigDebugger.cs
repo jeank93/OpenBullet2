@@ -31,27 +31,80 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Debugger;
 
+/// <summary>
+/// Represents the current execution state of a <see cref="ConfigDebugger"/>.
+/// </summary>
 public enum ConfigDebuggerStatus
 {
+    /// <summary>
+    /// The debugger is idle.
+    /// </summary>
     Idle,
+
+    /// <summary>
+    /// The debugger is currently running.
+    /// </summary>
     Running,
+
+    /// <summary>
+    /// The debugger is waiting for an explicit step command.
+    /// </summary>
     WaitingForStep
 }
 
+/// <summary>
+/// Executes a config against a single test input for interactive debugging.
+/// </summary>
 public class ConfigDebugger : IDisposable
 {
+    /// <summary>
+    /// The random user agent provider to use when the environment does not force a custom list.
+    /// </summary>
     public IRandomUAProvider? RandomUAProvider { get; set; }
+
+    /// <summary>
+    /// The random number provider used by the debug session.
+    /// </summary>
     public IRNGProvider? RNGProvider { get; set; }
+
+    /// <summary>
+    /// The settings service providing environment and library settings.
+    /// </summary>
     public RuriLibSettingsService? RuriLibSettings { get; set; }
+
+    /// <summary>
+    /// The plugin repository used to build scripts.
+    /// </summary>
     public PluginRepository? PluginRepo { get; set; }
 
+    /// <summary>
+    /// The current debugger status.
+    /// </summary>
     public ConfigDebuggerStatus Status { get; private set; }
 
+    /// <summary>
+    /// The config being debugged.
+    /// </summary>
     public Config Config { get; init; }
+
+    /// <summary>
+    /// The options controlling the debug session.
+    /// </summary>
     public DebuggerOptions Options { get; init; }
+
+    /// <summary>
+    /// The logger used during execution.
+    /// </summary>
     public BotLogger Logger { get; init; }
 
+    /// <summary>
+    /// Raised when the debugger status changes.
+    /// </summary>
     public event EventHandler<ConfigDebuggerStatus>? StatusChanged;
+
+    /// <summary>
+    /// Raised when a new log entry is emitted.
+    /// </summary>
     public event EventHandler<BotLoggerEntry>? NewLogEntry;
 
     private BotData? data;
@@ -60,6 +113,12 @@ public class ConfigDebugger : IDisposable
     private Browser? lastPuppeteerBrowser;
     private OpenQA.Selenium.WebDriver? lastSeleniumBrowser;
 
+    /// <summary>
+    /// Creates a new config debugger instance.
+    /// </summary>
+    /// <param name="config">The config to debug.</param>
+    /// <param name="options">Optional debugger options.</param>
+    /// <param name="logger">Optional logger to reuse.</param>
     public ConfigDebugger(Config config, DebuggerOptions? options = null, BotLogger? logger = null)
     {
         Config = config;
@@ -68,6 +127,10 @@ public class ConfigDebugger : IDisposable
         Logger.NewEntry += OnNewEntry;
     }
 
+    /// <summary>
+    /// Runs the config once against the configured test input.
+    /// </summary>
+    /// <returns>A task that completes when the debug session ends.</returns>
     public async Task Run()
     {
         if (RuriLibSettings is null)
@@ -370,6 +433,9 @@ public class ConfigDebugger : IDisposable
         return stepper.TryTakeStep();
     }
 
+    /// <summary>
+    /// Requests cancellation of the current debug session.
+    /// </summary>
     public void Stop() => cts?.Cancel();
 
     // Propagate the events
@@ -380,6 +446,7 @@ public class ConfigDebugger : IDisposable
         StatusChanged?.Invoke(this, ConfigDebuggerStatus.WaitingForStep);
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         Logger.NewEntry -= OnNewEntry;

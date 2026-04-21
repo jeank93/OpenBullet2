@@ -8,6 +8,9 @@ using System.Text.RegularExpressions;
 
 namespace RuriLib.Models.Data
 {
+    /// <summary>
+    /// Represents a single sliced line taken from a data source.
+    /// </summary>
     public class DataLine
     {
         /// <summary>The actual content of the line.</summary>
@@ -25,6 +28,8 @@ namespace RuriLib.Models.Data
         /// <summary>
         /// Creates a CData object given some <paramref name="data"/> and the <paramref name="wordlistType"/>.
         /// </summary>
+        /// <param name="data">The raw line content.</param>
+        /// <param name="wordlistType">The wordlist type used to validate and slice the line.</param>
         public DataLine(string data, WordlistType wordlistType)
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
@@ -34,6 +39,7 @@ namespace RuriLib.Models.Data
         /// <summary>
         /// Gets all the variables that need to be set after slicing the data line.
         /// </summary>
+        /// <returns>The generated variables for the configured slices and aliases.</returns>
         public List<StringVariable> GetVariables()
         {
             // Split the data
@@ -56,6 +62,8 @@ namespace RuriLib.Models.Data
         /// <summary>
         /// Checks if the data line respects the data rules.
         /// </summary>
+        /// <param name="rules">The rules to evaluate.</param>
+        /// <returns><see langword="true"/> if all rules are satisfied; otherwise <see langword="false"/>.</returns>
         public bool RespectsRules(IEnumerable<DataRule> rules)
         {
             var variables = GetVariables();

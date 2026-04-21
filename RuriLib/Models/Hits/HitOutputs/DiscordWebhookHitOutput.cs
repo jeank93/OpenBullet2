@@ -6,13 +6,27 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Hits.HitOutputs;
 
+/// <summary>
+/// Sends hits to a Discord webhook.
+/// </summary>
 public class DiscordWebhookHitOutput : IHitOutput
 {
+    /// <summary>Gets or sets the webhook URL.</summary>
     public string Webhook { get; set; }
+    /// <summary>Gets or sets the override username.</summary>
     public string Username { get; set; }
+    /// <summary>Gets or sets the avatar URL.</summary>
     public string AvatarUrl { get; set; }
+    /// <summary>Gets or sets a value indicating whether only successful hits should be sent.</summary>
     public bool OnlyHits { get; set; }
 
+    /// <summary>
+    /// Creates a Discord webhook hit output.
+    /// </summary>
+    /// <param name="webhook">The webhook URL.</param>
+    /// <param name="username">The optional override username.</param>
+    /// <param name="avatarUrl">The optional avatar URL.</param>
+    /// <param name="onlyHits">Whether only successful hits should be sent.</param>
     public DiscordWebhookHitOutput(string webhook, string username = "", string avatarUrl = "", bool onlyHits = true)
     {
         Webhook = webhook;
@@ -21,6 +35,7 @@ public class DiscordWebhookHitOutput : IHitOutput
         OnlyHits = onlyHits;
     }
 
+    /// <inheritdoc />
     public async Task Store(Hit hit)
     {
         if (OnlyHits && hit.Type != "SUCCESS")

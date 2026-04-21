@@ -2,6 +2,9 @@ using System;
 
 namespace RuriLib.Models.Environment;
 
+/// <summary>
+/// Describes how a wordlist line should be validated and sliced.
+/// </summary>
 public class WordlistType
 {
     /// <summary>The name of the Wordlist Type.</summary>

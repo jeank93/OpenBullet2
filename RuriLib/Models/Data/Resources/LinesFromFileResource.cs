@@ -6,6 +6,9 @@ using System.Text;
 
 namespace RuriLib.Models.Data.Resources;
 
+/// <summary>
+/// Reads resource values sequentially from a file.
+/// </summary>
 public class LinesFromFileResource : ConfigResource, IDisposable
 {
     private readonly LinesFromFileResourceOptions options;
@@ -14,6 +17,10 @@ public class LinesFromFileResource : ConfigResource, IDisposable
     private readonly object streamLocker = new();
     private int linesRead;
 
+    /// <summary>
+    /// Creates a new file-backed sequential resource.
+    /// </summary>
+    /// <param name="options">The resource options.</param>
     public LinesFromFileResource(LinesFromFileResourceOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -86,6 +93,7 @@ public class LinesFromFileResource : ConfigResource, IDisposable
         }
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         stream.Dispose();

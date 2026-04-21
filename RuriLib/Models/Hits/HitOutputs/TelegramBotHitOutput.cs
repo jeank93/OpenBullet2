@@ -6,12 +6,24 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Hits.HitOutputs;
 
+/// <summary>
+/// Sends hits through a Telegram bot.
+/// </summary>
 public class TelegramBotHitOutput : IHitOutput
 {
+    /// <summary>Gets or sets the bot token.</summary>
     public string Token { get; set; }
+    /// <summary>Gets or sets the target chat identifier.</summary>
     public long ChatId { get; set; }
+    /// <summary>Gets or sets a value indicating whether only successful hits should be sent.</summary>
     public bool OnlyHits { get; set; }
 
+    /// <summary>
+    /// Creates a Telegram bot hit output.
+    /// </summary>
+    /// <param name="token">The bot token.</param>
+    /// <param name="chatId">The target chat identifier.</param>
+    /// <param name="onlyHits">Whether only successful hits should be sent.</param>
     public TelegramBotHitOutput(string token, long chatId, bool onlyHits = true)
     {
         Token = token;
@@ -19,6 +31,7 @@ public class TelegramBotHitOutput : IHitOutput
         OnlyHits = onlyHits;
     }
 
+    /// <inheritdoc />
     public async Task Store(Hit hit)
     {
         if (OnlyHits && hit.Type != "SUCCESS")

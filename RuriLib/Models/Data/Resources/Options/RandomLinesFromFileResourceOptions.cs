@@ -1,5 +1,8 @@
 namespace RuriLib.Models.Data.Resources.Options;
 
+/// <summary>
+/// Options for a random file-backed resource.
+/// </summary>
 public class RandomLinesFromFileResourceOptions : ConfigResourceOptions
 {
     /// <summary>

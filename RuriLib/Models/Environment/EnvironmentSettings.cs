@@ -11,8 +11,19 @@ namespace RuriLib.Models.Environment;
 /// </summary>
 public class EnvironmentSettings
 {
+    /// <summary>
+    /// The available wordlist type definitions.
+    /// </summary>
     public List<WordlistType> WordlistTypes { get; set; } = [];
+
+    /// <summary>
+    /// The custom statuses available to configs and jobs.
+    /// </summary>
     public List<CustomStatus> CustomStatuses { get; set; } = [];
+
+    /// <summary>
+    /// The export format templates.
+    /// </summary>
     public List<ExportFormat> ExportFormats { get; set; } = [];
 
     /// <summary>

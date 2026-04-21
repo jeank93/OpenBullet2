@@ -11,31 +11,53 @@ namespace RuriLib.Models.Jobs;
 // - GroupProxySource
 // - DatabaseHitOutput
 // - DatabaseProxyCheckOutput
+/// <summary>
+/// Base class for executable jobs.
+/// </summary>
 public abstract class Job
 {
     // Public properties
+    /// <summary>Gets or sets the job identifier.</summary>
     public int Id { get; set; }
+    /// <summary>Gets or sets the job name.</summary>
     public string Name { get; set; } = string.Empty;
+    /// <summary>Gets or sets the owner identifier.</summary>
     public int OwnerId { get; set; }
+    /// <summary>Gets the current job status.</summary>
     public JobStatus Status { get; protected set; } = JobStatus.Idle;
+    /// <summary>Gets or sets the creation timestamp.</summary>
     public DateTime CreationTime { get; set; } = DateTime.Now;
+    /// <summary>Gets or sets the start timestamp.</summary>
     public DateTime StartTime { get; set; } = DateTime.Now;
+    /// <summary>Gets or sets the condition that controls when the job may start.</summary>
     public StartCondition StartCondition { get; set; } = new RelativeTimeStartCondition();
+    /// <summary>Gets the elapsed runtime.</summary>
     public virtual TimeSpan Elapsed => DateTime.Now - StartTime;
+    /// <summary>Gets the remaining runtime estimate.</summary>
     public virtual TimeSpan Remaining => throw new NotImplementedException();
 
     // Virtual properties
+    /// <summary>Gets the current progress percentage.</summary>
     public virtual float Progress => throw new NotImplementedException();
 
     // Protected fields
+    /// <summary>The settings service used by the job.</summary>
     protected readonly RuriLibSettingsService settings;
+    /// <summary>The plugin repository used by the job.</summary>
     protected readonly PluginRepository pluginRepo;
+    /// <summary>The optional logger used by the job.</summary>
     protected readonly IJobLogger? logger;
 
     // Private fields
     private bool waitFinished;
     private CancellationTokenSource? cts; // Cancellation token for cancelling the StartCondition wait
 
+    /// <summary>
+    /// Creates a job.
+    /// </summary>
+    /// <param name="settings">The RuriLib settings service.</param>
+    /// <param name="pluginRepo">The plugin repository.</param>
+    /// <param name="logger">The optional job logger.</param>
     public Job(RuriLibSettingsService settings, PluginRepository pluginRepo, IJobLogger? logger = null)
     {
         this.settings = settings;
@@ -43,6 +65,11 @@ public abstract class Job
         this.logger = logger;
     }
 
+    /// <summary>
+    /// Starts the job after waiting for its start condition.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that completes when startup has finished.</returns>
     public virtual async Task Start(CancellationToken cancellationToken = default)
     {
         waitFinished = false;
@@ -66,6 +93,9 @@ public abstract class Job
         waitFinished = true;
     }
 
+    /// <summary>
+    /// Skips the current start-condition wait.
+    /// </summary>
     public void SkipWait()
     {
         if (!waitFinished && cts is not null && !cts.IsCancellationRequested)
@@ -74,21 +104,37 @@ public abstract class Job
         }
     }
 
+    /// <summary>
+    /// Pauses the job.
+    /// </summary>
+    /// <returns>A task that completes when the job is paused.</returns>
     public virtual Task Pause()
     {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Resumes the job.
+    /// </summary>
+    /// <returns>A task that completes when the job is resumed.</returns>
     public virtual Task Resume()
     {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Stops the job gracefully.
+    /// </summary>
+    /// <returns>A task that completes when the job has stopped.</returns>
     public virtual Task Stop()
     {
         throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Aborts the job immediately.
+    /// </summary>
+    /// <returns>A task that completes when the job has been aborted.</returns>
     public virtual Task Abort()
     {
         throw new NotImplementedException();

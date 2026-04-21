@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace RuriLib.Models.Data.Resources;
 
+/// <summary>
+/// Reads resource values by picking random lines from a file.
+/// </summary>
 public class RandomLinesFromFileResource : ConfigResource
 {
     private readonly RandomLinesFromFileResourceOptions options;
@@ -13,6 +16,10 @@ public class RandomLinesFromFileResource : ConfigResource
     private readonly object sourceLocker = new();
     private readonly Random random = new();
 
+    /// <summary>
+    /// Creates a new random file-backed resource.
+    /// </summary>
+    /// <param name="options">The resource options.</param>
     public RandomLinesFromFileResource(RandomLinesFromFileResourceOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);

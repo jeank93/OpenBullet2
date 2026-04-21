@@ -1,5 +1,8 @@
 namespace RuriLib.Models.Data.Resources.Options;
 
+/// <summary>
+/// Base options shared by all config resources.
+/// </summary>
 public abstract class ConfigResourceOptions
 {
     /// <summary>

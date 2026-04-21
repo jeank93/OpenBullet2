@@ -1,5 +1,8 @@
 namespace RuriLib.Models.Data.Resources.Options;
 
+/// <summary>
+/// Options for a sequential file-backed resource.
+/// </summary>
 public class LinesFromFileResourceOptions : ConfigResourceOptions
 {
     /// <summary>

@@ -5,8 +5,14 @@ using System.Linq;
 
 namespace RuriLib.Models.Data;
 
+/// <summary>
+/// Represents a wordlist known to the application.
+/// </summary>
 public class Wordlist
 {
+    /// <summary>
+    /// The database identifier of the wordlist.
+    /// </summary>
     public int Id { get; set; }
 
     /// <summary>The name of the Wordlist.</summary>

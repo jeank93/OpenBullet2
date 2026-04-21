@@ -15,12 +15,20 @@ namespace RuriLib.Legacy.Functions.Conditions
         /// <summary>
         /// Replaces the values and verifies if a condition is true or false.
         /// </summary>
+        /// <param name="left">The left comparison term.</param>
+        /// <param name="comparer">The comparison operator.</param>
+        /// <param name="right">The right comparison term.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if the condition is satisfied; otherwise <see langword="false"/>.</returns>
         public static bool ReplaceAndVerify(string left, Comparer comparer, string right, LSGlobals ls)
             => ReplaceAndVerify(new KeycheckCondition() { Left = left, Comparer = comparer, Right = right }, ls);
 
         /// <summary>
         /// Replaces the values and verifies if a condition is true or false.
         /// </summary>
+        /// <param name="kcCond">The condition to evaluate.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if the condition is satisfied; otherwise <see langword="false"/>.</returns>
         public static bool ReplaceAndVerify(KeycheckCondition kcCond, LSGlobals ls)
         {
             var style = NumberStyles.Number | NumberStyles.AllowCurrencySymbol; // Needed when comparing values with a currency symbol
@@ -113,6 +121,9 @@ namespace RuriLib.Legacy.Functions.Conditions
         /// <summary>
         /// Verifies if all the provided conditions are true (after replacing).
         /// </summary>
+        /// <param name="conditions">The conditions to evaluate.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if all conditions are satisfied; otherwise <see langword="false"/>.</returns>
         public static bool ReplaceAndVerifyAll(KeycheckCondition[] conditions, LSGlobals ls)
             => conditions.All(c => ReplaceAndVerify(c, ls));
 
@@ -127,6 +138,9 @@ namespace RuriLib.Legacy.Functions.Conditions
         /// <summary>
         /// Verifies if at least one of the provided conditions is true (after replacing).
         /// </summary>
+        /// <param name="conditions">The conditions to evaluate.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if at least one condition is satisfied; otherwise <see langword="false"/>.</returns>
         public static bool ReplaceAndVerifyAny(KeycheckCondition[] conditions, LSGlobals ls)
             => conditions.Any(c => ReplaceAndVerify(c, ls));
 

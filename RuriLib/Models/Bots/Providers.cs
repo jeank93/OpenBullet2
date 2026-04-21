@@ -16,19 +16,55 @@ namespace RuriLib.Models.Bots;
 /// </summary>
 public class Providers
 {
+    /// <summary>
+    /// Gets or sets the random user agent provider.
+    /// </summary>
     public IRandomUAProvider RandomUA { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the captcha provider.
+    /// </summary>
     public ICaptchaProvider Captcha { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the email domain repository.
+    /// </summary>
     public IEmailDomainRepository EmailDomains { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the random number provider.
+    /// </summary>
     public IRNGProvider RNG { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Puppeteer browser provider.
+    /// </summary>
     public IPuppeteerBrowserProvider PuppeteerBrowser { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the Selenium browser provider.
+    /// </summary>
     public ISeleniumBrowserProvider SeleniumBrowser { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the general settings provider.
+    /// </summary>
     public IGeneralSettingsProvider GeneralSettings { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the proxy settings provider.
+    /// </summary>
     public IProxySettingsProvider ProxySettings { get; set; } = null!;
+
+    /// <summary>
+    /// Gets or sets the security settings provider.
+    /// </summary>
     public ISecurityProvider Security { get; set; } = null!;
 
     /// <summary>
     /// Initializes all default providers.
     /// </summary>
+    /// <param name="settings">The settings service used to build the default providers.</param>
     public Providers(RuriLibSettingsService? settings)
     {
         if (settings is not null)

@@ -95,7 +95,7 @@ namespace RuriLib.Legacy.LS;
         /// </summary>
         /// <param name="boolean">The boolean value to write</param>
         /// <param name="property">The name of the property</param>
-        /// <returns></returns>
+        /// <returns>The BlockWriter itself.</returns>
         public BlockWriter Boolean(bool boolean, string property)
         {
             if (property != string.Empty && CheckDefault(boolean, property)) return this;
@@ -107,7 +107,7 @@ namespace RuriLib.Legacy.LS;
         /// Writes a linebreak and a given number of spaces on the next line.
         /// </summary>
         /// <param name="spacing">The amount of spacing to perform. A spacing of value 1 means two blank space characters, 2 means 4 etc.</param>
-        /// <returns></returns>
+        /// <returns>The BlockWriter itself.</returns>
         public BlockWriter Indent(int spacing = 1)
         {
             if (Indented)
@@ -123,7 +123,7 @@ namespace RuriLib.Legacy.LS;
         /// <summary>
         /// Writes a linebreak.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The BlockWriter itself.</returns>
         public BlockWriter Return()
         {
             WriteLine();

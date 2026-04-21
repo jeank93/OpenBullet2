@@ -418,12 +418,12 @@ namespace RuriLib.Legacy.Functions.Crypto
         /// <summary>
         /// Encrypts a string with AES.
         /// </summary>
-        /// <param name="data">The AES-encrypted data</param>
-        /// <param name="key">The decryption key as base64</param>
-        /// <param name="iv">The initial value as base64</param>
+        /// <param name="data">The plaintext data to encrypt.</param>
+        /// <param name="key">The encryption key as base64.</param>
+        /// <param name="iv">The initialization vector as base64.</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
-        /// <returns>The AES-encrypted string encoded as base64</returns>
+        /// <returns>The AES-encrypted string encoded as base64.</returns>
         public static string AESEncrypt(string data, string key, string iv = "", CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None)
         {
             byte[][] keys = ConvertKeys(key, iv);

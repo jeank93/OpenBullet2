@@ -111,7 +111,7 @@ namespace RuriLib.Legacy.Functions.Conversions
                     return System.Text.Encoding.Unicode.GetString(input);
 
                 default:
-                    return "";
+                    return string.Empty;
             }
         }
     }

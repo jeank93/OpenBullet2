@@ -24,6 +24,11 @@ public class ScriptGlobals
     /// </summary>
     public dynamic globals;
 
+    /// <summary>
+    /// Initializes the globals exposed to a Roslyn script.
+    /// </summary>
+    /// <param name="data">The current bot data.</param>
+    /// <param name="globals">The shared global variables object.</param>
     public ScriptGlobals(BotData data, dynamic globals)
     {
         this.data = data;

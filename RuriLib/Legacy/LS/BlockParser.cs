@@ -35,17 +35,23 @@ public static class BlockParser
         /// <summary>
         /// Tests if a line is parsable as a block.
         /// </summary>
+        /// <param name="line">The line to inspect.</param>
+        /// <returns><see langword="true"/> if the line starts with a known block identifier; otherwise <see langword="false"/>.</returns>
     public static bool IsBlock(string line)
         => BlockMappings.Keys.Select(n => n.ToUpper()).Contains(GetBlockType(line).ToUpper());
 
         /// <summary>
         /// Gets the block type from a block line.
         /// </summary>
+        /// <param name="line">The line to inspect.</param>
+        /// <returns>The parsed block identifier.</returns>
     public static string GetBlockType(string line) => Regex.Match(line, @"^!?(#[^ ]* )?([^ ]*)").Groups[2].Value;
 
         /// <summary>
         /// Parses a block line as a block object.
         /// </summary>
+        /// <param name="line">The LoliScript line to parse.</param>
+        /// <returns>The parsed block instance.</returns>
     public static BlockBase Parse(string line)
     {
             // Trim the line

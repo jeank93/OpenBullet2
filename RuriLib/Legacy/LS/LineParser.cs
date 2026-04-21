@@ -267,21 +267,21 @@ public static class LineParser
 /// </summary>
 public enum TokenType
 {
-        /// <summary>A block label.</summary>
-        Label,
+    /// <summary>A block label.</summary>
+    Label,
 
-        /// <summary>A generic parameter, usually an enum value.</summary>
-        Parameter,
+    /// <summary>A generic parameter, usually an enum value.</summary>
+    Parameter,
 
-        /// <summary>A string between double quotes.</summary>
-        Literal,
+    /// <summary>A string between double quotes.</summary>
+    Literal,
 
-        /// <summary>The character sequence -&gt;.</summary>
-        Arrow,
+    /// <summary>The character sequence -&gt;.</summary>
+    Arrow,
 
-        /// <summary>A boolean value in the format Name=Value where Name is the name of the property.</summary>
-        Boolean,
+    /// <summary>A boolean value in the format Name=Value where Name is the name of the property.</summary>
+    Boolean,
 
-        /// <summary>An integer value.</summary>
+    /// <summary>An integer value.</summary>
     Integer
 }

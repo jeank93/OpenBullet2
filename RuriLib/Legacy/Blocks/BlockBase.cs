@@ -15,9 +15,19 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Legacy.Blocks;
 
+/// <summary>
+/// Base class for all legacy LoliScript blocks.
+/// </summary>
 public abstract class BlockBase
 {
+    /// <summary>
+    /// Gets or sets the optional block label.
+    /// </summary>
     public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the block is disabled.
+    /// </summary>
     public bool Disabled { get; set; }
 
         /// <summary>Whether the block is a selenium-related block.</summary>
@@ -32,21 +42,29 @@ public abstract class BlockBase
         /// <summary>
         /// Builds a block from a line of LoliScript code.
         /// </summary>
+        /// <param name="line">The LoliScript line to parse.</param>
+        /// <returns>The parsed block.</returns>
         public virtual BlockBase FromLS(string line) => throw new Exception("Cannot Convert to the abstract class BlockBase");
 
         /// <summary>
         /// Builds a block from multiple lines of LoliScript code.
         /// </summary>
+        /// <param name="lines">The LoliScript lines to parse.</param>
+        /// <returns>The parsed block.</returns>
         public virtual BlockBase FromLS(List<string> lines) => throw new Exception("Cannot Convert from the abstract class BlockBase");
 
         /// <summary>
         /// Converts the block to LoliScript code.
         /// </summary>
+        /// <param name="indent">Whether the output should be indented for readability.</param>
+        /// <returns>The serialized LoliScript block.</returns>
         public virtual string ToLS(bool indent = true) => throw new Exception("Cannot Convert from the abstract class BlockBase");
 
         /// <summary>
         /// Executes the actual block logic.
         /// </summary>
+        /// <param name="ls">The legacy globals used while executing the block.</param>
+        /// <returns>A task representing the asynchronous execution.</returns>
         public virtual Task Process(LSGlobals ls)
         {
             ls.BotData.Logger.Log($">> Executing Block {Label} <<", LogColors.ChromeYellow);
@@ -58,6 +76,9 @@ public abstract class BlockBase
         /// <summary>
         /// Replaces variables recursively, expanding lists or dictionaries with jolly indices.
         /// </summary>
+        /// <param name="original">The original template string.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns>The expanded list of replaced strings.</returns>
         public static List<string> ReplaceValuesRecursive(string original, LSGlobals ls)
         {
             var data = ls.BotData;
@@ -196,6 +217,9 @@ public abstract class BlockBase
         /// <summary>
         /// Replaces variables in all keys and values of a dictionary.
         /// </summary>
+        /// <param name="original">The original dictionary.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns>A dictionary with replaced keys and values.</returns>
         public static Dictionary<string, string> ReplaceValues(Dictionary<string, string> original, LSGlobals ls)
         {
             var newDict = new Dictionary<string, string>();
@@ -211,12 +235,18 @@ public abstract class BlockBase
         /// <summary>
         /// Replaces variables in all items of a list.
         /// </summary>
+        /// <param name="original">The original list.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns>A list with replaced items.</returns>
         public static List<string> ReplaceValues(List<string> original, LSGlobals ls)
             => original.Select(i => ReplaceValues(i, ls)).ToList();
 
         /// <summary>
         /// Replaces variables in a given input string.
         /// </summary>
+        /// <param name="original">The original input string.</param>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns>The replaced string.</returns>
         public static string ReplaceValues(string original, LSGlobals ls)
         {
             if (original == null)
@@ -471,6 +501,11 @@ public abstract class BlockBase
             }
         }
 
+        /// <summary>
+        /// Gets the legacy variable list associated with a bot.
+        /// </summary>
+        /// <param name="data">The bot data.</param>
+        /// <returns>The legacy variable list.</returns>
         public static VariablesList GetVariables(BotData data)
             => data.TryGetObject<VariablesList>("legacyVariables")
             ?? throw new InvalidOperationException("The legacy variables list was not initialized");

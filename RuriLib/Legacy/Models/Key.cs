@@ -19,6 +19,8 @@ namespace RuriLib.Legacy.Models
         /// <summary>
         /// Checks the comparison between left and right member.
         /// </summary>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if the key matches; otherwise <see langword="false"/>.</returns>
         public bool CheckKey(LSGlobals ls)
         {
             try

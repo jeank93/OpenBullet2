@@ -25,6 +25,8 @@ namespace RuriLib.Legacy.Models
         /// <summary>
         /// Checks all the Keys in the KeyChain.
         /// </summary>
+        /// <param name="ls">The legacy globals used to resolve variables.</param>
+        /// <returns><see langword="true"/> if the chain matches; otherwise <see langword="false"/>.</returns>
         public bool CheckKeys(LSGlobals ls)
         {
             var data = ls.BotData;
@@ -71,17 +73,43 @@ namespace RuriLib.Legacy.Models
     /// <summary>The returned status upon a successful check of the keys. If no KeyChain was valid, the original status won't be changed.</summary>        
     public enum KeychainType
     {
+        /// <summary>
+        /// Sets the bot status to success.
+        /// </summary>
         Success,
+
+        /// <summary>
+        /// Sets the bot status to failure.
+        /// </summary>
         Failure,
+
+        /// <summary>
+        /// Sets the bot status to ban.
+        /// </summary>
         Ban,
+
+        /// <summary>
+        /// Sets the bot status to retry.
+        /// </summary>
         Retry,
+
+        /// <summary>
+        /// Sets the bot status to a custom value.
+        /// </summary>
         Custom
     }
 
     /// <summary>The mode in which the keys should be checked.</summary>
     public enum KeychainMode
     {
+        /// <summary>
+        /// Any key in the chain can match.
+        /// </summary>
         OR,
+
+        /// <summary>
+        /// Every key in the chain must match.
+        /// </summary>
         AND
     }
 }

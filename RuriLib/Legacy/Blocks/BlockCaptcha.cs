@@ -15,7 +15,11 @@ namespace RuriLib.Legacy.Blocks
         [JsonIgnore]
         public decimal Balance { get; set; } = 0;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Performs the shared captcha-balance checks before solving.
+        /// </summary>
+        /// <param name="ls">The legacy globals used while executing the block.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public override async Task Process(LSGlobals ls)
         {
             var data = ls.BotData;

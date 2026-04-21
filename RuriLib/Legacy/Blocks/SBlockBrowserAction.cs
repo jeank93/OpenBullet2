@@ -121,7 +121,11 @@ namespace RuriLib.Legacy.Blocks;
             Label = "BROWSER ACTION";
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Parses the block from a legacy LoliScript line.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The current block instance.</returns>
         public override BlockBase FromLS(string line)
         {
             // Trim the line
@@ -335,9 +339,9 @@ namespace RuriLib.Legacy.Blocks;
         }
 
         /// <summary>
-        /// Opens a browser of the given type (if not already open) and with the given settings.
+        /// Opens and configures the Selenium browser for the provided bot.
         /// </summary>
-        /// <param name="data">The BotData where the settings are stored.</param>
+        /// <param name="data">The bot data that will receive the browser instance.</param>
         public static void OpenBrowser(BotData data)
         {
             var browser = data.TryGetObject<WebDriver>("selenium");

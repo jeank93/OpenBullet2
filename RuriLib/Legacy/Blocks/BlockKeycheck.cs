@@ -28,7 +28,11 @@ namespace RuriLib.Legacy.Blocks
             Label = "KEY CHECK";
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Parses the block from a legacy LoliScript line.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The current block instance.</returns>
         public override BlockBase FromLS(string line)
         {
             // Trim the line
@@ -87,7 +91,11 @@ namespace RuriLib.Legacy.Blocks
             return this;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Serializes the block to legacy LoliScript.
+        /// </summary>
+        /// <param name="indent">Whether the output should be indented.</param>
+        /// <returns>The serialized block.</returns>
         public override string ToLS(bool indent = true)
         {
             var writer = new BlockWriter(GetType(), indent, Disabled);
@@ -135,7 +143,11 @@ namespace RuriLib.Legacy.Blocks
             return writer.ToString();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Evaluates the configured keychains and updates the bot status.
+        /// </summary>
+        /// <param name="ls">The legacy globals used while executing the block.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public override async Task Process(LSGlobals ls)
         {
             var data = ls.BotData;

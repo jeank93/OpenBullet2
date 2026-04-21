@@ -101,7 +101,11 @@ namespace RuriLib.Legacy.Blocks
             Label = "REQUEST";
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Parses the block from a legacy LoliScript line.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The current block instance.</returns>
         public override BlockBase FromLS(string line)
         {
             // Trim the line
@@ -218,16 +222,20 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Parses values from a string.
+        /// Splits a delimited legacy token into a fixed number of pieces.
         /// </summary>
-        /// <param name="input">The string to parse</param>
-        /// <param name="separator">The character that separates the elements</param>
-        /// <param name="count">The number of elements to return</param>
-        /// <returns>The array of the parsed elements.</returns>
+        /// <param name="input">The input string.</param>
+        /// <param name="separator">The separator character.</param>
+        /// <param name="count">The expected number of parts.</param>
+        /// <returns>The parsed parts.</returns>
         public static string[] ParseString(string input, char separator, int count)
             => input.Split(new[] { separator }, count).Select(s => s.Trim()).ToArray();
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Serializes the block to legacy LoliScript.
+        /// </summary>
+        /// <param name="indent">Whether the output should be indented.</param>
+        /// <returns>The serialized block.</returns>
         public override string ToLS(bool indent = true)
         {
             var writer = new BlockWriter(GetType(), indent, Disabled);
@@ -344,6 +352,11 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <inheritdoc />
+        /// <summary>
+        /// Executes the configured HTTP request.
+        /// </summary>
+        /// <param name="ls">The legacy globals used while executing the block.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public override async Task Process(LSGlobals ls)
         {
             var data = ls.BotData;
@@ -482,6 +495,10 @@ namespace RuriLib.Legacy.Blocks
         /// Builds a string containing custom cookies.
         /// </summary>
         /// <returns>One cookie per line, with name and value separated by a colon</returns>
+        /// <summary>
+        /// Serializes the custom cookies to the legacy editor format.
+        /// </summary>
+        /// <returns>The serialized cookies.</returns>
         public string GetCustomCookies()
         {
             var sb = new StringBuilder();
@@ -494,9 +511,9 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Sets custom cookies from an array of lines.
+        /// Loads custom cookies from the legacy editor format.
         /// </summary>
-        /// <param name="lines">The lines containing the colon-separated name and value of the cookies</param>
+        /// <param name="lines">The serialized cookie lines.</param>
         public void SetCustomCookies(string[] lines)
         {
             CustomCookies.Clear();
@@ -511,9 +528,9 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Builds a string containing custom headers.
+        /// Serializes the custom headers to the legacy editor format.
         /// </summary>
-        /// <returns>One header per line, with name and value separated by a colon</returns>
+        /// <returns>The serialized headers.</returns>
         public string GetCustomHeaders()
         {
             var sb = new StringBuilder();
@@ -526,9 +543,9 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Sets custom headers from an array of lines.
+        /// Loads custom headers from the legacy editor format.
         /// </summary>
-        /// <param name="lines">The lines containing the colon-separated name and value of the headers</param>
+        /// <param name="lines">The serialized header lines.</param>
         public void SetCustomHeaders(string[] lines)
         {
             CustomHeaders.Clear();
@@ -543,9 +560,9 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Builds a string containing multipart content.
+        /// Serializes multipart contents to the legacy editor format.
         /// </summary>
-        /// <returns>One content per line, with type, name and value separated by a colon</returns>
+        /// <returns>The serialized multipart entries.</returns>
         public string GetMultipartContents()
         {
             var sb = new StringBuilder();
@@ -558,9 +575,9 @@ namespace RuriLib.Legacy.Blocks
         }
 
         /// <summary>
-        /// Sets multipart contents from an array of lines.
+        /// Loads multipart contents from the legacy editor format.
         /// </summary>
-        /// <param name="lines">The lines containing the colon-separated type, name and value of the multipart contents</param>
+        /// <param name="lines">The serialized multipart lines.</param>
         public void SetMultipartContents(string[] lines)
         {
             MultipartContents.Clear();
@@ -607,9 +624,21 @@ namespace RuriLib.Legacy.Blocks
     /// </summary>
     public enum RequestType
     {
+        /// <summary>
+        /// Standard form or body request.
+        /// </summary>
         Standard,
+        /// <summary>
+        /// Basic authentication request.
+        /// </summary>
         BasicAuth,
+        /// <summary>
+        /// Multipart form-data request.
+        /// </summary>
         Multipart,
+        /// <summary>
+        /// Raw byte-stream request.
+        /// </summary>
         Raw
     }
 
@@ -618,7 +647,13 @@ namespace RuriLib.Legacy.Blocks
     /// </summary>
     public enum MultipartContentType
     {
+        /// <summary>
+        /// Inline string content.
+        /// </summary>
         String,
+        /// <summary>
+        /// File-backed content.
+        /// </summary>
         File
     }
 
@@ -627,19 +662,43 @@ namespace RuriLib.Legacy.Blocks
     /// </summary>
     public enum ResponseType
     {
+        /// <summary>
+        /// Read the response as text.
+        /// </summary>
         String,
+        /// <summary>
+        /// Save the response to a file.
+        /// </summary>
         File,
+        /// <summary>
+        /// Store the response as a base64 string.
+        /// </summary>
         Base64String
     }
 
     /// <summary>
     /// Represents a Multipart Content
     /// </summary>
+    /// <summary>
+    /// Represents a multipart content entry in a legacy request block.
+    /// </summary>
     public struct MultipartContent
     {
+        /// <summary>
+        /// Gets or sets the multipart content kind.
+        /// </summary>
         public MultipartContentType Type { get; set; }
+        /// <summary>
+        /// Gets or sets the multipart field name.
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Gets or sets the content value or file path.
+        /// </summary>
         public string Value { get; set; }
+        /// <summary>
+        /// Gets or sets the content type for file entries.
+        /// </summary>
         public string ContentType { get; set; }
     }
 }

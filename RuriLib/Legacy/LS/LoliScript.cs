@@ -67,7 +67,7 @@ public class LoliScript
     /// <summary>
     /// Transforms the script into a list of blocks. The blocks that cannot be converted will be created as BlockLSCode blocks.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The parsed list of blocks.</returns>
     public List<BlockBase> ToBlocks()
     {
         var list = new List<BlockBase>();
@@ -152,7 +152,7 @@ public class LoliScript
     /// <summary>
     /// Executes a line of the script.
     /// </summary>
-    /// <param name="data">The BotData needed for variable replacement</param>
+    /// <param name="ls">The legacy globals used while executing the script.</param>
     public async Task TakeStep(LSGlobals ls)
     {
         var data = ls.BotData;
@@ -698,8 +698,17 @@ public class LoliScript
         (IsCustomStatus(data.STATUS) && data.ConfigSettings.GeneralSettings.ContinueStatuses.Contains("CUSTOM"));
 }
 
+/// <summary>
+/// The scripting engines supported by legacy <c>BEGIN SCRIPT</c> sections.
+/// </summary>
 public enum ScriptingLanguage
 {
+    /// <summary>
+    /// Executes the script as JavaScript through Jint.
+    /// </summary>
     JavaScript,
+    /// <summary>
+    /// Executes the script as IronPython.
+    /// </summary>
     IronPython
 }

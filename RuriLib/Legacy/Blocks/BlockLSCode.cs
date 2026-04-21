@@ -19,14 +19,22 @@ namespace RuriLib.Legacy.Blocks
             Label = "LS";
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Populates the block from raw LoliScript lines.
+        /// </summary>
+        /// <param name="lines">The lines that belong to this block.</param>
+        /// <returns>The current block instance.</returns>
         public override BlockBase FromLS(List<string> lines)
         {
             Script = string.Join(Environment.NewLine, lines);
             return this;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Serializes the stored raw script.
+        /// </summary>
+        /// <param name="indent">Unused for this block.</param>
+        /// <returns>The stored script.</returns>
         public override string ToLS(bool indent = true) => Script;
     }
 }

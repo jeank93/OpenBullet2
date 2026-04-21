@@ -30,7 +30,11 @@ namespace RuriLib.Legacy.Blocks
             Label = "EXECUTE JS";
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Parses the block from a legacy LoliScript line.
+        /// </summary>
+        /// <param name="line">The line to parse.</param>
+        /// <returns>The current block instance.</returns>
         public override BlockBase FromLS(string line)
         {
             // Trim the line

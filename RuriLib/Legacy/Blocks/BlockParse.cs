@@ -94,7 +94,11 @@ public class BlockParse : BlockBase
         Label = "PARSE";
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Parses the block from a legacy LoliScript line.
+    /// </summary>
+    /// <param name="line">The line to parse.</param>
+    /// <returns>The current block instance.</returns>
     public override BlockBase FromLS(string line)
     {
         // Trim the line
@@ -201,7 +205,11 @@ public class BlockParse : BlockBase
         return this;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Serializes the block to legacy LoliScript.
+    /// </summary>
+    /// <param name="indent">Whether the output should be indented.</param>
+    /// <returns>The serialized block.</returns>
     public override string ToLS(bool indent = true)
     {
         var writer = new BlockWriter(GetType(), indent, Disabled);
@@ -275,7 +283,11 @@ public class BlockParse : BlockBase
         return writer.ToString();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Executes the configured parsing strategy and stores the result.
+    /// </summary>
+    /// <param name="ls">The legacy globals used while executing the block.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public override async Task Process(LSGlobals ls)
     {
         var data = ls.BotData;
@@ -419,11 +431,29 @@ public class BlockParse : BlockBase
     }
 }
 
+/// <summary>
+/// The parsing strategies supported by the legacy parse block.
+/// </summary>
 public enum ParseType
 {
+    /// <summary>
+    /// Left-right string parsing.
+    /// </summary>
     LR,
+    /// <summary>
+    /// CSS selector parsing.
+    /// </summary>
     CSS,
+    /// <summary>
+    /// JSON field parsing.
+    /// </summary>
     JSON,
+    /// <summary>
+    /// XPath parsing.
+    /// </summary>
     XPATH,
+    /// <summary>
+    /// Regular expression parsing.
+    /// </summary>
     REGEX
 }

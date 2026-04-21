@@ -15,7 +15,7 @@ public class MultiRunJobOptions : JobOptions
     /// <summary>
     /// The ID of the config to use.
     /// </summary>
-    public string ConfigId { get; set; }
+    public string ConfigId { get; set; } = string.Empty;
 
     /// <summary>
     /// The amount of bots that will process the data lines concurrently.
@@ -79,10 +79,10 @@ public class MultiRunJobOptions : JobOptions
     /// <summary>
     /// The options for the proxy sources that will be used to fill the proxy pool whenever it requests a reload.
     /// </summary>
-    public List<ProxySourceOptions> ProxySources { get; set; } = new List<ProxySourceOptions>();
+    public List<ProxySourceOptions> ProxySources { get; set; } = [];
 
     /// <summary>
     /// The options for the outputs where hits will be stored.
     /// </summary>
-    public List<HitOutputOptions> HitOutputs { get; set; } = new List<HitOutputOptions>();
+    public List<HitOutputOptions> HitOutputs { get; set; } = [];
 }

@@ -18,18 +18,18 @@ public class JobMonitorService : IDisposable
     /// <summary>
     /// The list of triggered actions that can be executed by the job monitor.
     /// </summary>
-    public List<TriggeredAction> TriggeredActions { get; set; } = new List<TriggeredAction>();
+    public List<TriggeredAction> TriggeredActions { get; set; } = [];
 
     private readonly Timer timer;
-    private readonly Timer saveTimer;
+    private readonly Timer? saveTimer;
     private readonly JobManagerService jobManager;
     private readonly string fileName;
-    private readonly JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+    private readonly JsonSerializerSettings jsonSettings = new()
     {
         TypeNameHandling = TypeNameHandling.Auto,
         Formatting = Formatting.Indented
     };
-    private byte[] lastSavedHash = Array.Empty<byte>();
+    private byte[] lastSavedHash = [];
 
     public JobMonitorService(JobManagerService jobManager,
         string fileName = "UserData/triggeredActions.json", bool autoSave = true)
@@ -69,7 +69,7 @@ public class JobMonitorService : IDisposable
         try
         {
             var json = File.ReadAllText(fileName);
-            TriggeredActions = JsonConvert.DeserializeObject<TriggeredAction[]>(json, jsonSettings).ToList();
+            TriggeredActions = JsonConvert.DeserializeObject<TriggeredAction[]>(json, jsonSettings)?.ToList() ?? [];
         }
         catch
         {

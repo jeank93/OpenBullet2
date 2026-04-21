@@ -24,7 +24,7 @@ public class JobManagerService : IDisposable
     /// The list of all created jobs.
     /// </summary>
     public IEnumerable<Job> Jobs => _jobs;
-    private readonly List<Job> _jobs = new();
+    private readonly List<Job> _jobs = [];
 
     private readonly SemaphoreSlim _jobSemaphore = new(1, 1);
     private readonly SemaphoreSlim _recordSemaphore = new(1, 1);
@@ -41,6 +41,11 @@ public class JobManagerService : IDisposable
 
         foreach (var entity in entities)
         {
+            if (string.IsNullOrEmpty(entity.JobOptions))
+            {
+                continue;
+            }
+
             // Convert old namespaces to support old databases
             if (entity.JobOptions.Contains("OpenBullet2.Models") || entity.JobOptions.Contains(", OpenBullet2\""))
             {
@@ -51,7 +56,13 @@ public class JobManagerService : IDisposable
                 jobRepo.UpdateAsync(entity).Wait();
             }
 
-            var options = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings).Options;
+            var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings);
+            if (wrapper?.Options is null)
+            {
+                continue;
+            }
+
+            var options = wrapper.Options;
             var job = jobFactory.FromOptions(entity.Id, entity.Owner == null ? 0 : entity.Owner.Id, options);
             AddJob(job);
         }
@@ -101,12 +112,12 @@ public class JobManagerService : IDisposable
     }
 
     // Saves the record for a MultiRunJob in the IRecordRepository. Thread safe.
-    private async void SaveRecord(object sender, EventArgs e)
+    private async void SaveRecord(object? sender, EventArgs e)
     {
         using var scope = _scopeFactory.CreateScope();
         var recordRepo = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
 
-        if (sender is not MultiRunJob job || job.DataPool is not WordlistDataPool pool)
+        if (sender is not MultiRunJob job || job.DataPool is not WordlistDataPool pool || job.Config is null)
         {
             return;
         }
@@ -147,7 +158,7 @@ public class JobManagerService : IDisposable
         }
     }
 
-    private async void SaveMultiRunJobOptionsAsync(object sender, EventArgs e)
+    private async void SaveMultiRunJobOptionsAsync(object? sender, EventArgs e)
     {
         if (sender is not MultiRunJob job)
         {
@@ -178,7 +189,11 @@ public class JobManagerService : IDisposable
             // Deserialize and unwrap the job options
             var settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
             var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, settings);
-            var options = (MultiRunJobOptions)wrapper.Options;
+            if (wrapper?.Options is not MultiRunJobOptions options)
+            {
+                Console.WriteLine("Skipped job options save because deserialization failed");
+                return;
+            }
 
             // Check if it's valid
             if (string.IsNullOrEmpty(options.ConfigId))

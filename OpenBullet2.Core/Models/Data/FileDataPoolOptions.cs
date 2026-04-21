@@ -8,7 +8,7 @@ namespace OpenBullet2.Core.Models.Data;
 /// </summary>
 public class FileDataPoolOptions : DataPoolOptions
 {
-    private string fileName = null;
+    private string fileName = string.Empty;
 
     /// <summary>
     /// The path to the file on disk.

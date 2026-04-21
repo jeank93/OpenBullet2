@@ -18,26 +18,26 @@ namespace OpenBullet2.Core.Services;
 /// <summary>
 /// Manages the list of available configs.
 /// </summary>
-public class ConfigService
+public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsService openBulletSettingsService)
 {
     /// <summary>
     /// The list of available configs.
     /// </summary>
-    public List<Config> Configs { get; set; } = new();
+    public List<Config> Configs { get; set; } = [];
 
     /// <summary>
     /// Called when a new config is selected.
     /// </summary>
-    public event EventHandler<Config> OnConfigSelected;
+    public event EventHandler<Config>? OnConfigSelected;
 
     /// <summary>
     /// Called when all configs from configured remote endpoints are loaded.
     /// </summary>
-    public event EventHandler OnRemotesLoaded;
+    public event EventHandler? OnRemotesLoaded;
 
-    private Config selectedConfig = null;
-    private readonly IConfigRepository configRepo;
-    private readonly OpenBulletSettingsService openBulletSettingsService;
+    private Config selectedConfig = null!;
+    private readonly IConfigRepository configRepo = configRepo;
+    private readonly OpenBulletSettingsService openBulletSettingsService = openBulletSettingsService;
 
     /// <summary>
     /// The currently selected config.
@@ -52,12 +52,6 @@ public class ConfigService
         }
     }
 
-    public ConfigService(IConfigRepository configRepo, OpenBulletSettingsService openBulletSettingsService)
-    {
-        this.configRepo = configRepo;
-        this.openBulletSettingsService = openBulletSettingsService;
-    }
-
     /// <summary>
     /// Reloads all configs from the <see cref="IConfigRepository"/> and remote endpoints.
     /// </summary>
@@ -65,7 +59,7 @@ public class ConfigService
     {
         // Load from the main repository
         Configs = (await configRepo.GetAllAsync()).ToList();
-        SelectedConfig = null;
+        SelectedConfig = null!;
 
         // Load from remotes (fire and forget)
         LoadFromRemotes();
@@ -73,7 +67,7 @@ public class ConfigService
 
     private async void LoadFromRemotes()
     {
-        List<Config> remoteConfigs = new();
+        List<Config> remoteConfigs = [];
 
         var func = new Func<RemoteConfigsEndpoint, Task>(async endpoint => 
         {

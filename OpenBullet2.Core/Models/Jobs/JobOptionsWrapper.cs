@@ -6,5 +6,5 @@
 /// </summary>
 public class JobOptionsWrapper
 {
-    public JobOptions Options { get; set; }
+    public JobOptions Options { get; set; } = null!;
 }

@@ -14,7 +14,7 @@ public interface IConfigRepository
     /// Creates a new config with a given <paramref name="id"/>.
     /// If <paramref name="id"/> is null, a random one will be generated.
     /// </summary>
-    Task<Config> CreateAsync(string id = null);
+    Task<Config> CreateAsync(string? id = null);
 
     /// <summary>
     /// Deletes a config from the repository.

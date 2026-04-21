@@ -64,7 +64,7 @@ public class DiskConfigRepository : IConfigRepository
             });
 
         var results = await Task.WhenAll(tasks);
-        return results.Where(r => r != null);
+        return results.OfType<Config>();
     }
 
     /// <inheritdoc/>
@@ -104,7 +104,7 @@ public class DiskConfigRepository : IConfigRepository
     }
 
     /// <inheritdoc/>
-    public async Task<Config> CreateAsync(string id = null)
+    public async Task<Config> CreateAsync(string? id = null)
     {
         var config = new Config { Id = id ?? Guid.NewGuid().ToString() };
 
@@ -178,7 +178,9 @@ public class DiskConfigRepository : IConfigRepository
         var file = GetFileName(config);
 
         if (File.Exists(file))
+        {
             File.Delete(file);
+        }
     }
 
     private string GetFileName(Config config)

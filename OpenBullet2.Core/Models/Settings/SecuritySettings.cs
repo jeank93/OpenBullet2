@@ -1,5 +1,7 @@
 ﻿using System.Security.Cryptography;
 
+using System;
+
 namespace OpenBullet2.Core.Models.Settings;
 
 /// <summary>
@@ -27,7 +29,7 @@ public class SecuritySettings
     /// <summary>
     /// The bcrypt hash of the admin user's password.
     /// </summary>
-    public string AdminPasswordHash { get; set; }
+    public string AdminPasswordHash { get; set; } = string.Empty;
     
     /// <summary>
     /// The API key that the admin can use to authenticate to the API.
@@ -39,7 +41,7 @@ public class SecuritySettings
     /// The JWT key that this application will use when issuing authentication tokens.
     /// For security reasons this should be randomly generated via the <see cref="GenerateJwtKey"/> method.
     /// </summary>
-    public byte[] JwtKey { get; set; }
+    public byte[] JwtKey { get; set; } = [];
 
     /// <summary>
     /// The number of hours that the admin session will last before requiring another login.

@@ -251,6 +251,9 @@ public static class Methods
         return await content.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Connects to a POP3 server.
+    /// </summary>
     [Block("Connects to a POP3 server")]
     public static async Task Pop3Connect(BotData data, string host, int port, int timeoutMilliseconds = 60000)
     {
@@ -275,6 +278,9 @@ public static class Methods
         data.Logger.Log($"Connected to {host} on port {port}. SSL/TLS: {client.IsSecure}", LogColors.Mantis);
     }
 
+    /// <summary>
+    /// Disconnects from a POP3 server.
+    /// </summary>
     [Block("Disconnects from a POP3 server")]
     public static async Task Pop3Disconnect(BotData data)
     {
@@ -293,6 +299,9 @@ public static class Methods
         }
     }
 
+    /// <summary>
+    /// Logs into an account.
+    /// </summary>
     [Block("Logs into an account")]
     public static async Task Pop3Login(BotData data, string email, string password, int timeoutMilliseconds = 10000)
     {
@@ -307,6 +316,9 @@ public static class Methods
         data.Logger.Log($"Authenticated successfully, there are {client.Count} total messages", LogColors.Mantis);
     }
 
+    /// <summary>
+    /// Gets the protocol log.
+    /// </summary>
     [Block("Gets the protocol log", name = "Get Pop3 Log")]
     public static string Pop3GetLog(BotData data)
     {
@@ -323,6 +335,9 @@ public static class Methods
         return log;
     }
 
+    /// <summary>
+    /// Gets a text or HTML representation of a mail at a specified index.
+    /// </summary>
     [Block("Gets a text (or HTML) representation of a mail at a specified index")]
     public static async Task<string> Pop3ReadMail(BotData data, int index, bool preferHtml = false)
     {
@@ -352,6 +367,9 @@ Body:
         return output;
     }
 
+    /// <summary>
+    /// Gets a list of all mails from newest to oldest in the form From|To|Subject.
+    /// </summary>
     [Block("Gets a list of all mails in the form From|To|Subject (all if Max Amount is 0) from newest to oldest",
         extraInfo = "Use the Index Of block (in list functions) to get the index of the mail " +
                     "you want to read, and pass it to the Pop3 Read Mail block")]
@@ -378,6 +396,9 @@ Body:
         return list;
     }
 
+    /// <summary>
+    /// Deletes a mail.
+    /// </summary>
     [Block("Deletes a mail", name = "Delete Mail")]
     public static async Task Pop3DeleteMail(BotData data, int index)
     {

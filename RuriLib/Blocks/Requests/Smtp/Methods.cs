@@ -377,6 +377,9 @@ public static class Methods
         data.Logger.Log($"Email sent to {recipientAddress} ({recipientName})", LogColors.LightBrown);
     }
 
+    /// <summary>
+    /// Sends a mail in advanced mode with multiple senders, recipients, headers, and attachments.
+    /// </summary>
     [Block("Sends a mail in advanced mode", name = "Smtp Send Mail (Advanced)", 
         extraInfo = "Senders/Recipients in the format name: address. For attachments, path to one file per line.")]
     public static async Task SmtpSendMailAdvanced(BotData data, Dictionary<string, string> senders,

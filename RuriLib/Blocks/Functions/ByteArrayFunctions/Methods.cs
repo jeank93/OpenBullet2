@@ -23,7 +23,7 @@ public static class Methods
         
         var merged = new byte[first.Length + second.Length];
         Buffer.BlockCopy(first, 0, merged, 0, first.Length);
-        Buffer.BlockCopy(second, 0, merged, second.Length, second.Length);
+        Buffer.BlockCopy(second, 0, merged, first.Length, second.Length);
             
         data.Logger.Log($"Merged {HexConverter.ToHexString(first)} and {HexConverter.ToHexString(second)} into {HexConverter.ToHexString(merged)}", LogColors.YellowGreen);
         return merged;

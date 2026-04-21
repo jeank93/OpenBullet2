@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Utility.Files;
 
+/// <summary>
+/// Blocks for working with files and folders.
+/// </summary>
 [BlockCategory("Files", "Blocks for working with files and folders", "#fad6a5")]
 public static class Methods
 {
@@ -82,6 +85,9 @@ public static class Methods
     #endregion
 
     #region Write File
+    /// <summary>
+    /// Writes a string to a file.
+    /// </summary>
     [Block("Writes a string to a file",
         extraInfo = "The file will be created if it doesn't exist and all its previous content will be overwritten")]
     public static async Task FileWrite(BotData data, string path, [Interpolated] string content,
@@ -99,6 +105,9 @@ public static class Methods
         data.Logger.Log($"Wrote content to {path}", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Writes lines to a file.
+    /// </summary>
     [Block("Writes lines to a file",
         extraInfo = "The file will be created if it doesn't exist and all its previous content will be overwritten")]
     public static async Task FileWriteLines(BotData data, string path, [Variable] List<string> lines,
@@ -116,6 +125,9 @@ public static class Methods
         data.Logger.Log($"Wrote lines to {path}", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Writes bytes to a file.
+    /// </summary>
     [Block("Writes bytes to a file",
         extraInfo = "The file will be created if it doesn't exist and all its previous content will be overwritten")]
     public static async Task FileWriteBytes(BotData data, string path, [Variable] byte[] content)
@@ -153,6 +165,9 @@ public static class Methods
         data.Logger.Log($"Appended content to {path}", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Appends lines at the end of a file.
+    /// </summary>
     [Block("Appends lines at the end of a file")]
     public static async Task FileAppendLines(BotData data, string path, [Variable] List<string> lines,
         FileEncoding encoding = FileEncoding.UTF8)
@@ -171,6 +186,9 @@ public static class Methods
     #endregion
 
     #region File Operations
+    /// <summary>
+    /// Copies a file to a new location.
+    /// </summary>
     [Block("Copies a file to a new location")]
     public static void FileCopy(BotData data, string originPath, string destinationPath)
     {
@@ -198,6 +216,9 @@ public static class Methods
         data.Logger.Log($"Copied {originPath} to {destinationPath}", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Moves a file to a new location.
+    /// </summary>
     [Block("Moves a file to a new location")]
     public static void FileMove(BotData data, string originPath, string destinationPath)
     {
@@ -225,6 +246,9 @@ public static class Methods
         data.Logger.Log($"Moved {originPath} to {destinationPath}", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Deletes a file.
+    /// </summary>
     [Block("Deletes a file")]
     public static void FileDelete(BotData data, string path)
     {
@@ -247,6 +271,9 @@ public static class Methods
     #endregion
 
     #region Folders
+    /// <summary>
+    /// Checks if a folder exists.
+    /// </summary>
     [Block("Checks if a folder exists")]
     public static bool FolderExists(BotData data, string path)
     {
@@ -264,6 +291,9 @@ public static class Methods
         return exists;
     }
 
+    /// <summary>
+    /// Creates a directory in the given path.
+    /// </summary>
     [Block("Creates a directory in the given path")]
     public static void CreatePath(BotData data, string path)
     {
@@ -280,6 +310,9 @@ public static class Methods
         data.Logger.Log($"The path {path} was created", LogColors.Flavescent);
     }
 
+    /// <summary>
+    /// Gets the paths to all files in a specific folder.
+    /// </summary>
     [Block("Gets the paths to all files in a specific folder")]
     public static List<string> GetFilesInFolder(BotData data, string path)
     {
@@ -297,6 +330,9 @@ public static class Methods
         return files;
     }
 
+    /// <summary>
+    /// Deletes a given directory.
+    /// </summary>
     [Block("Deletes a given directory")]
     public static void FolderDelete(BotData data, string path)
     {
@@ -379,12 +415,38 @@ public static class Methods
     }
 }
 
+/// <summary>
+/// Supported file encodings for utility file blocks.
+/// </summary>
 public enum FileEncoding
 {
+    /// <summary>
+    /// UTF-8 encoding.
+    /// </summary>
     UTF8,
+
+    /// <summary>
+    /// ASCII encoding.
+    /// </summary>
     ASCII,
+
+    /// <summary>
+    /// UTF-16 little-endian encoding.
+    /// </summary>
     Unicode,
+
+    /// <summary>
+    /// UTF-16 big-endian encoding.
+    /// </summary>
     BigEndianUnicode,
+
+    /// <summary>
+    /// UTF-32 encoding.
+    /// </summary>
     UTF32,
+
+    /// <summary>
+    /// Latin-1 encoding.
+    /// </summary>
     Latin1
 }

@@ -8,6 +8,9 @@ using System.Text;
 
 namespace RuriLib.Blocks.Utility.Conversion;
 
+/// <summary>
+/// Blocks for converting between different encodings.
+/// </summary>
 [BlockCategory("Conversion", "Blocks for converting between different encodings", "#fad6a5")]
 public static class Methods
 {
@@ -80,6 +83,9 @@ public static class Methods
         return bi.ToString();
     }
 
+    /// <summary>
+    /// Converts a binary string to a byte array.
+    /// </summary>
     [Block("Converts a binary string to a byte array", name = "Binary String => Bytes")]
     public static byte[] BinaryStringToByteArray(BotData data, [Variable] string binaryString, bool addPadding = true)
     {
@@ -88,6 +94,9 @@ public static class Methods
         return BinaryConverter.ToByteArray(binaryString, addPadding);
     }
 
+    /// <summary>
+    /// Converts a byte array to a binary string.
+    /// </summary>
     [Block("Converts a byte array to a binary string", name = "Bytes => Binary String")]
     public static string ByteArrayToBinaryString(BotData data, [Variable] byte[] bytes)
     {
@@ -97,6 +106,9 @@ public static class Methods
         return bin;
     }
 
+    /// <summary>
+    /// Converts a UTF8 string to a base64 string.
+    /// </summary>
     [Block("Converts a UTF8 string to a base64 string", name = "UTF8 => Base64")]
     public static string UTF8ToBase64(BotData data, [Variable] string input)
     {
@@ -106,6 +118,9 @@ public static class Methods
         return base64;
     }
 
+    /// <summary>
+    /// Converts a base64 string to a UTF8 string.
+    /// </summary>
     [Block("Converts a base64 string to a UTF8 string", name = "Base64 => UTF8")]
     public static string Base64ToUTF8(BotData data, [Variable] string input)
     {
@@ -124,6 +139,9 @@ public static class Methods
         return utf8;
     }
 
+    /// <summary>
+    /// Converts an encoded string to a byte array.
+    /// </summary>
     [Block("Converts an encoded string to a byte array", name = "String => Bytes")]
     public static byte[] StringToBytes(BotData data, [Variable] string input, StringEncoding encoding = StringEncoding.UTF8)
     {
@@ -133,6 +151,9 @@ public static class Methods
         return bytes;
     }
 
+    /// <summary>
+    /// Converts a byte array to an encoded string.
+    /// </summary>
     [Block("Converts a byte array to an encoded string", name = "Bytes => String")]
     public static string BytesToString(BotData data, [Variable] byte[] input, StringEncoding encoding = StringEncoding.UTF8)
     {
@@ -142,6 +163,9 @@ public static class Methods
         return str;
     }
 
+    /// <summary>
+    /// Converts a byte count into a readable string.
+    /// </summary>
     [Block("Converts a long number representing bytes into a readable string like 4.5 Gbit or 2.14 KiB")]
     public static string ReadableSize(BotData data, [Variable] string input,
         bool outputBits = false, bool binaryUnit = false, int decimalPlaces = 2)
@@ -165,12 +189,38 @@ public static class Methods
         };
 }
 
+/// <summary>
+/// Supported string encodings for utility conversion blocks.
+/// </summary>
 public enum StringEncoding
 {
+    /// <summary>
+    /// UTF-8 encoding.
+    /// </summary>
     UTF8,
+
+    /// <summary>
+    /// ASCII encoding.
+    /// </summary>
     ASCII,
+
+    /// <summary>
+    /// UTF-16 little-endian encoding.
+    /// </summary>
     Unicode,
+
+    /// <summary>
+    /// UTF-16 big-endian encoding.
+    /// </summary>
     BigEndianUnicode,
+
+    /// <summary>
+    /// UTF-32 encoding.
+    /// </summary>
     UTF32,
+
+    /// <summary>
+    /// Latin-1 encoding.
+    /// </summary>
     Latin1
 }

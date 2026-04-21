@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Utility;
 
+/// <summary>
+/// Utility blocks for miscellaneous purposes.
+/// </summary>
 [BlockCategory("Utility", "Utility blocks for miscellaneous purposes", "#fad6a5")]
 public static class Methods
 {

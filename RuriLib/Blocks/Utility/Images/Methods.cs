@@ -8,6 +8,9 @@ using System.IO;
 
 namespace RuriLib.Blocks.Utility.Images;
 
+/// <summary>
+/// Blocks for working with images.
+/// </summary>
 [BlockCategory("Images", "Blocks for working with images", "#fad6a5")]
 public static class Methods
 {

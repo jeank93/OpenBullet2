@@ -26,7 +26,7 @@ public static class Methods
     }
 
     /// <summary>
-    /// Gets the value of a key in the dictionary.
+    /// Removes an item with a given key from the dictionary.
     /// </summary>
     [Block("Removes an item with a given key from the dictionary")]
     public static void RemoveByKey(BotData data, [Variable] Dictionary<string, string> dictionary, string key)
@@ -46,7 +46,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
         
-        var key = dictionary.FirstOrDefault(kvp => kvp.Value == value).Key;
+        var key = dictionary.FirstOrDefault(kvp => kvp.Value == value).Key ?? string.Empty;
         data.Logger.Log($"Got key: {key}", LogColors.YellowGreen);
         return key;
     }

@@ -281,6 +281,9 @@ public static class Methods
         data.Logger.Log($"Connected to {host} on port {port}. SSL/TLS: {client.IsSecure}", LogColors.DarkOrchid);
     }
 
+    /// <summary>
+    /// Disconnects from an IMAP server.
+    /// </summary>
     [Block("Disconnects from an IMAP server")]
     public static async Task ImapDisconnect(BotData data)
     {
@@ -299,6 +302,9 @@ public static class Methods
         }
     }
 
+    /// <summary>
+    /// Logs into an account and optionally opens the inbox.
+    /// </summary>
     [Block("Logs into an account")]
     public static async Task ImapLogin(BotData data, string email, string password, bool openInbox = true, int timeoutMilliseconds = 10000)
     {
@@ -320,6 +326,9 @@ public static class Methods
         }
     }
 
+    /// <summary>
+    /// Gets the protocol log.
+    /// </summary>
     [Block("Gets the protocol log", name = "Get Imap Log")]
     public static string ImapGetLog(BotData data)
     {
@@ -336,6 +345,9 @@ public static class Methods
         return log;
     }
 
+    /// <summary>
+    /// Opens the inbox folder.
+    /// </summary>
     [Block("Opens the inbox folder")]
     public static async Task ImapOpenInbox(BotData data)
     {
@@ -349,6 +361,9 @@ public static class Methods
         data.Logger.Log($"Opened the inbox, there are {client.Inbox.Count} total messages", LogColors.DarkOrchid);
     }
 
+    /// <summary>
+    /// Searches for mails in the current folder.
+    /// </summary>
     [Block("Searches for mails", extraInfo = "The 'delivered after' expects a Unix timestamp (UTC) in seconds.")]
     public static async Task<List<string>> ImapSearchMails(BotData data, SearchField field1 = SearchField.Subject, string text1 = "",
         SearchField field2 = SearchField.From, string text2 = "", int deliveredAfter = 1)
@@ -394,6 +409,9 @@ public static class Methods
         return ids;
     }
 
+    /// <summary>
+    /// Gets a text or HTML representation of a mail.
+    /// </summary>
     [Block("Gets a text (or HTML) representation of a mail")]
     public static async Task<string> ImapReadMail(BotData data, string id, bool preferHtml = false)
     {
@@ -427,6 +445,9 @@ public static class Methods
         return output;
     }
 
+    /// <summary>
+    /// Gets a mail in EML format.
+    /// </summary>
     [Block("Gets a mail in EML format")]
     public static async Task<byte[]> ImapReadMailRaw(BotData data, string id)
     {
@@ -446,6 +467,9 @@ public static class Methods
         return bytes;
     }
 
+    /// <summary>
+    /// Deletes a mail.
+    /// </summary>
     [Block("Deletes a mail", name = "Imap Delete Mail")]
     public static async Task ImapDeleteMail(BotData data, string id)
     {
@@ -459,6 +483,9 @@ public static class Methods
         data.Logger.Log($"Deleted mail with id {id}", LogColors.DarkOrchid);
     }
         
+    /// <summary>
+    /// Gets a list of folders.
+    /// </summary>
     [Block("Gets a list of folders", name = "Imap List Folders")]
     public static async Task<List<string>> ListFolders(BotData data)
     {
@@ -494,6 +521,9 @@ public static class Methods
         return folderNames;
     }
 
+    /// <summary>
+    /// Opens a folder given its full name.
+    /// </summary>
     [Block("Opens a folder given its full name", name = "Imap Open Folder")]
     public static async Task<bool> ImapOpenFolder(BotData data, string folderName, FolderAccess folderAccess = FolderAccess.ReadOnly)
     {
@@ -514,6 +544,9 @@ public static class Methods
         return folder.IsOpen;
     }
 
+    /// <summary>
+    /// Closes the current folder.
+    /// </summary>
     [Block("Close folder", name = "Imap Close Folder")]
     public static async Task ImapCloseFolder(BotData data)
     {
@@ -530,6 +563,9 @@ public static class Methods
         data.Logger.Log($"Folder '{folder.Name}' is closed", LogColors.DarkOrchid);
     }
 
+    /// <summary>
+    /// Gets the number of email messages in the current folder.
+    /// </summary>
     [Block("Gets the number of email messages in a folder", name = "Imap Get Mail Count")]
     public static async Task<int> GetMailCount(BotData data)
     {
@@ -547,6 +583,9 @@ public static class Methods
         return folder.Count;
     }
 
+    /// <summary>
+    /// Gets the id of the last message in the current folder.
+    /// </summary>
     [Block("Gets the id of the last message in the current folder", name = "Imap Get Last Message Id")]
     public static async Task<int> GetLastMessageId(BotData data)
     {

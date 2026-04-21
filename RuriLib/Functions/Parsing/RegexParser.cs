@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 
 namespace RuriLib.Functions.Parsing;
 
+/// <summary>
+/// Parses strings with regular expressions.
+/// </summary>
 public static class RegexParser
 {
     /// <summary>
@@ -16,6 +19,7 @@ public static class RegexParser
     /// <param name="outputFormat">The output format string, for which [0] will be replaced with the full match,
     /// [1] with the first group etc.</param>
     /// <param name="options">The Regex Options to use</param>
+    /// <returns>The formatted matches.</returns>
     public static IEnumerable<string> MatchGroupsToString(
         string input,
         string pattern,

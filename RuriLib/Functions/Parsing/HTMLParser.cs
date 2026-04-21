@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace RuriLib.Functions.Parsing;
 
+/// <summary>
+/// Parses HTML documents with CSS selectors and XPath queries.
+/// </summary>
 public static class HtmlParser
 {
     /// <summary>
@@ -13,6 +16,7 @@ public static class HtmlParser
     /// <param name="htmlPage">The HTML page</param>
     /// <param name="cssSelector">The CSS Selector that targets the desired elements</param>
     /// <param name="attributeName">The attribute for which you want to parse the value</param>
+    /// <returns>The parsed attribute values.</returns>
     public static IEnumerable<string> QueryAttributeAll(string htmlPage, string cssSelector, string attributeName)
     {
         ArgumentNullException.ThrowIfNull(htmlPage);
@@ -37,6 +41,7 @@ public static class HtmlParser
     /// <param name="htmlPage">The HTML page</param>
     /// <param name="xPath">The XPath that targets the desired elements</param>
     /// <param name="attributeName">The attribute for which you want to parse the value</param>
+    /// <returns>The parsed attribute values.</returns>
     public static IEnumerable<string> QueryXPathAll(string htmlPage, string xPath, string attributeName)
     {
         ArgumentNullException.ThrowIfNull(htmlPage);

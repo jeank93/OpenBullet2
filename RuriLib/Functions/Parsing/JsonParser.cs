@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace RuriLib.Functions.Parsing;
 
+/// <summary>
+/// Parses JSON documents and extracts values by token path.
+/// </summary>
 public static class JsonParser
 {
     /// <summary>
@@ -13,6 +16,7 @@ public static class JsonParser
     /// </summary>
     /// <param name="json">The serialized JSON object or array</param>
     /// <param name="path">The path to the JToken(s) you want to extract</param>
+    /// <returns>The extracted values converted to strings.</returns>
     public static IEnumerable<string> GetValuesByKey(string json, string path)
     {
         ArgumentNullException.ThrowIfNull(json);

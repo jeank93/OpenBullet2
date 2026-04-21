@@ -11,7 +11,11 @@ public static class LRParser
     /// <summary>
     /// Parses all strings between <paramref name="leftDelim"/> and <paramref name="rightDelim"/> in the <paramref name="input"/>.
     /// </summary>
+    /// <param name="input">The string to parse.</param>
+    /// <param name="leftDelim">The left delimiter.</param>
+    /// <param name="rightDelim">The right delimiter.</param>
     /// <param name="caseSensitive">Whether the case is important</param>
+    /// <returns>The parsed values between the delimiters.</returns>
     public static IEnumerable<string> ParseBetween(string input, string leftDelim, string rightDelim, bool caseSensitive = true)
     {
         ArgumentNullException.ThrowIfNull(input);

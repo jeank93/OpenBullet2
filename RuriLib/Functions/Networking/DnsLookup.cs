@@ -10,12 +10,21 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Functions.Networking;
 
+/// <summary>
+/// Performs DNS lookups using DNS over HTTPS.
+/// </summary>
 public static class DnsLookup
 {
     /// <summary>
     /// Retrieves a list of records from Google's DNS over HTTP service at dns.google.com.
     /// The list is ordered by priority.
     /// </summary>
+    /// <param name="domain">The domain name to resolve.</param>
+    /// <param name="type">The record type to query.</param>
+    /// <param name="proxy">An optional proxy to use for the HTTP request.</param>
+    /// <param name="timeout">The timeout in milliseconds.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The ordered list of record values.</returns>
     public static async Task<List<string>> FromGoogleAsync(
         string domain,
         string type,

@@ -14,6 +14,9 @@ public static class HexConverter
     /// to an array of <see cref="byte"/>, optionally adding a padding to the left if
     /// one of the octets is incomplete.
     /// </summary>
+    /// <param name="str">The hexadecimal string to decode.</param>
+    /// <param name="addPadding">Whether incomplete octets should be left-padded with zeroes.</param>
+    /// <returns>The decoded byte array.</returns>
     public static byte[] ToByteArray(string str, bool addPadding = true)
     {
         if (str.Contains(' '))
@@ -39,6 +42,8 @@ public static class HexConverter
     /// <summary>
     /// Converts an array of <see cref="byte"/> to a hex-encoded string.
     /// </summary>
+    /// <param name="bytes">The bytes to encode.</param>
+    /// <returns>The hexadecimal string representation.</returns>
     public static string ToHexString(byte[] bytes)
         => string.Concat(bytes.Select(b => Convert.ToString(b, 16).PadLeft(2, '0')));
 }

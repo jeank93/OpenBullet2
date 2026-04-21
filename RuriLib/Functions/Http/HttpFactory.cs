@@ -23,6 +23,10 @@ public class HttpFactory
     /// <paramref name="proxy"/>, <paramref name="options"/> and
     /// <paramref name="cookies"/>.
     /// </summary>
+    /// <param name="proxy">The optional proxy to use.</param>
+    /// <param name="options">The HTTP client options.</param>
+    /// <param name="cookies">The optional cookie container to attach.</param>
+    /// <returns>The configured proxied handler.</returns>
     public static ProxyClientHandler GetProxiedHandler(
         Proxy? proxy, HttpOptions options, CookieContainer? cookies)
     {
@@ -46,6 +50,9 @@ public class HttpFactory
     /// Creates an <see cref="RLHttpClient"/> with the given
     /// <paramref name="proxy"/> and <paramref name="options"/>.
     /// </summary>
+    /// <param name="proxy">The optional proxy to use.</param>
+    /// <param name="options">The HTTP client options.</param>
+    /// <returns>The configured <see cref="RLHttpClient"/>.</returns>
     public static RLHttpClient GetRLHttpClient(Proxy? proxy, HttpOptions options)
     {
         var client = GetProxyClient(proxy, options);
@@ -67,6 +74,10 @@ public class HttpFactory
     /// <paramref name="proxy"/>, <paramref name="options"/> and
     /// <paramref name="cookieContainer"/>.
     /// </summary>
+    /// <param name="proxy">The optional proxy to use.</param>
+    /// <param name="options">The HTTP client options.</param>
+    /// <param name="cookieContainer">The cookie container to attach.</param>
+    /// <returns>The configured <see cref="HttpClient"/>.</returns>
     public static HttpClient GetHttpClient(Proxy? proxy, HttpOptions options, CookieContainer cookieContainer)
     {
         var handler = GetHttpMessageHandler(proxy, options, cookieContainer);

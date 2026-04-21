@@ -13,6 +13,10 @@ public static class Conditions
     /// <summary>
     /// Compares two <see cref="bool"/> values.
     /// </summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(bool leftTerm, BoolComparison comparison, bool rightTerm)
     {
         return comparison switch
@@ -26,6 +30,10 @@ public static class Conditions
     /// <summary>
     /// Compares two <see cref="string"/> values.
     /// </summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(string? leftTerm, StrComparison comparison, string? rightTerm)
     {
         // These comparisons don't require the terms to be non-null
@@ -55,6 +63,10 @@ public static class Conditions
     }
 
     /// <summary>Compares a <see cref="List{T}"/> of <see cref="string"/> with a <see cref="string"/>.</summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(List<string>? leftTerm, ListComparison comparison, string? rightTerm)
     {
         // These comparisons don't require the left term to be non-null
@@ -77,6 +89,10 @@ public static class Conditions
     }
 
     /// <summary>Compares two <see cref="int"/> values.</summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(int leftTerm, NumComparison comparison, int rightTerm)
     {
         return comparison switch
@@ -92,6 +108,10 @@ public static class Conditions
     }
 
     /// <summary>Compares two <see cref="TimeSpan"/> values.</summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(TimeSpan leftTerm, NumComparison comparison, TimeSpan rightTerm)
     {
         return comparison switch
@@ -107,6 +127,10 @@ public static class Conditions
     }
 
     /// <summary>Compares two <see cref="float"/> values.</summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(float leftTerm, NumComparison comparison, float rightTerm)
     {
         return comparison switch
@@ -122,6 +146,10 @@ public static class Conditions
     }
 
     /// <summary>Compares a <see cref="Dictionary{TKey, TValue}"/> of (<see cref="string"/>,<see cref="string"/>) with a <see cref="string"/></summary>
+    /// <param name="leftTerm">The left operand.</param>
+    /// <param name="comparison">The comparison operator.</param>
+    /// <param name="rightTerm">The right operand.</param>
+    /// <returns><see langword="true"/> if the comparison succeeds.</returns>
     public static bool Check(Dictionary<string, string>? leftTerm, DictComparison comparison, string? rightTerm)
     {
         switch (comparison)

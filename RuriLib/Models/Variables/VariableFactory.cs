@@ -3,8 +3,16 @@ using System.Collections.Generic;
 
 namespace RuriLib.Models.Variables;
 
+/// <summary>
+/// Creates <see cref="Variable"/> instances from runtime objects.
+/// </summary>
 public class VariableFactory
 {
+    /// <summary>
+    /// Wraps an object into the matching <see cref="Variable"/> implementation.
+    /// </summary>
+    /// <param name="obj">The object to wrap.</param>
+    /// <returns>The matching variable wrapper.</returns>
     public static Variable FromObject(object obj) => obj switch
     {
         bool x => new BoolVariable(x),

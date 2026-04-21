@@ -12,6 +12,7 @@ public class DefaultRNGProvider : IRNGProvider
     /// <summary>
     /// Creates a new <see cref="Random"/> seeded from an internal generator.
     /// </summary>
+    /// <returns>A new random number generator.</returns>
     public Random GetNew()
         => new(random.Next(0, int.MaxValue));
 }

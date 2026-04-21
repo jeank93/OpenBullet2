@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Services;
 
+/// <summary>
+/// Loads and persists the RuriLib environment and global settings.
+/// </summary>
 public class RuriLibSettingsService
 {
     private readonly JsonSerializerSettings _jsonSettings;
@@ -15,9 +18,20 @@ public class RuriLibSettingsService
     private string EnvFile => Path.Combine(BaseFolder, "Environment.ini");
     private string RlSettFile => Path.Combine(BaseFolder, "RuriLibSettings.json");
 
+    /// <summary>
+    /// Gets or sets the parsed environment settings.
+    /// </summary>
     public EnvironmentSettings Environment { get; set; }
+
+    /// <summary>
+    /// Gets or sets the persisted RuriLib settings.
+    /// </summary>
     public GlobalSettings RuriLibSettings { get; set; }
 
+    /// <summary>
+    /// Creates a settings service rooted at the given base folder.
+    /// </summary>
+    /// <param name="baseFolder">The folder that stores the environment and settings files.</param>
     public RuriLibSettingsService(string baseFolder)
     {
         BaseFolder = baseFolder;
@@ -44,12 +58,14 @@ public class RuriLibSettingsService
     /// <summary>
     /// Saves the settings to the designated file.
     /// </summary>
+    /// <returns>A task that completes when the settings file has been written.</returns>
     public async Task Save()
         => await File.WriteAllTextAsync(RlSettFile, JsonConvert.SerializeObject(RuriLibSettings, _jsonSettings));
 
     /// <summary>
     /// Gets the currently supported statuses (including the custom ones defined in the Environment settings).
     /// </summary>
+    /// <returns>The built-in and custom status names.</returns>
     public string[] GetStatuses()
         => ["SUCCESS", "NONE", "FAIL", "RETRY", "BAN", "ERROR",
             .. Environment.CustomStatuses.Select(s => s.Name)];

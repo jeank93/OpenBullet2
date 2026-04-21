@@ -13,10 +13,13 @@ public interface IRandomUAProvider
     /// <summary>
     /// Generates a completely random User-Agent.
     /// </summary>
+    /// <returns>The generated User-Agent string.</returns>
     string Generate();
 
     /// <summary>
     /// Generates a random User-Agent for the given <paramref name="platform"/>.
     /// </summary>
+    /// <param name="platform">The platform family to target.</param>
+    /// <returns>The generated User-Agent string.</returns>
     string Generate(UAPlatform platform);
 }

@@ -12,6 +12,9 @@ public static class Base64Converter
     /// Removes the dots that sometimes come with base64 strings from the web
     /// to split the different sections of the encoded data.
     /// </summary>
+    /// <param name="base64String">The Base64 string to decode.</param>
+    /// <param name="urlEncoded">Whether the input uses Base64 URL encoding rules.</param>
+    /// <returns>The decoded bytes.</returns>
     public static byte[] ToByteArray(string base64String, bool urlEncoded = false)
         => urlEncoded
             ? UrlDecode(base64String)

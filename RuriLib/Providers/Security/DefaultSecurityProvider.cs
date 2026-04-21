@@ -21,6 +21,7 @@ public class DefaultSecurityProvider : ISecurityProvider
     /// <summary>
     /// Creates a provider from the persisted RuriLib settings.
     /// </summary>
+    /// <param name="settings">The settings service to read from.</param>
     public DefaultSecurityProvider(RuriLibSettingsService settings)
     {
         RestrictBlocksToCWD = settings.RuriLibSettings.GeneralSettings.RestrictBlocksToCWD;

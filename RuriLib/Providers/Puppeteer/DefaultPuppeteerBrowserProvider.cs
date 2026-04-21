@@ -15,6 +15,7 @@ public class DefaultPuppeteerBrowserProvider : IPuppeteerBrowserProvider
     /// <summary>
     /// Creates a provider from the persisted RuriLib settings.
     /// </summary>
+    /// <param name="settings">The settings service to read from.</param>
     public DefaultPuppeteerBrowserProvider(RuriLibSettingsService settings)
     {
         ChromeBinaryLocation = settings.RuriLibSettings.PuppeteerSettings.ChromeBinaryLocation;

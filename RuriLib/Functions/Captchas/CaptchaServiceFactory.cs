@@ -12,6 +12,8 @@ public class CaptchaServiceFactory
     /// <summary>
     /// Gets a <see cref="CaptchaService"/> to be used for solving captcha challenges.
     /// </summary>
+    /// <param name="settings">The configured captcha settings.</param>
+    /// <returns>The initialized captcha service instance.</returns>
     public static CaptchaService GetService(CaptchaSettings settings)
     {
         CaptchaService service = settings.CurrentService switch

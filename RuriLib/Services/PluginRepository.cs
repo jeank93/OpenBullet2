@@ -7,6 +7,9 @@ using System.Reflection;
 
 namespace RuriLib.Services;
 
+/// <summary>
+/// Manages plugin discovery, installation, and deletion.
+/// </summary>
 public class PluginRepository
 {
         // AppDomains other than AppDomain.CurrentDomain aren't supported in .NET core
@@ -15,6 +18,10 @@ public class PluginRepository
         private string BaseFolder { get; init; }
         private string ToDeleteFile => Path.Combine(BaseFolder, ".toDelete");
 
+        /// <summary>
+        /// Creates a repository rooted at the given base folder.
+        /// </summary>
+        /// <param name="baseFolder">The folder that contains plugin assemblies and dependencies.</param>
         public PluginRepository(string baseFolder)
         {
             BaseFolder = baseFolder;
@@ -57,6 +64,7 @@ public class PluginRepository
         /// <summary>
         /// Gets assemblies from .dll files in the base folder.
         /// </summary>
+        /// <returns>The loaded plugin assemblies.</returns>
         public IEnumerable<Assembly> GetPlugins()
             => Directory.GetFiles(BaseFolder, "*.dll")
                 .Where(p => !_toDelete.Contains(Path.GetFileNameWithoutExtension(p)))
@@ -65,6 +73,7 @@ public class PluginRepository
         /// <summary>
         /// Retrieves the names of .dll files in the base folder (without extension).
         /// </summary>
+        /// <returns>The plugin names.</returns>
         public IEnumerable<string> GetPluginNames()
             => Directory.GetFiles(BaseFolder, "*.dll")
                 .Select(Path.GetFileNameWithoutExtension)
@@ -73,12 +82,14 @@ public class PluginRepository
         /// <summary>
         /// Retrieves the assemblies of all plugins and their references.
         /// </summary>
+        /// <returns>The plugin assemblies and their referenced assemblies.</returns>
         public IEnumerable<Assembly> GetPluginsAndReferences()
             => GetReferences(GetPlugins());
 
         /// <summary>
         /// Adds a plugin from a .zip file.
         /// </summary>
+        /// <param name="stream">The ZIP archive stream containing the plugin payload.</param>
         public void AddPlugin(Stream stream)
         {
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read, false);
@@ -117,6 +128,10 @@ public class PluginRepository
         }
 
         // Delete a plugin (unload, recreate Descriptors) (also unload all deps from appdomain?)
+        /// <summary>
+        /// Marks a plugin for deletion and refreshes the descriptors repository.
+        /// </summary>
+        /// <param name="name">The plugin name.</param>
         public void DeletePlugin(string name)
         {
             // TODO: Loading and unloading through AssemblyLoadContext

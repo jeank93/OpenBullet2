@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Providers.Emails;
 
+/// <summary>
+/// File-backed implementation of <see cref="IEmailDomainRepository"/>.
+/// </summary>
 public class FileEmailDomainRepository : IEmailDomainRepository
 {
     private const string imapFile = "UserData/imapdomains.dat";
@@ -17,6 +20,9 @@ public class FileEmailDomainRepository : IEmailDomainRepository
     private readonly ConcurrentDictionary<string, List<HostEntry>> pop3Hosts = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, List<HostEntry>> smtpHosts = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Creates a file-backed repository and loads the known server lists.
+    /// </summary>
     public FileEmailDomainRepository()
     {
         FillDictionary(imapFile, imapHosts);
@@ -24,21 +30,27 @@ public class FileEmailDomainRepository : IEmailDomainRepository
         FillDictionary(smtpFile, smtpHosts);
     }
 
+    /// <inheritdoc />
     public Task TryAddImapServer(string domain, HostEntry server)
         => TryAddServer(imapFile, imapHosts, domain, server);
 
+    /// <inheritdoc />
     public Task TryAddPop3Server(string domain, HostEntry server)
         => TryAddServer(pop3File, pop3Hosts, domain, server);
 
+    /// <inheritdoc />
     public Task TryAddSmtpServer(string domain, HostEntry server)
         => TryAddServer(smtpFile, smtpHosts, domain, server);
 
+    /// <inheritdoc />
     public Task<IEnumerable<HostEntry>> GetImapServers(string domain)
         => Task.FromResult(imapHosts.TryGetValue(domain, out var hosts) ? hosts as IEnumerable<HostEntry> : []);
 
+    /// <inheritdoc />
     public Task<IEnumerable<HostEntry>> GetPop3Servers(string domain)
         => Task.FromResult(pop3Hosts.TryGetValue(domain, out var hosts) ? hosts as IEnumerable<HostEntry> : []);
 
+    /// <inheritdoc />
     public Task<IEnumerable<HostEntry>> GetSmtpServers(string domain)
         => Task.FromResult(smtpHosts.TryGetValue(domain, out var hosts) ? hosts as IEnumerable<HostEntry> : []);
 

@@ -9,12 +9,21 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Functions.Tcp
 {
+    /// <summary>
+    /// Creates TCP clients with optional proxy support.
+    /// </summary>
     public static class TcpClientFactory
     {
         /// <summary>
-        /// Creates a socket that talks to the given <paramref name="host"/> on the given <paramref name="port"/>
-        /// (optionally through a proxy) and returns the <see cref="NetworkStream"/>.
+        /// Creates a TCP client that talks to the given <paramref name="host"/> on the given <paramref name="port"/>
+        /// optionally through a proxy.
         /// </summary>
+        /// <param name="host">The destination host.</param>
+        /// <param name="port">The destination port.</param>
+        /// <param name="timeout">The connect/read-write timeout.</param>
+        /// <param name="proxy">The optional proxy to use.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The connected <see cref="TcpClient"/>.</returns>
         public static Task<TcpClient> GetClientAsync(string host, int port, TimeSpan timeout, Proxy? proxy = null,
             CancellationToken cancellationToken = default)
         {

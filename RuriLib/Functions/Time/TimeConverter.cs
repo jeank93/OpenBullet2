@@ -12,6 +12,7 @@ public static class TimeConverter
     /// Converts a DateTime to unix time seconds.
     /// </summary>
     /// <param name="dateTime">The DateTime to convert</param>
+    /// <param name="outputMilliseconds">Whether to output milliseconds instead of seconds.</param>
     /// <returns>The seconds that passed since Jan 1st 1970.</returns>
     public static long ToUnixTime(this DateTime dateTime, bool outputMilliseconds = false)
     {
@@ -26,6 +27,7 @@ public static class TimeConverter
     /// Converts a unix time to a universal DateTime.
     /// </summary>
     /// <param name="unixTime">The unix time in seconds or milliseconds</param>
+    /// <param name="isMilliseconds">Whether the input is already expressed in milliseconds.</param>
     /// <returns>A DateTime.</returns>
     public static DateTime ToDateTimeUtc(this long unixTime, bool isMilliseconds = false)
     {

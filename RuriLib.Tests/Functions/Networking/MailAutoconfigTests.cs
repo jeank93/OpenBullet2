@@ -61,4 +61,19 @@ public class MailAutoconfigTests
 
         Assert.Throws<FormatException>(() => ImapAutoconfig.Parse(xml));
     }
+
+    [Fact]
+    public void Parse_NoMatchingServers_ReturnsEmptyList()
+    {
+        const string xml = """
+            <clientConfig>
+              <emailProvider>
+              </emailProvider>
+            </clientConfig>
+            """;
+
+        Assert.Empty(SmtpAutoconfig.Parse(xml));
+        Assert.Empty(Pop3Autoconfig.Parse(xml));
+        Assert.Empty(ImapAutoconfig.Parse(xml));
+    }
 }

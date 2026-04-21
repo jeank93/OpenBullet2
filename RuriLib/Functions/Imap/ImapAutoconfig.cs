@@ -6,8 +6,16 @@ using System.Xml;
 
 namespace RuriLib.Functions.Imap;
 
+/// <summary>
+/// Parses IMAP Thunderbird-style autoconfig XML.
+/// </summary>
 public static class ImapAutoconfig
 {
+    /// <summary>
+    /// Parses IMAP server entries from autoconfig XML.
+    /// </summary>
+    /// <param name="xml">The autoconfig XML.</param>
+    /// <returns>The parsed IMAP host entries.</returns>
     public static List<HostEntry> Parse(string xml)
     {
         var doc = new XmlDocument();

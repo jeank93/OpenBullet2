@@ -6,8 +6,16 @@ using System.Xml;
 
 namespace RuriLib.Functions.Pop3;
 
+/// <summary>
+/// Parses POP3 Thunderbird-style autoconfig XML.
+/// </summary>
 public static class Pop3Autoconfig
 {
+    /// <summary>
+    /// Parses POP3 server entries from autoconfig XML.
+    /// </summary>
+    /// <param name="xml">The autoconfig XML.</param>
+    /// <returns>The parsed POP3 host entries.</returns>
     public static List<HostEntry> Parse(string xml)
     {
         var doc = new XmlDocument();

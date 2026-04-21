@@ -6,8 +6,16 @@ using System.Xml;
 
 namespace RuriLib.Functions.Smtp;
 
+/// <summary>
+/// Parses SMTP Thunderbird-style autoconfig XML.
+/// </summary>
 public static class SmtpAutoconfig
 {
+    /// <summary>
+    /// Parses SMTP server entries from autoconfig XML.
+    /// </summary>
+    /// <param name="xml">The autoconfig XML.</param>
+    /// <returns>The parsed SMTP host entries.</returns>
     public static List<HostEntry> Parse(string xml)
     {
         var doc = new XmlDocument();

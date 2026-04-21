@@ -5,8 +5,16 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Helpers;
 
+/// <summary>
+/// Runs local scripts and captures their standard output.
+/// </summary>
 public static class RunScript
 {
+    /// <summary>
+    /// Runs a supported script file and returns its standard output.
+    /// </summary>
+    /// <param name="scriptPath">The script path.</param>
+    /// <returns>The standard output, or <c>null</c> if unsupported or failed.</returns>
     public static async Task<string?> RunScriptAndGetStdOut(string scriptPath)
     {
         ArgumentNullException.ThrowIfNull(scriptPath);

@@ -29,27 +29,49 @@ public static class FileLocker
     }
 }
 
+/// <summary>
+/// Provides asynchronous read/write locking semantics for a single file handle.
+/// </summary>
 public class RWLock : IDisposable
 {
     private readonly SemaphoreSlim readLock = new(1, 1);
     private readonly SemaphoreSlim writeLock = new(1, 1);
 
+    /// <summary>
+    /// Enters the read lock.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that completes when the lock is acquired.</returns>
     public Task EnterReadLock(CancellationToken cancellationToken = default) => readLock.WaitAsync(cancellationToken);
 
+    /// <summary>
+    /// Enters the write lock.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that completes when the lock is acquired.</returns>
     public async Task EnterWriteLock(CancellationToken cancellationToken = default)
     {
         await readLock.WaitAsync(cancellationToken);
         await writeLock.WaitAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Exits the read lock.
+    /// </summary>
     public void ExitReadLock() => readLock.Release();
 
+    /// <summary>
+    /// Exits the write lock.
+    /// </summary>
     public void ExitWriteLock()
     {
         readLock.Release();
         writeLock.Release();
     }
 
+    /// <summary>
+    /// Disposes the underlying semaphores.
+    /// </summary>
     public void Dispose()
     {
         readLock.Dispose();

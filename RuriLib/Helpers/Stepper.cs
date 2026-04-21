@@ -7,6 +7,9 @@ namespace RuriLib.Helpers;
 // TODO: Rework this with a better pattern (StepTokenSource and StepToken)
 // see PauseTokenSource and PauseToken for inspiration. This works but it's not very
 // good pattern-wise, it would be better with a publisher/consumer model.
+/// <summary>
+/// Coordinates one-step-at-a-time execution for debugging scenarios.
+/// </summary>
 public class Stepper
 {
     private CancellationTokenSource? waitCts;
@@ -16,12 +19,16 @@ public class Stepper
     /// </summary>
     public bool IsWaiting => waitCts is not null;
 
+    /// <summary>
+    /// Raised when the stepper begins waiting for a step.
+    /// </summary>
     public event EventHandler? WaitingForStep;
 
     /// <summary>
     /// Asynchronously waits until the <see cref="TryTakeStep"/> method is called,
     /// or the <paramref name="cancellationToken"/> is cancelled.
     /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
     public async Task WaitForStepAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -56,6 +63,7 @@ public class Stepper
     /// Takes a step, returns true if the step was actually taken,
     /// false if the stepper was not waiting.
     /// </summary>
+    /// <returns><c>true</c> if a waiting step was released; otherwise <c>false</c>.</returns>
     public bool TryTakeStep()
     {
         var cts = waitCts;

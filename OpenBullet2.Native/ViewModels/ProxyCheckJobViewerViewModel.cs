@@ -17,7 +17,7 @@ public class ProxyCheckJobViewerViewModel : ViewModelBase, IDisposable
     public event Action<object, string, Color>? NewMessage;
 
     public ProxyCheckJobViewModel Job { get; set; }
-    private ProxyCheckJob ProxyCheckJob => Job.Job as ProxyCheckJob;
+    private ProxyCheckJob ProxyCheckJob => (ProxyCheckJob)Job.Job;
 
     #region Properties that need to be updated every second
     public string RemainingWaitString => ProxyCheckJob.StartCondition switch

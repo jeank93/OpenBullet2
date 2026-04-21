@@ -99,20 +99,20 @@ public partial class Wordlists : Page
         
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             wordlistListView.Items.SortDescriptions.Clear();
         }
 
         var newDir = ListSortDirection.Ascending;
         
-        if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         wordlistListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
     }
 

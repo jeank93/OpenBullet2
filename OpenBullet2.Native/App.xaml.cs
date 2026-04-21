@@ -48,7 +48,8 @@ public partial class App : Application
         serviceProvider = serviceCollection.BuildServiceProvider();
         SP.Init(serviceProvider);
 
-        config = SP.GetService<IConfiguration>();
+        config = SP.GetService<IConfiguration>()
+            ?? throw new InvalidOperationException("Configuration service was not registered");
         var workerThreads = config.GetSection("Resources").GetValue("WorkerThreads", 1000);
         var ioThreads = config.GetSection("Resources").GetValue("IOThreads", 1000);
         var connectionLimit = config.GetSection("Resources").GetValue("ConnectionLimit", 1000);
@@ -57,21 +58,21 @@ public partial class App : Application
         ServicePointManager.DefaultConnectionLimit = connectionLimit;
 
         // Apply DB migrations or create a DB if it doesn't exist
-        using (var serviceScope = serviceProvider.GetService<IServiceScopeFactory>().CreateScope())
+        using (var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope())
         {
             var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             context.Database.Migrate();
         }
 
         // Load the configs
-        var configService = serviceProvider.GetService<ConfigService>();
+        var configService = serviceProvider.GetRequiredService<ConfigService>();
         configService.ReloadConfigsAsync().Wait();
 
         AutocompletionProvider.Init();
 
         // Start the job monitor at the start of the application,
         // otherwise it will only be started when navigating to the page
-        _ = serviceProvider.GetService<JobMonitorService>();
+        _ = serviceProvider.GetRequiredService<JobMonitorService>();
     }
 
     private void ConfigureServices(IServiceCollection services)
@@ -92,10 +93,10 @@ public partial class App : Application
         services.AddSingleton<IJobRepository, DbJobRepository>();
         services.AddSingleton<IRecordRepository, DbRecordRepository>();
         services.AddSingleton<IConfigRepository>(service =>
-            new DiskConfigRepository(service.GetService<RuriLibSettingsService>(),
+            new DiskConfigRepository(service.GetRequiredService<RuriLibSettingsService>(),
             "UserData/Configs"));
         services.AddSingleton<IWordlistRepository>(service =>
-            new HybridWordlistRepository(service.GetService<ApplicationDbContext>(),
+            new HybridWordlistRepository(service.GetRequiredService<ApplicationDbContext>(),
             "UserData/Wordlists"));
 
         // Singletons
@@ -119,13 +120,13 @@ public partial class App : Application
         services.AddSingleton<IRNGProvider, DefaultRNGProvider>();
         services.AddSingleton<MemoryJobLogger>();
         services.AddSingleton<IJobLogger>(service =>
-            new FileJobLogger(service.GetService<RuriLibSettingsService>(),
+            new FileJobLogger(service.GetRequiredService<RuriLibSettingsService>(),
             "UserData/Logs/Jobs"));
     }
 
     private void OnStartup(object sender, StartupEventArgs e)
     {
-        var mainWindow = serviceProvider.GetService<MainWindow>();
+        var mainWindow = serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.NavigateTo(MainWindowPage.Home);
         mainWindow.Show();
     }

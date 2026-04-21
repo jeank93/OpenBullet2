@@ -3,36 +3,40 @@ using OpenBullet2.Native.Views.Pages;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace OpenBullet2.Native.Views.Dialogs
+namespace OpenBullet2.Native.Views.Dialogs;
+
+/// <summary>
+/// Interaction logic for ChangeBotsDialog.xaml
+/// </summary>
+public partial class ChangeBotsDialog : Page
 {
-    /// <summary>
-    /// Interaction logic for ChangeBotsDialog.xaml
-    /// </summary>
-    public partial class ChangeBotsDialog : Page
+    private readonly object caller;
+
+    public ChangeBotsDialog(object caller, int oldValue)
     {
-        private readonly object caller;
+        this.caller = caller;
 
-        public ChangeBotsDialog(object caller, int oldValue)
+        InitializeComponent();
+        bots.Maximum = SP.GetService<JobFactoryService>().BotLimit;
+        bots.Value = oldValue;
+    }
+
+    private void Accept(object sender, RoutedEventArgs e)
+    {
+        if (bots.Value is not double value)
         {
-            this.caller = caller;
-
-            InitializeComponent();
-            bots.Maximum = SP.GetService<JobFactoryService>().BotLimit;
-            bots.Value = oldValue;
+            return;
         }
 
-        private void Accept(object sender, RoutedEventArgs e)
+        if (caller is MultiRunJobViewer mr)
         {
-            if (caller is MultiRunJobViewer mr)
-            {
-                mr.ChangeBots((int)bots.Value);
-            }
-            else if (caller is ProxyCheckJobViewer pc)
-            {
-                pc.ChangeBots((int)bots.Value);
-            }
-
-            ((MainDialog)Parent).Close();
+            mr.ChangeBots((int)value);
         }
+        else if (caller is ProxyCheckJobViewer pc)
+        {
+            pc.ChangeBots((int)value);
+        }
+
+        ((MainDialog)Parent).Close();
     }
 }

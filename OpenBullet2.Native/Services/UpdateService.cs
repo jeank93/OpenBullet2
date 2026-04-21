@@ -70,11 +70,13 @@ public class UpdateService : IDisposable
                 client.BaseAddress = new Uri("https://api.github.com/repos/openbullet/OpenBullet2/");
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0");
                 var response = await client.GetAsync("releases/latest");
+                response.EnsureSuccessStatusCode();
 
                 // Take the first and get its name
                 var json = await response.Content.ReadAsStringAsync();
                 var release = JToken.Parse(json);
-                var releaseName = release["tag_name"].ToString();
+                var releaseName = release["tag_name"]?.ToString()
+                    ?? throw new InvalidOperationException("GitHub release payload did not contain tag_name");
 
                 // Try to parse that name to a Version object
                 RemoteVersion = Version.Parse(releaseName);

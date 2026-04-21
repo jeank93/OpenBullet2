@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Xunit;
+using RuriLib.Tests.Utils;
 
 namespace RuriLib.Tests.Blocks;
 
@@ -58,7 +59,7 @@ public sealed class UtilityBlocksTests : IDisposable
         Assert.Equal("hello", value);
     }
 
-    [Fact]
+    [WindowsFact]
     public void SvgToPng_ReturnsPngBytes()
     {
         var data = NewBotData();

@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using RuriLib.Helpers.Blocks;
 
 namespace RuriLib.Services;
 
@@ -14,7 +15,7 @@ public class PluginRepository
 {
         // AppDomains other than AppDomain.CurrentDomain aren't supported in .NET core
         private readonly AppDomain _domain = AppDomain.CurrentDomain;
-        private readonly List<string> _toDelete = new();
+        private readonly List<string> _toDelete = [];
         private string BaseFolder { get; init; }
         private string ToDeleteFile => Path.Combine(BaseFolder, ".toDelete");
 
@@ -161,8 +162,9 @@ public class PluginRepository
         // Recreates the descriptors repository and loads the plugins
         private void ReloadBlockDescriptors()
         {
-            Globals.DescriptorsRepository.Recreate();
-            GetPlugins().ToList().ForEach(p => Globals.DescriptorsRepository.AddFromExposedMethods(p));
+            var repository = new DescriptorsRepository();
+            GetPlugins().ToList().ForEach(p => repository.AddFromExposedMethods(p));
+            Globals.DescriptorsRepository = repository;
         }
 
         private void LoadAssemblies(IEnumerable<Assembly> assemblies)

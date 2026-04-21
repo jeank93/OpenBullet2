@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Proxies;
 
+/// <summary>
+/// Manages a shared pool of proxies loaded from one or more sources.
+/// </summary>
 public class ProxyPool : IDisposable
 {
     /// <summary>All the proxies currently in the pool.</summary>
@@ -30,6 +33,8 @@ public class ProxyPool : IDisposable
     /// <summary>
     /// Initializes the proxy pool given the proxy sources.
     /// </summary>
+    /// <param name="sources">The proxy sources to load from.</param>
+    /// <param name="options">Optional pool behavior settings.</param>
     public ProxyPool(IEnumerable<ProxySource> sources, ProxyPoolOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(sources);
@@ -42,6 +47,7 @@ public class ProxyPool : IDisposable
     /// <summary>
     /// Sets all the BANNED and BAD proxies status to AVAILABLE and resets their Uses.
     /// </summary>
+    /// <param name="minimumBanTime">The minimum ban duration that must have elapsed before a proxy can be unbanned.</param>
     public void UnbanAll(TimeSpan minimumBanTime)
     {
         var now = DateTime.Now;
@@ -64,6 +70,9 @@ public class ProxyPool : IDisposable
     /// Use this together with a lock if possible. Returns null if no proxy
     /// matching the required parameters was found.
     /// </summary>
+    /// <param name="evenBusy">Whether busy proxies are also considered valid candidates.</param>
+    /// <param name="maxUses">The maximum number of times a proxy can have been used, or 0 for no limit.</param>
+    /// <returns>The selected proxy, or <see langword="null"/> if none matched.</returns>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)] //hot path
     public Proxy? GetProxy(bool evenBusy = false, int maxUses = 0)
     {
@@ -117,6 +126,8 @@ public class ProxyPool : IDisposable
     /// <summary>
     /// Releases a proxy that was being used, optionally banning it.
     /// </summary>
+    /// <param name="proxy">The proxy to release.</param>
+    /// <param name="ban">Whether the proxy should be marked as banned.</param>
     public void ReleaseProxy(Proxy proxy, bool ban = false)
     {
         ArgumentNullException.ThrowIfNull(proxy);
@@ -150,6 +161,9 @@ public class ProxyPool : IDisposable
     /// <summary>
     /// Reloads all proxies in the pool from the provided sources.
     /// </summary>
+    /// <param name="shuffle">Whether the loaded proxies should be shuffled.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that completes when the reload process finishes.</returns>
     public async Task ReloadAllAsync(bool shuffle = true, CancellationToken cancellationToken = default)
     {
         if (isReloadingProxies)
@@ -239,6 +253,9 @@ public class ProxyPool : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Releases resources owned by the proxy pool.
+    /// </summary>
     public void Dispose()
     {
         if (asyncLocker is not null)

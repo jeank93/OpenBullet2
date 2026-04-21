@@ -7,10 +7,20 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Proxies.ProxySources;
 
+/// <summary>
+/// Loads proxies from a remote HTTP endpoint.
+/// </summary>
 public class RemoteProxySource : ProxySource
 {
+    /// <summary>
+    /// Gets or sets the remote URL.
+    /// </summary>
     public string Url { get; set; }
 
+    /// <summary>
+    /// Creates a remote proxy source.
+    /// </summary>
+    /// <param name="url">The URL to download proxies from.</param>
     public RemoteProxySource(string url)
     {
         ArgumentNullException.ThrowIfNull(url);
@@ -18,6 +28,7 @@ public class RemoteProxySource : ProxySource
         Url = url;
     }
 
+    /// <inheritdoc />
     public override async Task<IEnumerable<Proxy>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         using var client = new HttpClient();

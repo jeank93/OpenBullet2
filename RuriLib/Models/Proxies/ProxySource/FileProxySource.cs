@@ -8,11 +8,21 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Proxies.ProxySources;
 
+/// <summary>
+/// Loads proxies from a file or executable script.
+/// </summary>
 public class FileProxySource : ProxySource
 {
+    /// <summary>
+    /// Gets or sets the file or script path.
+    /// </summary>
     public string FileName { get; set; }
     private AsyncLocker? asyncLocker;
 
+    /// <summary>
+    /// Creates a file-backed proxy source.
+    /// </summary>
+    /// <param name="fileName">The file or script path.</param>
     public FileProxySource(string fileName)
     {
         ArgumentNullException.ThrowIfNull(fileName);
@@ -21,6 +31,7 @@ public class FileProxySource : ProxySource
         asyncLocker = new();
     }
 
+    /// <inheritdoc />
     public async override Task<IEnumerable<Proxy>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         string[] lines;
@@ -59,6 +70,7 @@ public class FileProxySource : ProxySource
             .OfType<Proxy>();
     }
 
+    /// <inheritdoc />
     public override void Dispose()
     {
         if (asyncLocker is not null)

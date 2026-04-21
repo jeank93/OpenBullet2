@@ -15,24 +15,73 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Jobs;
 
+/// <summary>
+/// Represents a job that checks proxy connectivity and status.
+/// </summary>
 public class ProxyCheckJob : Job
 {
     // Options
+    /// <summary>
+    /// Gets or sets the number of worker bots.
+    /// </summary>
     public int Bots { get; set; } = 1;
+
+    /// <summary>
+    /// Gets the maximum allowed number of worker bots.
+    /// </summary>
     public int BotLimit { get; init; } = 200;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether only untested proxies should be checked.
+    /// </summary>
     public bool CheckOnlyUntested { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the URL used for proxy verification.
+    /// </summary>
     public string? Url { get; set; } = "https://google.com";
+
+    /// <summary>
+    /// Gets or sets the success marker expected in the response.
+    /// </summary>
     public string? SuccessKey { get; set; } = "title>Google";
+
+    /// <summary>
+    /// Gets or sets the proxies to test.
+    /// </summary>
     public IEnumerable<Proxy>? Proxies { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout for each proxy check.
+    /// </summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Gets or sets the timer tick interval.
+    /// </summary>
     public TimeSpan TickInterval = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// Gets or sets the proxy output sink.
+    /// </summary>
     public IProxyCheckOutput? ProxyOutput { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional proxy geolocation provider.
+    /// </summary>
     public IProxyGeolocationProvider? GeoProvider { get; set; }
 
     // Getters
+    /// <inheritdoc />
     public override float Progress => parallelizer?.Progress ?? -1;
+    /// <inheritdoc />
     public override TimeSpan Elapsed => parallelizer?.Elapsed ?? TimeSpan.Zero;
+    /// <inheritdoc />
     public override TimeSpan Remaining => parallelizer?.Remaining ?? System.Threading.Timeout.InfiniteTimeSpan;
+
+    /// <summary>
+    /// Gets the current checks per minute.
+    /// </summary>
     public int CPM => parallelizer?.CPM ?? 0;
 
     // Private fields
@@ -41,21 +90,73 @@ public class ProxyCheckJob : Job
     private CancellationTokenSource? startCts;
 
     // Stats
+    /// <summary>
+    /// Gets or sets the total number of proxies to process.
+    /// </summary>
     public int Total { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of tested proxies.
+    /// </summary>
     public int Tested { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of working proxies.
+    /// </summary>
     public int Working { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of non-working proxies.
+    /// </summary>
     public int NotWorking { get; set; }
 
     // Events
+    /// <summary>
+    /// Raised when a worker task fails.
+    /// </summary>
     public event EventHandler<ErrorDetails<ProxyCheckInput>>? OnTaskError;
+
+    /// <summary>
+    /// Raised when a proxy-check result is produced.
+    /// </summary>
     public event EventHandler<ResultDetails<ProxyCheckInput, Proxy>>? OnResult;
+
+    /// <summary>
+    /// Raised when the job encounters an error.
+    /// </summary>
     public event EventHandler<Exception>? OnError;
+
+    /// <summary>
+    /// Raised when job progress changes.
+    /// </summary>
     public event EventHandler<float>? OnProgress;
+
+    /// <summary>
+    /// Raised when the job status changes.
+    /// </summary>
     public event EventHandler<JobStatus>? OnStatusChanged;
+
+    /// <summary>
+    /// Raised when the bot count changes.
+    /// </summary>
     public event EventHandler? OnBotsChanged;
+
+    /// <summary>
+    /// Raised when the job completes.
+    /// </summary>
     public event EventHandler? OnCompleted;
+
+    /// <summary>
+    /// Raised on each timer tick.
+    /// </summary>
     public event EventHandler? OnTimerTick;
 
+    /// <summary>
+    /// Creates a proxy-check job.
+    /// </summary>
+    /// <param name="settings">The RuriLib settings service.</param>
+    /// <param name="pluginRepo">The plugin repository.</param>
+    /// <param name="logger">The optional job logger.</param>
     public ProxyCheckJob(RuriLibSettingsService settings, PluginRepository pluginRepo, IJobLogger? logger = null)
         : base(settings, pluginRepo, logger)
     {
@@ -132,6 +233,7 @@ public class ProxyCheckJob : Job
     #endregion
 
     #region Controls
+    /// <inheritdoc />
     public override async Task Start(CancellationToken cancellationToken = default)
     {
         if (Status is JobStatus.Starting or JobStatus.Running)
@@ -221,6 +323,7 @@ public class ProxyCheckJob : Job
         }
     }
 
+    /// <inheritdoc />
     public override async Task Stop()
         {
             try
@@ -242,6 +345,7 @@ public class ProxyCheckJob : Job
             }
         }
 
+    /// <inheritdoc />
     public override async Task Abort()
         {
             try
@@ -268,6 +372,7 @@ public class ProxyCheckJob : Job
             }
         }
 
+    /// <inheritdoc />
     public override async Task Pause()
         {
             try
@@ -289,6 +394,7 @@ public class ProxyCheckJob : Job
             }
         }
 
+    /// <inheritdoc />
     public override async Task Resume()
         {
             try
@@ -310,6 +416,11 @@ public class ProxyCheckJob : Job
     #endregion
 
     #region Wrappers for TaskManager methods
+    /// <summary>
+    /// Changes the number of worker bots used by the job.
+    /// </summary>
+    /// <param name="amount">The new degree of parallelism.</param>
+    /// <returns>A task that completes when the change has been applied.</returns>
     public async Task ChangeBots(int amount)
     {
         if (parallelizer is not null)
@@ -406,14 +517,44 @@ public class ProxyCheckJob : Job
     #endregion
 }
 
+/// <summary>
+/// Represents the input required to check a single proxy.
+/// </summary>
 public struct ProxyCheckInput
 {
+    /// <summary>
+    /// Gets or sets the proxy to check.
+    /// </summary>
     public Proxy Proxy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the verification URL.
+    /// </summary>
     public string Url { get; set; }
+
+    /// <summary>
+    /// Gets or sets the success marker expected in the response.
+    /// </summary>
     public string SuccessKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout for the check.
+    /// </summary>
     public TimeSpan Timeout { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional geolocation provider.
+    /// </summary>
     public IProxyGeolocationProvider? GeoProvider { get; set; }
 
+    /// <summary>
+    /// Creates a proxy-check input payload.
+    /// </summary>
+    /// <param name="proxy">The proxy to check.</param>
+    /// <param name="url">The verification URL.</param>
+    /// <param name="successKey">The success marker expected in the response.</param>
+    /// <param name="timeout">The timeout for the check.</param>
+    /// <param name="geoProvider">The optional geolocation provider.</param>
     public ProxyCheckInput(Proxy proxy, string url, string successKey,
         TimeSpan timeout, IProxyGeolocationProvider? geoProvider)
     {

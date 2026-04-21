@@ -9,15 +9,40 @@ using System.Text.RegularExpressions;
 
 namespace RuriLib.Models.Blocks;
 
+/// <summary>
+/// Base class for a configured block instance inside a config.
+/// </summary>
 public abstract class BlockInstance
 {
+    /// <summary>
+    /// Gets the descriptor identifier of the block.
+    /// </summary>
     public string Id { get; protected set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether the block is disabled.
+    /// </summary>
     public bool Disabled { get; set; }
+    /// <summary>
+    /// Gets or sets the runtime label of the block.
+    /// </summary>
     public string Label { get; set; }
+    /// <summary>
+    /// Gets the readable default name of the block.
+    /// </summary>
     public string ReadableName { get; protected set; }
+    /// <summary>
+    /// Gets the configured block settings.
+    /// </summary>
     public Dictionary<string, BlockSetting> Settings { get; protected set; } = [];
+    /// <summary>
+    /// Gets the descriptor used to create this instance.
+    /// </summary>
     public BlockDescriptor Descriptor { get; protected set; }
 
+    /// <summary>
+    /// Initializes a block instance from its descriptor.
+    /// </summary>
+    /// <param name="descriptor">The descriptor that defines the block shape.</param>
     public BlockInstance(BlockDescriptor descriptor)
     {
         Descriptor = descriptor;
@@ -29,6 +54,11 @@ public abstract class BlockInstance
             .ToDictionary(p => p.Name, p => p);
     }
 
+    /// <summary>
+    /// Serializes the block instance to LoliCode.
+    /// </summary>
+    /// <param name="printDefaultParams">Whether settings with default values should be printed.</param>
+    /// <returns>The serialized LoliCode block body.</returns>
     public virtual string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -63,6 +93,11 @@ public abstract class BlockInstance
         return writer.ToString();
     }
 
+    /// <summary>
+    /// Reads common block metadata from LoliCode.
+    /// </summary>
+    /// <param name="script">The remaining block script to parse.</param>
+    /// <param name="lineNumber">The current line number, updated while parsing.</param>
     public virtual void FromLC(ref string script, ref int lineNumber)
     {
         /*
@@ -101,8 +136,20 @@ public abstract class BlockInstance
         script = writer.ToString();
     }
 
+    /// <summary>
+    /// Transpiles the block instance to C#.
+    /// </summary>
+    /// <param name="definedVariables">The variables already declared in the generated script.</param>
+    /// <param name="settings">The config settings used during transpilation.</param>
+    /// <returns>The generated C# code.</returns>
     public virtual string ToCSharp(List<string> definedVariables, ConfigSettings settings) => throw new NotImplementedException();
 
+    /// <summary>
+    /// Gets a fixed setting cast to the requested type.
+    /// </summary>
+    /// <typeparam name="T">The expected setting type.</typeparam>
+    /// <param name="name">The setting name.</param>
+    /// <returns>The fixed setting if present and compatible; otherwise <see langword="null"/>.</returns>
     public T? GetFixedSetting<T>(string name) where T : Setting
         => Settings[name].FixedSetting as T;
 }

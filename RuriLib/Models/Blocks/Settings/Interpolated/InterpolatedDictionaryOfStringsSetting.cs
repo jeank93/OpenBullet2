@@ -3,7 +3,7 @@
 namespace RuriLib.Models.Blocks.Settings.Interpolated;
 
 /// <summary>
-/// A setting that holds an interpolated dictionary of strings.
+/// Represents an interpolated dictionary-of-strings block setting.
 /// </summary>
 public class InterpolatedDictionaryOfStringsSetting : InterpolatedSetting
 {

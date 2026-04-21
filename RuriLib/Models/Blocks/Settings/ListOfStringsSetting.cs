@@ -3,7 +3,7 @@
 namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds a list of strings.
+/// Represents a list-of-strings block setting.
 /// </summary>
 public class ListOfStringsSetting : Setting
 {

@@ -15,12 +15,22 @@ using RuriLib.Models.Configs;
 
 namespace RuriLib.Models.Blocks.Custom;
 
+/// <summary>
+/// Block instance for the custom HTTP request block.
+/// </summary>
 public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : BlockInstance(descriptor)
 {
+    /// <summary>
+    /// Gets or sets the request-parameter payload matching the selected request type.
+    /// </summary>
     public RequestParams RequestParams { get; set; } = new StandardRequestParams();
 
+    /// <summary>
+    /// Gets or sets a value indicating whether safe mode is enabled.
+    /// </summary>
     public bool Safe { get; set; }
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -115,6 +125,7 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
         return writer.ToString();
     }
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         /*
@@ -320,6 +331,7 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
         }
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
     {
         ArgumentNullException.ThrowIfNull(definedVariables);

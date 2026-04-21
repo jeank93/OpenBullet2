@@ -3,7 +3,7 @@
 namespace RuriLib.Models.Blocks.Settings.Interpolated;
 
 /// <summary>
-/// A setting that holds an interpolated list of strings.
+/// Represents an interpolated list-of-strings block setting.
 /// </summary>
 public class InterpolatedListOfStringsSetting : InterpolatedSetting
 {

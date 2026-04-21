@@ -12,21 +12,40 @@ using RuriLib.Models.Configs;
 
 namespace RuriLib.Models.Blocks.Custom;
 
+/// <summary>
+/// Block instance for the custom parse block.
+/// </summary>
 public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance(descriptor)
 {
     private string outputVariable = "parseOutput";
 
+    /// <summary>
+    /// Gets or sets the output variable written by the block.
+    /// </summary>
     public string OutputVariable
     {
         get => outputVariable;
         set => outputVariable = VariableNames.MakeValid(value);
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether multiple results should be returned.
+    /// </summary>
     public bool Recursive { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether the output should be captured.
+    /// </summary>
     public bool IsCapture { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether safe mode is enabled.
+    /// </summary>
     public bool Safe { get; set; }
+    /// <summary>
+    /// Gets or sets the parsing mode.
+    /// </summary>
     public ParseMode Mode { get; set; } = ParseMode.LR;
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -59,6 +78,7 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         /*
@@ -143,6 +163,7 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
         }
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
     {
         ArgumentNullException.ThrowIfNull(definedVariables);

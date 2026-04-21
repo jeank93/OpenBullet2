@@ -432,8 +432,8 @@ public class LoliScript
     /// Parses a condition made of left-hand term, condition type and right-hand term and verifies if it's true.
     /// </summary>
     /// <param name="cfLine">The reference to the line to parse</param>
-    /// <param name="data">The BotData needed for variable replacement</param>
-    /// <returns></returns>
+    /// <param name="ls">The legacy script globals used for variable replacement.</param>
+    /// <returns><see langword="true"/> if the parsed condition evaluates to true; otherwise, <see langword="false"/>.</returns>
     public static bool ParseCheckCondition(ref string cfLine, LSGlobals ls)
     {
         var first = LineParser.ParseLiteral(ref cfLine, "STRING");

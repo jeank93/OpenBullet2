@@ -22,6 +22,9 @@ public class BlockFactory
     /// <summary>
     /// Gets a block by <paramref name="id"/> and casts it to the requested type.
     /// </summary>
+    /// <typeparam name="T">The expected block instance type.</typeparam>
+    /// <param name="id">The unique block identifier.</param>
+    /// <returns>The created block instance cast to <typeparamref name="T"/>.</returns>
     public static T GetBlock<T>(string id) where T : BlockInstance
     {
         if (!Globals.DescriptorsRepository.Descriptors.TryGetValue(id, out var descriptor))

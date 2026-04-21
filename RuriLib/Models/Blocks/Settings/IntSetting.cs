@@ -1,7 +1,7 @@
 ﻿namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds an integer value.
+/// Represents an integer block setting.
 /// </summary>
 public class IntSetting : Setting
 {

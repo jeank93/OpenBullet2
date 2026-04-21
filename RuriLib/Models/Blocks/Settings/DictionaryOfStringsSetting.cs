@@ -3,7 +3,7 @@
 namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds a dictionary of strings.
+/// Represents a dictionary-of-strings block setting.
 /// </summary>
 public class DictionaryOfStringsSetting : Setting
 {

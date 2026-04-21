@@ -12,13 +12,21 @@ public class ByteArrayParameter : BlockParameter
     /// </summary>
     public byte[] DefaultValue { get; set; } = [];
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ByteArrayParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
     public ByteArrayParameter(string name) : base(name)
     {
 
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ByteArrayParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="inputMode">The supported input mode.</param>
     public ByteArrayParameter(string name, byte[]? defaultValue = null,
         SettingInputMode inputMode = SettingInputMode.Fixed) : base(name)
     {
@@ -26,7 +34,11 @@ public class ByteArrayParameter : BlockParameter
         DefaultValue = defaultValue ?? [];
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ByteArrayParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
     public ByteArrayParameter(string name, string defaultVariableName = "")
         : base(name)
     {

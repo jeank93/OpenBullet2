@@ -13,6 +13,13 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a boolean block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateBoolSetting(string name, bool defaultValue = false,
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -29,6 +36,13 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates an integer block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateIntSetting(string name, int defaultValue = 0,
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -45,6 +59,13 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a float block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateFloatSetting(string name, float defaultValue = 0,
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -61,6 +82,13 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a byte array block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateByteArraySetting(string name, byte[]? defaultValue = null,
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -77,6 +105,14 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates an enum block setting for the given enum type parameter.
     /// </summary>
+    /// <typeparam name="T">The enum type.</typeparam>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default enum value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateEnumSetting<T>(string name, string defaultValue = "",
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -93,6 +129,14 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates an enum block setting for the provided runtime enum type.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="enumType">The enum type.</param>
+    /// <param name="defaultValue">The default enum value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateEnumSetting(string name, Type enumType, string defaultValue = "",
         SettingInputMode mode = SettingInputMode.Fixed, string? defaultVariableName = null,
         string? readableName = null, string? description = null)
@@ -109,6 +153,13 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a string block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default value or variable name, depending on mode.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="multiLine">Whether the editor should allow multiple lines.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateStringSetting(string name, string? defaultValue = "",
         SettingInputMode mode = SettingInputMode.Fixed, bool multiLine = false,
         string? readableName = null, string? description = null)
@@ -134,6 +185,12 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a list-of-strings block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateListOfStringsSetting(string name, List<string>? defaultValue = null,
         SettingInputMode mode = SettingInputMode.Fixed, string? readableName = null,
         string? description = null)
@@ -156,6 +213,11 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a variable-backed list-of-strings block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="variableName">The source variable name.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateListOfStringsSetting(string name, string variableName,
         string? readableName = null, string? description = null)
     {
@@ -168,6 +230,12 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a dictionary-of-strings block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="mode">The input mode.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateDictionaryOfStringsSetting(string name,
         Dictionary<string, string>? defaultValue = null,
         SettingInputMode mode = SettingInputMode.Fixed, string? readableName = null,
@@ -191,6 +259,11 @@ public static class BlockSettingFactory
     /// <summary>
     /// Creates a variable-backed dictionary-of-strings block setting.
     /// </summary>
+    /// <param name="name">The setting name.</param>
+    /// <param name="variableName">The source variable name.</param>
+    /// <param name="readableName">The optional display name.</param>
+    /// <param name="description">The optional description.</param>
+    /// <returns>The created setting.</returns>
     public static BlockSetting CreateDictionaryOfStringsSetting(string name, string variableName,
         string? readableName = null, string? description = null)
     {

@@ -16,6 +16,7 @@ public class EnumSetting : Setting
     /// <summary>
     /// Creates a new enum setting for the given enum type.
     /// </summary>
+    /// <param name="enumType">The enum type represented by this setting.</param>
     public EnumSetting(Type enumType)
     {
         EnumType = enumType;
@@ -78,6 +79,7 @@ public class EnumSetting : Setting
     /// <summary>
     /// Sets the value of the setting from a pretty name.
     /// </summary>
+    /// <param name="prettyName">The display name of the enum member.</param>
     public void SetFromPrettyName(string prettyName)
     {
         if (!_enumValues.TryGetValue(prettyName, out var value))

@@ -12,19 +12,30 @@ public class FloatParameter : BlockParameter
     /// </summary>
     public float DefaultValue { get; set; }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FloatParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
     public FloatParameter(string name) : base(name)
     {
 
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FloatParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
     public FloatParameter(string name, float defaultValue = 0) : base(name)
     {
         DefaultValue = defaultValue;
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FloatParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
     public FloatParameter(string name, string defaultVariableName = "") : base(name)
     {
         DefaultVariableName = defaultVariableName;

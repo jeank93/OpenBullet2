@@ -1,7 +1,7 @@
 ﻿namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds a boolean value.
+/// Represents a boolean block setting.
 /// </summary>
 public class BoolSetting : Setting
 {

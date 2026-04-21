@@ -16,9 +16,12 @@ namespace RuriLib.Helpers.Transpilers
     public class Stack2CSharpTranspiler
     {
         /// <summary>
-        /// Transpiles a list of <paramref name="blocks"/> to a C# script. If <paramref name="pauseToken"/> is
-        /// not null, step-by-step mode will be enabled.
+        /// Transpiles a list of <paramref name="blocks"/> to a C# script.
         /// </summary>
+        /// <param name="blocks">The blocks to transpile.</param>
+        /// <param name="settings">The config settings that influence generated code.</param>
+        /// <param name="stepByStep">Whether step-by-step mode should be enabled.</param>
+        /// <returns>The generated C# script.</returns>
         public static string Transpile(List<BlockInstance> blocks, ConfigSettings settings, bool stepByStep = false)
         {
             var declaredVariables = typeof(BotData).GetProperties()

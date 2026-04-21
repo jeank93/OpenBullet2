@@ -13,10 +13,17 @@ using RuriLib.Models.Configs;
 
 namespace RuriLib.Models.Blocks.Custom;
 
+/// <summary>
+/// Block instance for the custom keycheck block.
+/// </summary>
 public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockInstance(descriptor)
 {
+    /// <summary>
+    /// Gets or sets the configured keychains.
+    /// </summary>
     public List<Keychain> Keychains { get; set; } = [];
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -62,6 +69,7 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
         return writer.ToString();
     }
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         /*
@@ -137,6 +145,7 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
         }
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
     {
         /*

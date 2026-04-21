@@ -423,6 +423,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
+        /// <param name="keySize">The AES key size in bits.</param>
         public static byte[] AESEncrypt(byte[] plainText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
@@ -465,6 +466,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
+        /// <param name="keySize">The AES key size in bits.</param>
         public static byte[] AESEncryptString(string plainText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
@@ -520,6 +522,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
+        /// <param name="keySize">The AES key size in bits.</param>
         public static byte[] AESDecrypt(byte[] cipherText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
@@ -562,6 +565,7 @@ namespace RuriLib.Functions.Crypto
         /// <param name="iv">The initial value</param>
         /// <param name="mode">The cipher mode</param>
         /// <param name="padding">The padding mode</param>
+        /// <param name="keySize">The AES key size in bits.</param>
         public static string AESDecryptString(byte[] cipherText, byte[] key, byte[]? iv = null,
             CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
         {
@@ -623,6 +627,14 @@ namespace RuriLib.Functions.Crypto
         #endregion
 
         #region JWT
+        /// <summary>
+        /// Encodes a JWT using the requested algorithm and payload.
+        /// </summary>
+        /// <param name="algorithmName">The JWT algorithm to use.</param>
+        /// <param name="secret">The secret or PEM-encoded key material.</param>
+        /// <param name="extraHeaders">Additional JWT headers to include.</param>
+        /// <param name="payload">The JWT payload.</param>
+        /// <returns>The encoded JWT string.</returns>
         public static string JwtEncode(JwtAlgorithmName algorithmName, string secret, IDictionary<string, object> extraHeaders, IDictionary<string, object> payload)
         {
             IJwtAlgorithm algorithm;

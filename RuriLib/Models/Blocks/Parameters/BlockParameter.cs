@@ -9,7 +9,10 @@ namespace RuriLib.Models.Blocks.Parameters;
 /// </summary>
 public abstract class BlockParameter
 {
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BlockParameter"/> class.
+    /// </summary>
+    /// <param name="name">The internal parameter name.</param>
     protected BlockParameter(string name)
     {
         Name = name;

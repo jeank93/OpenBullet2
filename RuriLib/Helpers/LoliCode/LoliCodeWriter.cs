@@ -63,8 +63,11 @@ public class LoliCodeWriter : StringWriter
     /// The setting will be written only if the value is different from the default value in the
     /// corresponding <paramref name="parameter"/>.
     /// </summary>
-    /// <param name="setting"></param>
-    /// <param name="parameter"></param>
+    /// <param name="setting">The setting to append.</param>
+    /// <param name="parameter">The optional parameter metadata used to detect default values.</param>
+    /// <param name="spaces">The indentation width.</param>
+    /// <param name="printDefaults">Whether default values should still be written.</param>
+    /// <returns>The current writer.</returns>
     public LoliCodeWriter AppendSetting(BlockSetting setting, BlockParameter? parameter = null,
         int spaces = 2, bool printDefaults = false)
     {

@@ -24,6 +24,12 @@ public class EnumParameter : BlockParameter
     public string[] Options => Enum.GetNames(EnumType);
 
     /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EnumParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="enumType">The enum type.</param>
+    /// <param name="defaultValue">The default enum value.</param>
     public EnumParameter(string name, Type enumType, string defaultValue) : base(name)
     {
         EnumType = enumType;

@@ -1,7 +1,7 @@
 namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds a byte array value.
+/// Represents a byte-array block setting.
 /// </summary>
 public class ByteArraySetting : Setting
 {

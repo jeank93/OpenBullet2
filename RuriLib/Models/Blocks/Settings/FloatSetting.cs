@@ -1,7 +1,7 @@
 ﻿namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// A setting that holds a float value.
+/// Represents a floating-point block setting.
 /// </summary>
 public class FloatSetting : Setting
 {

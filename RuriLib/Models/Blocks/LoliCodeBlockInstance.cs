@@ -12,20 +12,32 @@ using RuriLib.Models.Proxies;
 
 namespace RuriLib.Models.Blocks;
 
+/// <summary>
+/// A block instance that stores raw LoliCode and transpiles its special statements.
+/// </summary>
 public class LoliCodeBlockInstance : BlockInstance
 {
     private const string ValidTokenRegex = "[A-Za-z][A-Za-z0-9_]*";
     private static readonly string NewLine = global::System.Environment.NewLine;
 
+    /// <summary>
+    /// Gets or sets the raw LoliCode script.
+    /// </summary>
     public string Script { get; set; } = string.Empty;
     
+    /// <summary>
+    /// Initializes a new <see cref="LoliCodeBlockInstance"/>.
+    /// </summary>
+    /// <param name="descriptor">The block descriptor.</param>
     public LoliCodeBlockInstance(LoliCodeBlockDescriptor descriptor)
         : base(descriptor)
     {
     }
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false) => Script;
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         ArgumentNullException.ThrowIfNull(script);
@@ -34,6 +46,7 @@ public class LoliCodeBlockInstance : BlockInstance
         lineNumber += script.CountLines();
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
     {
         ArgumentNullException.ThrowIfNull(definedVariables);

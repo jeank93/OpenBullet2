@@ -132,6 +132,7 @@ public static class LineParser
         /// <param name="input">The reference to the line of code</param>
         /// <param name="label">Debug information about the expected literal</param>
         /// <param name="replace">Whether to perform variable replacement in the literal</param>
+        /// <param name="ls">The legacy globals used for variable replacement.</param>
         /// <returns>The literal without the leading and trailing double quotes</returns>
         public static string ParseLiteral(ref string input, string label, bool replace = false, LSGlobals? ls = null)
         {

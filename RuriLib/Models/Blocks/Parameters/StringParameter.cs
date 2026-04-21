@@ -17,13 +17,21 @@ public class StringParameter : BlockParameter
     /// </summary>
     public bool MultiLine { get; set; } = false;
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StringParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
     public StringParameter(string name) : base(name)
     {
 
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="StringParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="inputMode">The supported input mode.</param>
     public StringParameter(string name,
         string? defaultValue = "", SettingInputMode inputMode = SettingInputMode.Fixed)
         : base(name)

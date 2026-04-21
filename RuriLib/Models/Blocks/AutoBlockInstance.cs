@@ -20,21 +20,35 @@ public class AutoBlockInstance : BlockInstance
 {
     private string outputVariable = "output";
 
+    /// <summary>
+    /// Gets or sets the output variable written by the block.
+    /// </summary>
     public string OutputVariable
     {
         get => outputVariable;
         set => outputVariable = VariableNames.MakeValid(value);
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the output should be captured.
+    /// </summary>
     public bool IsCapture { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether the block should run in safe mode.
+    /// </summary>
     public bool Safe { get; set; }
 
+    /// <summary>
+    /// Initializes an auto-generated block instance.
+    /// </summary>
+    /// <param name="descriptor">The descriptor that defines the block.</param>
     public AutoBlockInstance(AutoBlockDescriptor descriptor)
         : base(descriptor)
     {
         OutputVariable = descriptor.Id[..1].ToLower() + descriptor.Id[1..] + "Output";
     }
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -61,6 +75,7 @@ public class AutoBlockInstance : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         // First parse the options that are common to every BlockInstance
@@ -112,6 +127,7 @@ public class AutoBlockInstance : BlockInstance
         }
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> declaredVariables, ConfigSettings settings)
     {
         // If disabled /* code here */

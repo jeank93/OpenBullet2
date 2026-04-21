@@ -13,13 +13,21 @@ public class ListOfStringsParameter : BlockParameter
     /// </summary>
     public List<string> DefaultValue { get; set; } = [];
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ListOfStringsParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
     public ListOfStringsParameter(string name) : base(name)
     {
 
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ListOfStringsParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultValue">The default fixed value.</param>
+    /// <param name="inputMode">The supported input mode.</param>
     public ListOfStringsParameter(string name, List<string>? defaultValue = null,
         SettingInputMode inputMode = SettingInputMode.Fixed) : base(name)
     {
@@ -28,7 +36,11 @@ public class ListOfStringsParameter : BlockParameter
         InputMode = inputMode;
     }
 
-    /// <summary></summary>
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ListOfStringsParameter"/> class.
+    /// </summary>
+    /// <param name="name">The parameter name.</param>
+    /// <param name="defaultVariableName">The default variable name when used in variable mode.</param>
     public ListOfStringsParameter(string name, string defaultVariableName = "")
         : base(name)
     {

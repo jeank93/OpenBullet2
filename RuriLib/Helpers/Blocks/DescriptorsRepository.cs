@@ -72,6 +72,9 @@ public class DescriptorsRepository
     /// Gets a <see cref="BlockDescriptor"/> by its unique <paramref name="id"/>
     /// and automatically casts it to the type <typeparamref name="T"/>.
     /// </summary>
+    /// <typeparam name="T">The expected descriptor type.</typeparam>
+    /// <param name="id">The descriptor id.</param>
+    /// <returns>The typed descriptor.</returns>
     public T GetAs<T>(string id) where T : BlockDescriptor
     {
         if (!Descriptors.TryGetValue(id, out var descriptor))
@@ -91,6 +94,7 @@ public class DescriptorsRepository
     /// Adds descriptors to the repository by finding exposed methods in the given
     /// <paramref name="assembly"/>.
     /// </summary>
+    /// <param name="assembly">The assembly to scan.</param>
     public void AddFromExposedMethods(Assembly assembly)
     {
         foreach (var type in assembly.GetTypes())
@@ -213,6 +217,8 @@ public class DescriptorsRepository
     /// Converts the return <paramref name="type"/> of a method to a <see cref="VariableType"/>.
     /// Returns null if the method returns void or Task.
     /// </summary>
+    /// <param name="type">The CLR return type.</param>
+    /// <returns>The corresponding variable type, or <see langword="null"/> when there is no return value.</returns>
     public static VariableType? ToVariableType(Type type)
     {
         if (_variableTypes.TryGetValue(type, out var value))
@@ -227,6 +233,10 @@ public class DescriptorsRepository
     /// Casts a C# variable with a given <paramref name="name"/>, <paramref name="type"/>
     /// and <paramref name="value"/> to a custom <see cref="Variable"/> object.
     /// </summary>
+    /// <param name="name">The variable name.</param>
+    /// <param name="type">The CLR type.</param>
+    /// <param name="value">The value to wrap.</param>
+    /// <returns>The wrapped variable.</returns>
     public static Variable ToVariable(string name, Type type, dynamic value)
     {
         var t = ToVariableType(type);
@@ -334,6 +344,7 @@ public class DescriptorsRepository
     /// <summary>
     /// Retrieves the category tree of all categories and block descriptors.
     /// </summary>
+    /// <returns>The root node of the category tree.</returns>
     public CategoryTreeNode AsTree()
     {
         var root = new CategoryTreeNode

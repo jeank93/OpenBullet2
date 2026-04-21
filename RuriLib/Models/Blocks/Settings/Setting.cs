@@ -1,7 +1,7 @@
 namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
-/// Generic abstract setting.
+/// Base type for fixed block setting values.
 /// </summary>
 public abstract class Setting
 {

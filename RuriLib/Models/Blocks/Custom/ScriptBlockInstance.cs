@@ -17,10 +17,19 @@ using RuriLib.Models.Variables;
 
 namespace RuriLib.Models.Blocks.Custom;
 
+/// <summary>
+/// Block instance for invoking a script in another language.
+/// </summary>
 public class ScriptBlockInstance : BlockInstance
 {
+    /// <summary>
+    /// Gets or sets the script body.
+    /// </summary>
     public string Script { get; set; } = "var result = x + y;";
 
+    /// <summary>
+    /// Gets or sets the output variables exposed by the script.
+    /// </summary>
     public List<OutputVariable> OutputVariables { get; set; } =
     [
         new OutputVariable
@@ -30,14 +39,25 @@ public class ScriptBlockInstance : BlockInstance
         }
     ];
 
+    /// <summary>
+    /// Gets or sets the comma-separated input variable list.
+    /// </summary>
     public string InputVariables { get; set; } = "x,y";
+    /// <summary>
+    /// Gets or sets the interpreter used to run the script.
+    /// </summary>
     public Interpreter Interpreter { get; set; } = Interpreter.Jint;
 
+    /// <summary>
+    /// Initializes a new <see cref="ScriptBlockInstance"/>.
+    /// </summary>
+    /// <param name="descriptor">The block descriptor.</param>
     public ScriptBlockInstance(ScriptBlockDescriptor descriptor)
         : base(descriptor)
     {
     }
 
+    /// <inheritdoc />
     public override string ToLC(bool printDefaultParams = false)
     {
         /*
@@ -64,6 +84,7 @@ public class ScriptBlockInstance : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
     public override void FromLC(ref string script, ref int lineNumber)
     {
         ArgumentNullException.ThrowIfNull(script);
@@ -161,6 +182,7 @@ public class ScriptBlockInstance : BlockInstance
         }
     }
 
+    /// <inheritdoc />
     public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
     {
         ArgumentNullException.ThrowIfNull(definedVariables);

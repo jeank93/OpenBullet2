@@ -30,6 +30,9 @@ public abstract class ProxySource : IDisposable
     /// </summary>
     public int UserId { get; set; }
 
+    /// <summary>
+    /// Shared random generator used by sources that need randomized selection.
+    /// </summary>
     protected readonly Random random = new();
 
     /// <summary>

@@ -1,6 +1,7 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Functions.Files;
 using RuriLib.Functions.Puppeteer;
 using RuriLib.Logging;
@@ -15,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Selenium.Elements;
 
+/// <summary>
+/// Blocks for interacting with elements in a Selenium browser page.
+/// </summary>
 [BlockCategory("Elements", "Blocks for interacting with elements on a selenium browser page", "#bdda57")]
 public static class Methods
 {
@@ -365,7 +369,7 @@ public static class Methods
 
         if (elements.Length < index + 1)
         {
-            throw new Exception($"Expected at least {index + 1} elements to be found but {elements.Length} were found");
+            throw new BlockExecutionException($"Expected at least {index + 1} elements to be found but {elements.Length} were found");
         }
 
         return elements[index];
@@ -400,7 +404,7 @@ public static class Methods
         };
 
     private static WebDriver GetBrowser(BotData data)
-        => data.TryGetObject<WebDriver>("selenium") ?? throw new Exception("The browser is not open!");
+        => data.TryGetObject<WebDriver>("selenium") ?? throw new BlockExecutionException("The browser is not open!");
 
     private static void UpdateSeleniumData(BotData data)
     {

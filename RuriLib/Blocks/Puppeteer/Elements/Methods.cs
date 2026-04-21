@@ -1,5 +1,6 @@
 ﻿using PuppeteerSharp;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Functions.Files;
 using RuriLib.Functions.Puppeteer;
 using RuriLib.Logging;
@@ -11,6 +12,9 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Puppeteer.Elements;
 
+/// <summary>
+/// Blocks for interacting with elements in a Puppeteer browser page.
+/// </summary>
 [BlockCategory("Elements", "Blocks for interacting with elements on a puppeteer browser page", "#e9967a")]
 public static class Methods
 {
@@ -340,7 +344,7 @@ public static class Methods
 
         if (elements.Length < index + 1)
         {
-            throw new Exception($"Expected at least {index + 1} elements to be found but {elements.Length} were found");
+            throw new BlockExecutionException($"Expected at least {index + 1} elements to be found but {elements.Length} were found");
         }
 
         return elements[index];
@@ -372,10 +376,10 @@ public static class Methods
         };
 
     private static IBrowser GetBrowser(BotData data)
-        => data.TryGetObject<IBrowser>("puppeteer") ?? throw new Exception("The browser is not open!");
+        => data.TryGetObject<IBrowser>("puppeteer") ?? throw new BlockExecutionException("The browser is not open!");
 
     private static IPage GetPage(BotData data)
-        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new Exception("No pages open!");
+        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new BlockExecutionException("No pages open!");
 
     private static IFrame GetFrame(BotData data)
         => data.TryGetObject<IFrame>("puppeteerFrame") ?? GetPage(data).MainFrame;

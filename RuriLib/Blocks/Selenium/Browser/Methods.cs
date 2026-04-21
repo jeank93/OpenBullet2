@@ -1,4 +1,5 @@
 ﻿using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 
@@ -16,6 +17,9 @@ using RuriLib.Helpers;
 
 namespace RuriLib.Blocks.Selenium.Browser;
 
+/// <summary>
+/// Blocks for interacting with a Selenium browser.
+/// </summary>
 [BlockCategory("Browser", "Blocks for interacting with a selenium browser", "#bdda57")]
 public static class Methods
 {
@@ -195,6 +199,9 @@ public static class Methods
         data.Logger.Log("Opened a new tab", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Closes the currently active browser tab.
+    /// </summary>
     [Block("Closes the currently active browser tab", name = "Close Tab")]
     public static void SeleniumCloseTab(BotData data)
     {
@@ -207,6 +214,9 @@ public static class Methods
         data.Logger.Log("Closed the active tab", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Switches to the browser tab with the given index.
+    /// </summary>
     [Block("Switches to the browser tab with a specified index", name = "Switch to Tab")]
     public static void SeleniumSwitchToTab(BotData data, int index)
     {
@@ -219,6 +229,9 @@ public static class Methods
         data.Logger.Log($"Switched to tab with index {index}", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Reloads the current page.
+    /// </summary>
     [Block("Reloads the current page", name = "Reload")]
     public static void SeleniumReload(BotData data)
     {
@@ -229,6 +242,9 @@ public static class Methods
         data.Logger.Log("Reloaded the page", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Goes back to the previously visited page.
+    /// </summary>
     [Block("Goes back to the previously visited page", name = "Go Back")]
     public static void SeleniumGoBack(BotData data)
     {
@@ -239,6 +255,9 @@ public static class Methods
         data.Logger.Log("Went back to the previously visited page", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Goes forward to the next visited page.
+    /// </summary>
     [Block("Goes forward to the next visited page", name = "Go Forward")]
     public static void SeleniumGoForward(BotData data)
     {
@@ -249,6 +268,9 @@ public static class Methods
         data.Logger.Log("Went forward to the next visited page", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Minimizes the browser window.
+    /// </summary>
     [Block("Minimizes the browser window", name = "Minimize")]
     public static void SeleniumMinimize(BotData data)
     {
@@ -258,6 +280,9 @@ public static class Methods
         data.Logger.Log("Minimized the browser window", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Maximizes the browser window.
+    /// </summary>
     [Block("Maximizes the browser window", name = "Maximize")]
     public static void SeleniumMaximize(BotData data)
     {
@@ -267,6 +292,9 @@ public static class Methods
         data.Logger.Log("Maximized the browser window", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Makes the browser window full screen.
+    /// </summary>
     [Block("Makes the browser window full screen", name = "Full Screen")]
     public static void SeleniumFullScreen(BotData data)
     {
@@ -276,6 +304,9 @@ public static class Methods
         data.Logger.Log("Made the browser window full screen", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Sets the size of the browser window.
+    /// </summary>
     [Block("Sets the height and width of the browser window", name = "Set Browser Size")]
     public static void SeleniumSetWindowSize(BotData data, int width, int height)
     {
@@ -286,7 +317,7 @@ public static class Methods
     }
 
     private static WebDriver GetBrowser(BotData data)
-        => data.TryGetObject<WebDriver>("selenium") ?? throw new Exception("The browser is not open!");
+        => data.TryGetObject<WebDriver>("selenium") ?? throw new BlockExecutionException("The browser is not open!");
 
     private static void UpdateSeleniumData(BotData data)
     {

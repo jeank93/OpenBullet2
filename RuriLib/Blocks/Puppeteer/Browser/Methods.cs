@@ -3,6 +3,7 @@ using PuppeteerExtraSharp;
 using PuppeteerExtraSharp.Plugins.ExtraStealth;
 using PuppeteerSharp;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using System;
@@ -14,9 +15,15 @@ using RuriLib.Helpers;
 
 namespace RuriLib.Blocks.Puppeteer.Browser;
 
+/// <summary>
+/// Blocks for interacting with a Puppeteer browser.
+/// </summary>
 [BlockCategory("Browser", "Blocks for interacting with a puppeteer browser", "#e9967a")]
 public static class Methods
 {
+    /// <summary>
+    /// Opens a new Puppeteer browser.
+    /// </summary>
     [Block("Opens a new puppeteer browser", name = "Open Browser")]
     public static async Task PuppeteerOpenBrowser(BotData data, string extraCmdLineArgs = "")
     {
@@ -95,6 +102,9 @@ public static class Methods
         data.Logger.Log($"{(launchOptions.Headless ? "Headless " : "")}Browser opened successfully!", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Closes the currently open Puppeteer browser.
+    /// </summary>
     [Block("Closes an open puppeteer browser", name = "Close Browser")]
     public static async Task PuppeteerCloseBrowser(BotData data)
     {
@@ -106,6 +116,9 @@ public static class Methods
         data.Logger.Log("Browser closed successfully!", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Opens a new page in a new browser tab.
+    /// </summary>
     [Block("Opens a new page in a new browser tab", name = "New Tab")]
     public static async Task PuppeteerNewTab(BotData data)
     {
@@ -119,6 +132,9 @@ public static class Methods
         data.Logger.Log("Opened a new page", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Closes the currently active browser tab.
+    /// </summary>
     [Block("Closes the currently active browser tab", name = "Close Tab")]
     public static async Task PuppeteerCloseTab(BotData data)
     {
@@ -142,6 +158,9 @@ public static class Methods
         data.Logger.Log("Closed the active page", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Switches to the browser tab with the given index.
+    /// </summary>
     [Block("Switches to the browser tab with a specified index", name = "Switch to Tab")]
     public static async Task PuppeteerSwitchToTab(BotData data, int index)
     {
@@ -161,6 +180,9 @@ public static class Methods
         data.Logger.Log($"Switched to tab with index {index}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Reloads the current page.
+    /// </summary>
     [Block("Reloads the current page", name = "Reload")]
     public static async Task PuppeteerReload(BotData data)
     {
@@ -173,6 +195,9 @@ public static class Methods
         data.Logger.Log("Reloaded the page", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Goes back to the previously visited page.
+    /// </summary>
     [Block("Goes back to the previously visited page", name = "Go Back")]
     public static async Task PuppeteerGoBack(BotData data)
     {
@@ -185,6 +210,9 @@ public static class Methods
         data.Logger.Log("Went back to the previously visited page", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Goes forward to the next visited page.
+    /// </summary>
     [Block("Goes forward to the next visited page", name = "Go Forward")]
     public static async Task PuppeteerGoForward(BotData data)
     {
@@ -198,10 +226,10 @@ public static class Methods
     }
 
     private static IBrowser GetBrowser(BotData data)
-        => data.TryGetObject<IBrowser>("puppeteer") ?? throw new Exception("The browser is not open!");
+        => data.TryGetObject<IBrowser>("puppeteer") ?? throw new BlockExecutionException("The browser is not open!");
 
     private static IPage GetPage(BotData data)
-        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new Exception("No pages open!");
+        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new BlockExecutionException("No pages open!");
 
     private static void SwitchToMainFramePrivate(BotData data)
         => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);

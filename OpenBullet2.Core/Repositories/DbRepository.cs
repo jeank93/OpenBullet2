@@ -11,18 +11,13 @@ namespace OpenBullet2.Core.Repositories;
 /// Stores data to a database.
 /// </summary>
 /// <typeparam name="T">The type of data to store</typeparam>
-public class DbRepository<T> : IRepository<T> where T : Entity
+public class DbRepository<T>(ApplicationDbContext context) : IRepository<T> where T : Entity
 {
-    protected readonly ApplicationDbContext context;
+    protected readonly ApplicationDbContext context = context;
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    public DbRepository(ApplicationDbContext context)
-    {
-        this.context = context;
-    }
-
     /// <inheritdoc/>
-    public async virtual Task AddAsync(T entity, CancellationToken cancellationToken = default)
+    public virtual async Task AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         
@@ -38,7 +33,7 @@ public class DbRepository<T> : IRepository<T> where T : Entity
     }
 
     /// <inheritdoc/>
-    public async virtual Task AddAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    public virtual async Task AddAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -54,7 +49,7 @@ public class DbRepository<T> : IRepository<T> where T : Entity
     }
 
     /// <inheritdoc/>
-    public async virtual Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
+    public virtual async Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -70,7 +65,7 @@ public class DbRepository<T> : IRepository<T> where T : Entity
     }
 
     /// <inheritdoc/>
-    public async virtual Task DeleteAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    public virtual async Task DeleteAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -86,14 +81,14 @@ public class DbRepository<T> : IRepository<T> where T : Entity
     }
 
     /// <inheritdoc/>
-    public async virtual Task<T> GetAsync(int id, CancellationToken cancellationToken = default)
+    public virtual async Task<T> GetAsync(int id, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
             return await GetAll()
-                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken).ConfigureAwait(false);
+                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken).ConfigureAwait(false)!;
         }
         finally
         {
@@ -106,7 +101,7 @@ public class DbRepository<T> : IRepository<T> where T : Entity
         => context.Set<T>();
 
     /// <inheritdoc/>
-    public async virtual Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+    public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -122,7 +117,7 @@ public class DbRepository<T> : IRepository<T> where T : Entity
     }
 
     /// <inheritdoc/>
-    public async virtual Task UpdateAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    public virtual async Task UpdateAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 

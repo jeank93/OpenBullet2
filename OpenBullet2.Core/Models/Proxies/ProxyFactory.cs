@@ -12,10 +12,10 @@ public class ProxyFactory
     /// Creates a <see cref="Proxy"/> from a <see cref="ProxyEntity"/>.
     /// </summary>
     public static Proxy FromEntity(ProxyEntity entity) 
-        => new(entity.Host, entity.Port, entity.Type, entity.Username, entity.Password)
+        => new(entity.Host ?? string.Empty, entity.Port, entity.Type, entity.Username, entity.Password)
     {
         Id = entity.Id,
-        Country = entity.Country,
+        Country = entity.Country ?? "Unknown",
         WorkingStatus = entity.Status,
         LastChecked = entity.LastChecked,
         Ping = entity.Ping

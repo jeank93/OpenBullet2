@@ -1,15 +1,23 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 
-namespace OpenBullet2.Native
+namespace OpenBullet2.Native;
+
+public static class SP
 {
-    public static class SP
+    private static IServiceProvider? instance;
+
+    public static void Init(IServiceProvider instance) => SP.instance = instance;
+
+    public static T GetService<T>() where T : notnull
     {
-        private static IServiceProvider instance;
+        if (instance is null)
+        {
+            throw new InvalidOperationException("Service provider has not been initialized");
+        }
 
-        public static void Init(IServiceProvider instance) => SP.instance = instance;
-
-        public static T GetService<T>()
-            => instance.GetService<IServiceScopeFactory>().CreateScope().ServiceProvider.GetRequiredService<T>();
+        var scopeFactory = instance.GetRequiredService<IServiceScopeFactory>();
+        using var scope = scopeFactory.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<T>();
     }
 }

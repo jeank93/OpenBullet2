@@ -11,212 +11,209 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace OpenBullet2.Native.Views.Dialogs
+namespace OpenBullet2.Native.Views.Dialogs;
+
+/// <summary>
+/// Interaction logic for ProxyCheckJobOptionsDialog.xaml
+/// </summary>
+public partial class ProxyCheckJobOptionsDialog : Page
 {
-    /// <summary>
-    /// Interaction logic for ProxyCheckJobOptionsDialog.xaml
-    /// </summary>
-    public partial class ProxyCheckJobOptionsDialog : Page
+    private readonly Action<JobOptions>? onAccept;
+    private readonly ProxyCheckJobOptionsViewModel vm;
+
+    public ProxyCheckJobOptionsDialog(ProxyCheckJobOptions? options = null, Action<JobOptions>? onAccept = null)
     {
-        private readonly Action<JobOptions> onAccept;
-        private readonly ProxyCheckJobOptionsViewModel vm;
+        this.onAccept = onAccept;
+        vm = new ProxyCheckJobOptionsViewModel(options);
+        DataContext = vm;
 
-        public ProxyCheckJobOptionsDialog(ProxyCheckJobOptions options = null, Action<JobOptions> onAccept = null)
+        vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
+
+        InitializeComponent();
+
+        startConditionTabControl.SelectedIndex = (int)vm.StartConditionMode;
+    }
+
+    private void Accept(object sender, RoutedEventArgs e)
+    {
+        onAccept?.Invoke(vm.Options);
+        ((MainDialog)Parent).Close();
+    }
+}
+
+public class ProxyCheckJobOptionsViewModel : ViewModelBase
+{
+    private readonly IProxyGroupRepository proxyGroupRepo;
+    private readonly JobFactoryService jobFactory;
+    private readonly OpenBulletSettingsService obSettingsService;
+    public ProxyCheckJobOptions Options { get; init; }
+
+    #region Start Condition
+    public event Action<StartConditionMode>? StartConditionModeChanged;
+
+    public StartConditionMode StartConditionMode
+    {
+        get => Options.StartCondition switch
         {
-            this.onAccept = onAccept;
-            vm = new ProxyCheckJobOptionsViewModel(options);
-            DataContext = vm;
-
-            vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
-
-            InitializeComponent();
-
-            startConditionTabControl.SelectedIndex = (int)vm.StartConditionMode;
-        }
-
-        private void Accept(object sender, RoutedEventArgs e)
+            RelativeTimeStartCondition => StartConditionMode.Relative,
+            AbsoluteTimeStartCondition => StartConditionMode.Absolute,
+            _ => throw new NotImplementedException()
+        };
+        set
         {
-            onAccept?.Invoke(vm.Options);
-            ((MainDialog)Parent).Close();
+            Options.StartCondition = value switch
+            {
+                StartConditionMode.Relative => new RelativeTimeStartCondition(),
+                StartConditionMode.Absolute => new AbsoluteTimeStartCondition(),
+                _ => throw new NotImplementedException()
+            };
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(StartInMode));
+            OnPropertyChanged(nameof(StartAtMode));
+            StartConditionModeChanged?.Invoke(StartConditionMode);
         }
     }
 
-    public class ProxyCheckJobOptionsViewModel : ViewModelBase
+    public bool StartInMode
     {
-        private readonly IProxyGroupRepository proxyGroupRepo;
-        private readonly JobFactoryService jobFactory;
-        private readonly OpenBulletSettingsService obSettingsService;
-        public ProxyCheckJobOptions Options { get; init; }
-
-        #region Start Condition
-        public event Action<StartConditionMode> StartConditionModeChanged;
-
-        public StartConditionMode StartConditionMode
+        get => StartConditionMode is StartConditionMode.Relative;
+        set
         {
-            get => Options.StartCondition switch
+            if (value)
             {
-                RelativeTimeStartCondition => StartConditionMode.Relative,
-                AbsoluteTimeStartCondition => StartConditionMode.Absolute,
-                _ => throw new NotImplementedException()
-            };
-            set
-            {
-                Options.StartCondition = value switch
-                {
-                    StartConditionMode.Relative => new RelativeTimeStartCondition(),
-                    StartConditionMode.Absolute => new AbsoluteTimeStartCondition(),
-                    _ => throw new NotImplementedException()
-                };
-
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(StartInMode));
-                OnPropertyChanged(nameof(StartAtMode));
-                StartConditionModeChanged?.Invoke(StartConditionMode);
+                StartConditionMode = StartConditionMode.Relative;
             }
+
+            OnPropertyChanged();
         }
+    }
 
-        public bool StartInMode
+    public bool StartAtMode
+    {
+        get => StartConditionMode is StartConditionMode.Absolute;
+        set
         {
-            get => StartConditionMode is StartConditionMode.Relative;
-            set
+            if (value)
             {
-                if (value)
-                {
-                    StartConditionMode = StartConditionMode.Relative;
-                }
-
-                OnPropertyChanged();
+                StartConditionMode = StartConditionMode.Absolute;
             }
+
+            OnPropertyChanged();
         }
+    }
 
-        public bool StartAtMode
+    public DateTime StartAtTime
+    {
+        get => Options.StartCondition is AbsoluteTimeStartCondition abs ? abs.StartAt : DateTime.Now;
+        set
         {
-            get => StartConditionMode is StartConditionMode.Absolute;
-            set
+            if (Options.StartCondition is AbsoluteTimeStartCondition abs)
             {
-                if (value)
-                {
-                    StartConditionMode = StartConditionMode.Absolute;
-                }
-
-                OnPropertyChanged();
+                abs.StartAt = value;
             }
+
+            OnPropertyChanged();
         }
+    }
 
-        public DateTime StartAtTime
+    public TimeSpan StartIn
+    {
+        get => Options.StartCondition is RelativeTimeStartCondition rel ? rel.StartAfter : TimeSpan.Zero;
+        set
         {
-            get => Options.StartCondition is AbsoluteTimeStartCondition abs ? abs.StartAt : DateTime.Now;
-            set
+            if (Options.StartCondition is RelativeTimeStartCondition rel)
             {
-                if (Options.StartCondition is AbsoluteTimeStartCondition abs)
-                {
-                    abs.StartAt = value;
-                }
-
-                OnPropertyChanged();
+                rel.StartAfter = value;
             }
+
+            OnPropertyChanged();
         }
+    }
+    #endregion
 
-        public TimeSpan StartIn
+    public ProxyCheckJobOptionsViewModel(ProxyCheckJobOptions? options)
+    {
+        Options = options ?? (JobOptionsFactory.CreateNew(JobType.ProxyCheck) as ProxyCheckJobOptions
+            ?? throw new InvalidOperationException("Failed to create proxy check job options"));
+        proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
+        jobFactory = SP.GetService<JobFactoryService>();
+        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+
+        proxyGroups = proxyGroupRepo.GetAll().ToList();
+
+        var proxyCheckTargets = obSettingsService.Settings.GeneralSettings.ProxyCheckTargets;
+        Targets = proxyCheckTargets.Any()
+            ? proxyCheckTargets
+            : new ProxyCheckTarget[] { new() };
+
+        // TODO: Move this to the factory!
+        Target ??= Targets.FirstOrDefault();
+    }
+
+    private readonly IEnumerable<ProxyGroupEntity> proxyGroups;
+    public IEnumerable<string> ProxyGroupNames => new[] { "All" }.Concat(proxyGroups.Select(g => g.Name ?? string.Empty));
+
+    public string ProxyGroup
+    {
+        get => Options.GroupId == -1 ? "All" : proxyGroups.First(g => g.Id == Options.GroupId).Name ?? "All";
+        set
         {
-            get => Options.StartCondition is RelativeTimeStartCondition rel ? rel.StartAfter : TimeSpan.Zero;
-            set
-            {
-                if (Options.StartCondition is RelativeTimeStartCondition rel)
-                {
-                    rel.StartAfter = value;
-                }
-
-                OnPropertyChanged();
-            }
+            Options.GroupId = value == "All" ? -1 : proxyGroups.First(g => g.Name == value).Id;
+            OnPropertyChanged();
         }
-        #endregion
+    }
 
-        public ProxyCheckJobOptionsViewModel(ProxyCheckJobOptions options)
+    public int BotLimit => jobFactory.BotLimit;
+
+    public int Bots
+    {
+        get => Options.Bots;
+        set
         {
-            Options = options ?? JobOptionsFactory.CreateNew(JobType.ProxyCheck) as ProxyCheckJobOptions;
-            proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
-            jobFactory = SP.GetService<JobFactoryService>();
-            obSettingsService = SP.GetService<OpenBulletSettingsService>();
-
-            proxyGroups = proxyGroupRepo.GetAll().ToList();
-
-            var proxyCheckTargets = obSettingsService.Settings.GeneralSettings.ProxyCheckTargets;
-            Targets = proxyCheckTargets.Any()
-                ? proxyCheckTargets
-                : new ProxyCheckTarget[] { new() };
-
-            // TODO: Move this to the factory!
-            if (Target is null)
-            {
-                Target = Targets.FirstOrDefault();
-            }
+            Options.Bots = value;
+            OnPropertyChanged();
         }
+    }
 
-        private readonly IEnumerable<ProxyGroupEntity> proxyGroups;
-        public IEnumerable<string> ProxyGroupNames => new string[] { "All" }.Concat(proxyGroups.Select(g => g.Name));
-
-        public string ProxyGroup
+    public int TimeoutMilliseconds
+    {
+        get => Options.TimeoutMilliseconds;
+        set
         {
-            get => Options.GroupId == -1 ? "All" : proxyGroups.First(g => g.Id == Options.GroupId).Name;
-            set
-            {
-                Options.GroupId = value == "All" ? -1 : proxyGroups.First(g => g.Name == value).Id;
-                OnPropertyChanged();
-            }
+            Options.TimeoutMilliseconds = value;
+            OnPropertyChanged();
         }
+    }
 
-        public int BotLimit => jobFactory.BotLimit;
-
-        public int Bots
+    public bool CheckOnlyUntested
+    {
+        get => Options.CheckOnlyUntested;
+        set
         {
-            get => Options.Bots;
-            set
-            {
-                Options.Bots = value;
-                OnPropertyChanged();
-            }
+            Options.CheckOnlyUntested = value;
+            OnPropertyChanged();
         }
+    }
 
-        public int TimeoutMilliseconds
+    private List<ProxyCheckTarget> targets = [];
+    public IEnumerable<ProxyCheckTarget> Targets
+    {
+        get => targets;
+        set
         {
-            get => Options.TimeoutMilliseconds;
-            set
-            {
-                Options.TimeoutMilliseconds = value;
-                OnPropertyChanged();
-            }
+            targets = value.ToList(); // Clone the list
+            OnPropertyChanged();
         }
+    }
 
-        public bool CheckOnlyUntested
+    public ProxyCheckTarget Target
+    {
+        get => Options.Target;
+        set
         {
-            get => Options.CheckOnlyUntested;
-            set
-            {
-                Options.CheckOnlyUntested = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private List<ProxyCheckTarget> targets;
-        public IEnumerable<ProxyCheckTarget> Targets
-        {
-            get => targets;
-            set
-            {
-                targets = value.ToList(); // Clone the list
-                OnPropertyChanged();
-            }
-        }
-
-        public ProxyCheckTarget Target
-        {
-            get => Options.Target;
-            set
-            {
-                Options.Target = value;
-                OnPropertyChanged();
-            }
+            Options.Target = value;
+            OnPropertyChanged();
         }
     }
 }

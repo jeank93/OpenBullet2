@@ -3,6 +3,9 @@ using System.Globalization;
 
 namespace RuriLib.Functions.Conversion;
 
+/// <summary>
+/// Provides helpers to convert byte counts into readable sizes.
+/// </summary>
 public static class SizeConverter
 {
     /// <summary>
@@ -12,7 +15,7 @@ public static class SizeConverter
     /// <param name="outputBits">If true it will output e.g. Gbit instead of GB</param>
     /// <param name="binaryUnit">If true it will output e.g. GiB and Gibit instead of GB and Gbit</param>
     /// <param name="decimalPlaces">How many decimal places to print at most</param>
-    /// <returns></returns>
+    /// <returns>The readable size string.</returns>
     public static string ToReadableSize(long byteCount, bool outputBits = false, bool binaryUnit = false, int decimalPlaces = 2)
     {
         var suffixes = outputBits

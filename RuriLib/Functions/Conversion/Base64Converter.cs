@@ -3,6 +3,9 @@ using System.Text;
 
 namespace RuriLib.Functions.Conversion;
 
+/// <summary>
+/// Provides helpers to convert Base64 strings and byte arrays.
+/// </summary>
 public static class Base64Converter
 {
     /// <summary>
@@ -14,6 +17,12 @@ public static class Base64Converter
             ? UrlDecode(base64String)
             : Convert.FromBase64String(base64String.Replace(".", ""));
 
+    /// <summary>
+    /// Converts a byte array to a Base64 string.
+    /// </summary>
+    /// <param name="bytes">The bytes to encode.</param>
+    /// <param name="urlEncoded">Whether to use Base64 URL encoding rules.</param>
+    /// <returns>The encoded Base64 string.</returns>
     public static string ToBase64String(byte[] bytes, bool urlEncoded = false)
         => urlEncoded
             ? UrlEncode(bytes)

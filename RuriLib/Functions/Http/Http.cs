@@ -5,8 +5,16 @@ using System.Reflection;
 
 namespace RuriLib.Functions.Http;
 
+/// <summary>
+/// Provides HTTP-related utility methods.
+/// </summary>
 public static class Http
 {
+    /// <summary>
+    /// Gets all cookies stored in a <see cref="CookieContainer"/>.
+    /// </summary>
+    /// <param name="cookieJar">The cookie container to inspect.</param>
+    /// <returns>A flattened collection with all cookies from all domains and paths.</returns>
     public static CookieCollection GetAllCookies(CookieContainer cookieJar)
     {
         var cookieCollection = new CookieCollection();

@@ -60,9 +60,9 @@ public class HybridWordlistRepository : IWordlistRepository
     /// <inheritdoc/>
     public async Task<WordlistEntity> GetAsync(
         int id, CancellationToken cancellationToken = default)
-        => await GetAll().Include(w => w.Owner)
+        => (await GetAll().Include(w => w.Owner)
         .FirstOrDefaultAsync(e => e.Id == id, cancellationToken: cancellationToken)
-        .ConfigureAwait(false)!;
+        .ConfigureAwait(false))!;
 
     /// <inheritdoc/>
     public async Task UpdateAsync(WordlistEntity entity, CancellationToken cancellationToken = default)

@@ -13,7 +13,7 @@ public class DbProxyGroupRepository(ApplicationDbContext context) : DbRepository
 
     /// <inheritdoc/>
     public override async Task<ProxyGroupEntity> GetAsync(int id, CancellationToken cancellationToken = default)
-        => await GetAll().Include(w => w.Owner)
+        => (await GetAll().Include(w => w.Owner)
         .FirstOrDefaultAsync(e => e.Id == id, cancellationToken)
-        .ConfigureAwait(false)!;
+        .ConfigureAwait(false))!;
 }

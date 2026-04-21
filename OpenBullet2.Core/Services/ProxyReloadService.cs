@@ -17,7 +17,7 @@ namespace OpenBullet2.Core.Services;
 /// </summary>
 public class ProxyReloadService(IServiceScopeFactory scopeFactory) : IDisposable
 {
-    private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
 
     /// <summary>
@@ -42,7 +42,7 @@ public class ProxyReloadService(IServiceScopeFactory scopeFactory) : IDisposable
             {
                 entities = userId == 0
                     ? await proxyRepo.GetAll().ToListAsync(cancellationToken).ConfigureAwait(false)
-                    : await proxyRepo.GetAll().Include(p => p.Group).ThenInclude(g => g.Owner)
+                    : await proxyRepo.GetAll().Include(p => p.Group).ThenInclude(g => g!.Owner)
                         .Where(p => p.Group != null && p.Group.Owner != null && p.Group.Owner.Id == userId)
                         .ToListAsync(cancellationToken).ConfigureAwait(false);
             }

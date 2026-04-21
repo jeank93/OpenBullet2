@@ -87,8 +87,9 @@ public class DbRepository<T>(ApplicationDbContext context) : IRepository<T> wher
 
         try
         {
-            return await GetAll()
-                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken).ConfigureAwait(false)!;
+            return (await GetAll()
+                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken)
+                .ConfigureAwait(false))!;
         }
         finally
         {

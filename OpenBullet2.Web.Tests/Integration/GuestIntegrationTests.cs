@@ -40,7 +40,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(guest);
         Assert.Equal("guest", guest.Username);
         Assert.Equal(dto.AccessExpiration, guest.AccessExpiration);
-        Assert.True(guest.AllowedAddresses.Split(',').SequenceEqual(dto.AllowedAddresses));
+        Assert.True((guest.AllowedAddresses ?? string.Empty).Split(',').SequenceEqual(dto.AllowedAddresses));
     }
     
     [Fact]
@@ -148,7 +148,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         await dbContext.Entry(guest).ReloadAsync();
         Assert.NotNull(updatedGuest);
         Assert.Equal(dto.AccessExpiration, updatedGuest.AccessExpiration);
-        Assert.True(updatedGuest.AllowedAddresses.Split(',').SequenceEqual(dto.AllowedAddresses));
+        Assert.True((updatedGuest.AllowedAddresses ?? string.Empty).Split(',').SequenceEqual(dto.AllowedAddresses));
     }
     
     [Fact]

@@ -305,11 +305,11 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1000 / 8, result.Value.Count);
         
         var group1ProxyCount = await dbContext.Proxies
-            .Where(p => p.Group.Id == group.Id)
+            .Where(p => p.Group != null && p.Group.Id == group.Id)
             .CountAsync();
-        
+
         var group2ProxyCount = await dbContext.Proxies
-            .Where(p => p.Group.Id == group2.Id)
+            .Where(p => p.Group != null && p.Group.Id == group2.Id)
             .CountAsync();
         
         Assert.Equal(1000 - 1000 / 8, group1ProxyCount);
@@ -487,7 +487,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1000 / 8, result.Value.Count);
         
         var remaining = await dbContext.Proxies
-            .Where(p => p.Group.Id == group.Id)
+            .Where(p => p.Group != null && p.Group.Id == group.Id)
             .CountAsync();
         
         Assert.Equal(1000 - 1000 / 8, remaining);
@@ -522,7 +522,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(2, result.Value.Count);
         
         var remaining = await dbContext.Proxies
-            .Where(p => p.Group.Id == group.Id)
+            .Where(p => p.Group != null && p.Group.Id == group.Id)
             .CountAsync();
         
         Assert.Equal(2, remaining);

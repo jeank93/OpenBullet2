@@ -67,7 +67,7 @@ public class IntegrationTests : IDisposable
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, guest.Id.ToString(), ClaimValueTypes.Integer),
-            new Claim(ClaimTypes.Name, guest.Username),
+            new Claim(ClaimTypes.Name, guest.Username ?? string.Empty),
             new Claim(ClaimTypes.Role, "Guest"),
             new Claim("IPAtLogin", "::1")
         };
@@ -77,12 +77,9 @@ public class IntegrationTests : IDisposable
         
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
-    
-    protected T GetRequiredService<T>() where T : notnull
-    {
-        return _serviceScope.ServiceProvider.GetRequiredService<T>();
-    }
-    
+
+    protected T GetRequiredService<T>() where T : notnull => _serviceScope.ServiceProvider.GetRequiredService<T>();
+
     protected async Task<ApiErrorResponse?> SendAsync(HttpClient client, Uri url, object? dto, HttpMethod method)
     {
         var json = dto is null
@@ -153,77 +150,35 @@ public class IntegrationTests : IDisposable
         
         return JsonSerializer.Deserialize<T>(jsonResponse, JsonSerializerOptions)!;
     }
-    
-    protected Task<Result<T, ApiErrorResponse>> GetJsonAsync<T>(HttpClient client, string url)
-    {
-        return GetJsonAsync<T>(client, new Uri(url, UriKind.Relative));
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> GetJsonAsync<T>(HttpClient client, Uri url)
-    {
-        return await SendJsonAsync<T>(client, url, null, HttpMethod.Get);
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> PostJsonAsync<T>(HttpClient client, string url, object dto)
-    {
-        return await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Post);
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> PostJsonAsync<T>(HttpClient client, Uri url, object dto)
-    {
-        return await SendJsonAsync<T>(client, url, dto, HttpMethod.Post);
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> PutJsonAsync<T>(HttpClient client, string url, object dto)
-    {
-        return await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Put);
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> PatchJsonAsync<T>(HttpClient client, string url, object dto)
-    {
-        return await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Patch);
-    }
-    
-    protected Task<Result<T, ApiErrorResponse>> DeleteJsonAsync<T>(HttpClient client, string url)
-    {
-        return DeleteJsonAsync<T>(client, new Uri(url, UriKind.Relative));
-    }
-    
-    protected async Task<Result<T, ApiErrorResponse>> DeleteJsonAsync<T>(HttpClient client, Uri url)
-    {
-        return await SendJsonAsync<T>(client, url, null, HttpMethod.Delete);
-    }
-    
-    protected async Task<ApiErrorResponse?> PostAsync(HttpClient client, string url, object? dto)
-    {
-        return await SendAsync(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Post);
-    }
-    
-    protected async Task<ApiErrorResponse?> PostAsync(HttpClient client, Uri url, object? dto)
-    {
-        return await SendAsync(client, url, dto, HttpMethod.Post);
-    }
-    
-    protected async Task<ApiErrorResponse?> PatchAsync(HttpClient client, string url, object? dto)
-    {
-        return await SendAsync(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Patch);
-    }
-    
-    protected async Task<ApiErrorResponse?> PatchAsync(HttpClient client, Uri url, object? dto)
-    {
-        return await SendAsync(client, url, dto, HttpMethod.Post);
-    }
-    
-    protected async Task<ApiErrorResponse?> DeleteAsync(HttpClient client, Uri url)
-    {
-        return await SendAsync(client, url, null, HttpMethod.Delete);
-    }
-    
-    protected async Task<ApiErrorResponse?> DeleteAsync(HttpClient client, string url)
-    {
-        return await SendAsync(client, new Uri(url, UriKind.Relative), null, HttpMethod.Delete);
-    }
-    
+
+    protected Task<Result<T, ApiErrorResponse>> GetJsonAsync<T>(HttpClient client, string url) => GetJsonAsync<T>(client, new Uri(url, UriKind.Relative));
+
+    protected async Task<Result<T, ApiErrorResponse>> GetJsonAsync<T>(HttpClient client, Uri url) => await SendJsonAsync<T>(client, url, null, HttpMethod.Get);
+
+    protected async Task<Result<T, ApiErrorResponse>> PostJsonAsync<T>(HttpClient client, string url, object dto) => await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Post);
+
+    protected async Task<Result<T, ApiErrorResponse>> PostJsonAsync<T>(HttpClient client, Uri url, object dto) => await SendJsonAsync<T>(client, url, dto, HttpMethod.Post);
+
+    protected async Task<Result<T, ApiErrorResponse>> PutJsonAsync<T>(HttpClient client, string url, object dto) => await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Put);
+
+    protected async Task<Result<T, ApiErrorResponse>> PatchJsonAsync<T>(HttpClient client, string url, object dto) => await SendJsonAsync<T>(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Patch);
+
+    protected Task<Result<T, ApiErrorResponse>> DeleteJsonAsync<T>(HttpClient client, string url) => DeleteJsonAsync<T>(client, new Uri(url, UriKind.Relative));
+
+    protected async Task<Result<T, ApiErrorResponse>> DeleteJsonAsync<T>(HttpClient client, Uri url) => await SendJsonAsync<T>(client, url, null, HttpMethod.Delete);
+
+    protected async Task<ApiErrorResponse?> PostAsync(HttpClient client, string url, object? dto) => await SendAsync(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Post);
+
+    protected async Task<ApiErrorResponse?> PostAsync(HttpClient client, Uri url, object? dto) => await SendAsync(client, url, dto, HttpMethod.Post);
+
+    protected async Task<ApiErrorResponse?> PatchAsync(HttpClient client, string url, object? dto) => await SendAsync(client, new Uri(url, UriKind.Relative), dto, HttpMethod.Patch);
+
+    protected async Task<ApiErrorResponse?> PatchAsync(HttpClient client, Uri url, object? dto) => await SendAsync(client, url, dto, HttpMethod.Post);
+
+    protected async Task<ApiErrorResponse?> DeleteAsync(HttpClient client, Uri url) => await SendAsync(client, url, null, HttpMethod.Delete);
+
+    protected async Task<ApiErrorResponse?> DeleteAsync(HttpClient client, string url) => await SendAsync(client, new Uri(url, UriKind.Relative), null, HttpMethod.Delete);
+
     protected virtual void Dispose(bool disposing)
     {
         _serviceScope.Dispose();

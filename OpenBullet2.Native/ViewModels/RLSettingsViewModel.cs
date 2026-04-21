@@ -18,7 +18,7 @@ public class RLSettingsViewModel : ViewModelBase
     private PuppeteerSettings Puppeteer => _service.RuriLibSettings.PuppeteerSettings;
     private SeleniumSettings Selenium => _service.RuriLibSettings.SeleniumSettings;
 
-    public event Action<CaptchaServiceType> CaptchaServiceChanged;
+    public event Action<CaptchaServiceType>? CaptchaServiceChanged;
 
     public IEnumerable<ParallelizerType> ParallelizerTypes => Enum.GetValues(typeof(ParallelizerType)).Cast<ParallelizerType>();
 

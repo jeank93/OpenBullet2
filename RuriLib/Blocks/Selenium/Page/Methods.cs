@@ -10,6 +10,9 @@ using RuriLib.Exceptions;
 
 namespace RuriLib.Blocks.Selenium.Page;
 
+/// <summary>
+/// Blocks for interacting with a Selenium browser page.
+/// </summary>
 [BlockCategory("Page", "Blocks for interacting with a selenium browser page", "#bdda57")]
 public static class Methods
 {
@@ -58,6 +61,9 @@ public static class Methods
         data.Logger.Log($"Typed {text}", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Presses and releases a key in the browser page.
+    /// </summary>
     [Block("Presses and releases a key in the browser page", name = "Key Press in Page",
         extraInfo = "Full list of keys here: https://github.com/SeleniumHQ/selenium/blob/master/dotnet/src/webdriver/Keys.cs")]
     public static void SeleniumPageKeyPress(BotData data, string key)
@@ -75,6 +81,9 @@ public static class Methods
         // Full list of keys: https://github.com/SeleniumHQ/selenium/blob/master/dotnet/src/webdriver/Keys.cs
     }
 
+    /// <summary>
+    /// Presses a key in the browser page without releasing it.
+    /// </summary>
     [Block("Presses a key in the browser page without releasing it", name = "Key Down in Page",
         extraInfo = "Full list of keys here: https://github.com/SeleniumHQ/selenium/blob/master/dotnet/src/webdriver/Keys.cs")]
     public static void SeleniumPageKeyDown(BotData data, string key)
@@ -90,6 +99,9 @@ public static class Methods
         // Full list of keys: https://github.com/SeleniumHQ/selenium/blob/master/dotnet/src/webdriver/Keys.cs
     }
 
+    /// <summary>
+    /// Releases a key that was previously pressed in the browser page.
+    /// </summary>
     [Block("Releases a key that was previously pressed in the browser page", name = "Key Up in Page",
         extraInfo = "Full list of keys here: https://github.com/SeleniumHQ/selenium/blob/master/dotnet/src/webdriver/Keys.cs")]
     public static void SeleniumKeyUp(BotData data, string key)
@@ -254,7 +266,7 @@ public static class Methods
     }
 
     private static WebDriver GetBrowser(BotData data)
-        => data.TryGetObject<WebDriver>("selenium") ?? throw new Exception("The browser is not open!");
+        => data.TryGetObject<WebDriver>("selenium") ?? throw new BlockExecutionException("The browser is not open!");
 
     private static void UpdateSeleniumData(BotData data)
     {

@@ -1,5 +1,6 @@
 ﻿using PuppeteerSharp;
 using RuriLib.Attributes;
+using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using System;
@@ -80,6 +81,9 @@ public static class Methods
         data.Logger.Log($"Cookies cleared for site {website}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Sends keystrokes to the browser page.
+    /// </summary>
     [Block("Sends keystrokes to the browser page", name = "Type in Page")]
     public static async Task PuppeteerPageType(BotData data, string text)
     {
@@ -90,6 +94,9 @@ public static class Methods
         data.Logger.Log($"Typed {text}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Presses and releases a key in the browser page.
+    /// </summary>
     [Block("Presses and releases a key in the browser page", name = "Key Press in Page", 
         extraInfo = "Full list of keys here: https://github.com/puppeteer/puppeteer/blob/v1.14.0/lib/USKeyboardLayout.js")]
     public static async Task PuppeteerPageKeyPress(BotData data, string key)
@@ -103,6 +110,9 @@ public static class Methods
         // Full list of keys: https://github.com/puppeteer/puppeteer/blob/v1.14.0/lib/USKeyboardLayout.js
     }
 
+    /// <summary>
+    /// Presses a key in the browser page without releasing it.
+    /// </summary>
     [Block("Presses a key in the browser page without releasing it", name = "Key Down in Page",
         extraInfo = "Full list of keys here: https://github.com/puppeteer/puppeteer/blob/v1.14.0/lib/USKeyboardLayout.js")]
     public static async Task PuppeteerPageKeyDown(BotData data, string key)
@@ -116,6 +126,9 @@ public static class Methods
         // Full list of keys: https://github.com/puppeteer/puppeteer/blob/v1.14.0/lib/USKeyboardLayout.js
     }
 
+    /// <summary>
+    /// Releases a key that was previously pressed in the browser page.
+    /// </summary>
     [Block("Releases a key that was previously pressed in the browser page", name = "Key Up in Page",
         extraInfo = "Full list of keys here: https://github.com/puppeteer/puppeteer/blob/v1.14.0/lib/USKeyboardLayout.js")]
     public static async Task PuppeteerKeyUp(BotData data, string key)
@@ -364,7 +377,7 @@ public static class Methods
     }
 
     private static IPage GetPage(BotData data)
-        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new Exception("No pages open!");
+        => data.TryGetObject<IPage>("puppeteerPage") ?? throw new BlockExecutionException("No pages open!");
 
     private static void SwitchToMainFramePrivate(BotData data)
         => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);

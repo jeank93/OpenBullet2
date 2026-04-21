@@ -18,6 +18,9 @@ namespace RuriLib.Blocks.Puppeteer.Elements;
 [BlockCategory("Elements", "Blocks for interacting with elements on a puppeteer browser page", "#e9967a")]
 public static class Methods
 {
+    /// <summary>
+    /// Sets the value of the specified attribute of an element.
+    /// </summary>
     [Block("Sets the value of the specified attribute of an element", name = "Set Attribute Value")]
     public static async Task PuppeteerSetAttributeValue(BotData data, FindElementBy findBy, string identifier, int index,
         string attributeName, string value)
@@ -32,6 +35,9 @@ public static class Methods
         data.Logger.Log($"Set value {value} of attribute {attributeName} by executing {script}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Types text in an input field.
+    /// </summary>
     [Block("Types text in an input field", name = "Type")]
     public static async Task PuppeteerTypeElement(BotData data, FindElementBy findBy, string identifier, int index,
         string text, int timeBetweenKeystrokes = 0)
@@ -45,6 +51,9 @@ public static class Methods
         data.Logger.Log($"Typed {text}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Types text in an input field with human-like random delays.
+    /// </summary>
     [Block("Types text in an input field with human-like random delays", name = "Type Human")]
     public static async Task PuppeteerTypeElementHuman(BotData data, FindElementBy findBy, string identifier, int index,
         string text)
@@ -63,6 +72,9 @@ public static class Methods
         data.Logger.Log($"Typed {text}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Clicks an element.
+    /// </summary>
     [Block("Clicks an element", name = "Click")]
     public static async Task PuppeteerClick(BotData data, FindElementBy findBy, string identifier, int index,
         PuppeteerSharp.Input.MouseButton mouseButton = PuppeteerSharp.Input.MouseButton.Left, int clickCount = 1,
@@ -77,6 +89,9 @@ public static class Methods
         data.Logger.Log($"Clicked {clickCount} time(s) with {mouseButton} button", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Submits a form.
+    /// </summary>
     [Block("Submits a form", name = "Submit")]
     public static async Task PuppeteerSubmit(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -90,6 +105,9 @@ public static class Methods
         data.Logger.Log($"Submitted the form by executing {script}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Selects a value in a select element.
+    /// </summary>
     [Block("Selects a value in a select element", name = "Select")]
     public static async Task PuppeteerSelect(BotData data, FindElementBy findBy, string identifier, int index, string value)
     {
@@ -102,6 +120,9 @@ public static class Methods
         data.Logger.Log($"Selected value {value}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Selects a value by index in a select element.
+    /// </summary>
     [Block("Selects a value by index in a select element", name = "Select by Index")]
     public static async Task PuppeteerSelectByIndex(BotData data, FindElementBy findBy, string identifier, int index, int selectionIndex)
     {
@@ -118,6 +139,9 @@ public static class Methods
         data.Logger.Log($"Selected value {value}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Selects a value by text in a select element.
+    /// </summary>
     [Block("Selects a value by text in a select element", name = "Select by Text")]
     public static async Task PuppeteerSelectByText(BotData data, FindElementBy findBy, string identifier, int index, string text)
     {
@@ -131,6 +155,9 @@ public static class Methods
         data.Logger.Log($"Selected text {text}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Gets the value of an attribute of an element.
+    /// </summary>
     [Block("Gets the value of an attribute of an element", name = "Get Attribute Value")]
     public static async Task<string> PuppeteerGetAttributeValue(BotData data, FindElementBy findBy, string identifier, int index,
         string attributeName = "innerText")
@@ -146,6 +173,9 @@ public static class Methods
         return value;
     }
 
+    /// <summary>
+    /// Gets the values of an attribute from multiple elements.
+    /// </summary>
     [Block("Gets the values of an attribute of multiple elements", name = "Get Attribute Value All")]
     public static async Task<List<string>> PuppeteerGetAttributeValueAll(BotData data, FindElementBy findBy, string identifier,
         string attributeName = "innerText")
@@ -161,6 +191,9 @@ public static class Methods
         return values.ToList();
     }
 
+    /// <summary>
+    /// Checks if an element is currently displayed on the page.
+    /// </summary>
     [Block("Checks if an element is currently being displayed on the page", name = "Is Displayed")]
     public static async Task<bool> PuppeteerIsDisplayed(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -175,6 +208,9 @@ public static class Methods
         return displayed;
     }
 
+    /// <summary>
+    /// Checks if an element exists on the page.
+    /// </summary>
     [Block("Checks if an element exists on the page", name = "Exists")]
     public static async Task<bool> PuppeteerExists(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -197,6 +233,9 @@ public static class Methods
         }
     }
 
+    /// <summary>
+    /// Uploads one or more files to the selected element.
+    /// </summary>
     [Block("Uploads one or more files to the selected element", name = "Upload Files")]
     public static async Task PuppeteerUploadFiles(BotData data, FindElementBy findBy, string identifier, int index, List<string> filePaths)
     {
@@ -209,6 +248,9 @@ public static class Methods
         data.Logger.Log($"Uploaded {filePaths.Count} files to the element", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Gets the X coordinate of the element in pixels.
+    /// </summary>
     [Block("Gets the X coordinate of the element in pixels", name = "Get Position X")]
     public static async Task<int> PuppeteerGetPositionX(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -222,6 +264,9 @@ public static class Methods
         return x;
     }
 
+    /// <summary>
+    /// Gets the Y coordinate of the element in pixels.
+    /// </summary>
     [Block("Gets the Y coordinate of the element in pixels", name = "Get Position Y")]
     public static async Task<int> PuppeteerGetPositionY(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -235,6 +280,9 @@ public static class Methods
         return y;
     }
 
+    /// <summary>
+    /// Gets the width of the element in pixels.
+    /// </summary>
     [Block("Gets the width of the element in pixels", name = "Get Width")]
     public static async Task<int> PuppeteerGetWidth(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -248,6 +296,9 @@ public static class Methods
         return width;
     }
 
+    /// <summary>
+    /// Gets the height of the element in pixels.
+    /// </summary>
     [Block("Gets the height of the element in pixels", name = "Get Height")]
     public static async Task<int> PuppeteerGetHeight(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -261,6 +312,9 @@ public static class Methods
         return height;
     }
 
+    /// <summary>
+    /// Takes a screenshot of the element and saves it to an output file.
+    /// </summary>
     [Block("Takes a screenshot of the element and saves it to an output file", name = "Screenshot Element")]
     public static async Task PuppeteerScreenshotElement(BotData data, FindElementBy findBy, string identifier, int index,
         string fileName, bool fullPage = false, bool omitBackground = false)
@@ -283,6 +337,9 @@ public static class Methods
         data.Logger.Log($"Took a screenshot of the element and saved it to {fileName}", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Takes a screenshot of the element and converts it to a base64 string.
+    /// </summary>
     [Block("Takes a screenshot of the element and converts it to a base64 string", name = "Screenshot Element Base64")]
     public static async Task<string> PuppeteerScreenshotBase64(BotData data, FindElementBy findBy, string identifier, int index,
         bool fullPage = false, bool omitBackground = false)
@@ -303,6 +360,9 @@ public static class Methods
         return base64;
     }
 
+    /// <summary>
+    /// Switches to a different iframe.
+    /// </summary>
     [Block("Switches to a different iframe", name = "Switch to Frame")]
     public static async Task PuppeteerSwitchToFrame(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -315,6 +375,9 @@ public static class Methods
         data.Logger.Log("Switched to iframe", LogColors.DarkSalmon);
     }
 
+    /// <summary>
+    /// Waits for an element to appear on the page.
+    /// </summary>
     [Block("Waits for an element to appear on the page", name = "Wait for Element")]
     public static async Task PuppeteerWaitForElement(BotData data, FindElementBy findBy, string identifier, bool hidden = false, bool visible = true,
         int timeout = 30000)

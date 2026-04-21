@@ -190,6 +190,9 @@ public static class Methods
         return value;
     }
 
+    /// <summary>
+    /// Gets the values of an attribute from multiple elements.
+    /// </summary>
     [Block("Gets the values of an attribute of multiple elements", name = "Get Attribute Value All")]
     public static List<string> SeleniumGetAttributeValueAll(BotData data, FindElementBy findBy, string identifier,
         string attributeName = "innerText")
@@ -203,6 +206,9 @@ public static class Methods
         return values;
     }
 
+    /// <summary>
+    /// Checks if an element is currently displayed on the page.
+    /// </summary>
     [Block("Checks if an element is currently being displayed on the page", name = "Is Displayed")]
     public static bool SeleniumIsDisplayed(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -215,6 +221,9 @@ public static class Methods
         return displayed;
     }
 
+    /// <summary>
+    /// Checks if an element is currently enabled.
+    /// </summary>
     [Block("Checks if an element is currently enabled", name = "Is Enabled")]
     public static bool SeleniumIsEnabled(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -227,6 +236,9 @@ public static class Methods
         return enabled;
     }
 
+    /// <summary>
+    /// Checks if an element exists on the page.
+    /// </summary>
     [Block("Checks if an element exists on the page", name = "Exists")]
     public static bool SeleniumExists(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -245,6 +257,9 @@ public static class Methods
         }
     }
 
+    /// <summary>
+    /// Gets the X coordinate of the element in pixels.
+    /// </summary>
     [Block("Gets the X coordinate of the element in pixels", name = "Get Position X")]
     public static int SeleniumGetPositionX(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -257,6 +272,9 @@ public static class Methods
         return x;
     }
 
+    /// <summary>
+    /// Gets the Y coordinate of the element in pixels.
+    /// </summary>
     [Block("Gets the Y coordinate of the element in pixels", name = "Get Position Y")]
     public static int SeleniumGetPositionY(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -269,6 +287,9 @@ public static class Methods
         return y;
     }
 
+    /// <summary>
+    /// Gets the width of the element in pixels.
+    /// </summary>
     [Block("Gets the width of the element in pixels", name = "Get Width")]
     public static int SeleniumGetWidth(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -281,6 +302,9 @@ public static class Methods
         return width;
     }
 
+    /// <summary>
+    /// Gets the height of the element in pixels.
+    /// </summary>
     [Block("Gets the height of the element in pixels", name = "Get Height")]
     public static int SeleniumGetHeight(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -293,6 +317,9 @@ public static class Methods
         return height;
     }
 
+    /// <summary>
+    /// Takes a screenshot of the element and saves it to an output file.
+    /// </summary>
     [Block("Takes a screenshot of the element and saves it to an output file", name = "Screenshot Element")]
     public static void SeleniumScreenshotElement(BotData data, FindElementBy findBy, string identifier, int index, string fileName)
     {
@@ -310,6 +337,9 @@ public static class Methods
         data.Logger.Log($"Took a screenshot of the element and saved it to {fileName}", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Takes a screenshot of the element and converts it to a base64 string.
+    /// </summary>
     [Block("Takes a screenshot of the element and converts it to a base64 string", name = "Screenshot Element Base64")]
     public static string SeleniumScreenshotBase64(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -327,6 +357,9 @@ public static class Methods
         return base64;
     }
 
+    /// <summary>
+    /// Switches to a different iframe.
+    /// </summary>
     [Block("Switches to a different iframe", name = "Switch to Frame")]
     public static void SeleniumSwitchToFrame(BotData data, FindElementBy findBy, string identifier, int index)
     {
@@ -339,6 +372,9 @@ public static class Methods
         data.Logger.Log($"Switched to iframe", LogColors.JuneBud);
     }
 
+    /// <summary>
+    /// Waits for an element to appear on the page.
+    /// </summary>
     [Block("Waits for an element to appear on the page", name = "Wait for Element")]
     public static async Task SeleniumWaitForElement(BotData data, FindElementBy findBy, string identifier, int timeout = 30000)
     {

@@ -5,61 +5,57 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
 
-namespace OpenBullet2.Native.Controls
+namespace OpenBullet2.Native.Controls;
+
+/// <summary>
+/// Interaction logic for BlockSettingViewer.xaml
+/// </summary>
+public partial class EnumSettingViewer : UserControl
 {
-    /// <summary>
-    /// Interaction logic for BlockSettingViewer.xaml
-    /// </summary>
-    public partial class EnumSettingViewer : UserControl
+    private EnumSettingViewerViewModel? vm;
+    private EnumSettingViewerViewModel ViewModel => vm
+        ?? throw new InvalidOperationException("The setting viewer has not been initialized");
+
+    public BlockSetting Setting
     {
-        private EnumSettingViewerViewModel vm;
-
-        public BlockSetting Setting
+        get => ViewModel.Setting;
+        set
         {
-            get => vm?.Setting;
-            set
+            if (value.FixedSetting is not EnumSetting)
             {
-                if (value.FixedSetting is not EnumSetting)
-                {
-                    throw new Exception("Invalid setting type for this UC");
-                }
-
-                vm = new EnumSettingViewerViewModel(value);
-                DataContext = vm;
+                throw new Exception("Invalid setting type for this UC");
             }
-        }
 
-        public EnumSettingViewer()
-        {
-            InitializeComponent();
+            vm = new EnumSettingViewerViewModel(value);
+            DataContext = vm;
         }
     }
 
-    public class EnumSettingViewerViewModel : ViewModelBase
+    public EnumSettingViewer()
     {
-        public BlockSetting Setting { get; init; }
+        InitializeComponent();
+    }
+}
 
-        private EnumSetting FixedSetting => Setting.FixedSetting as EnumSetting;
+public class EnumSettingViewerViewModel(BlockSetting setting) : ViewModelBase
+{
+    public BlockSetting Setting { get; init; } = setting;
 
-        public string Name => Setting.ReadableName;
+    private EnumSetting FixedSetting => (EnumSetting)Setting.FixedSetting!;
 
-        public string Description => Setting.Description;
+    public string Name => Setting.ReadableName;
 
-        public IEnumerable<string> Values => FixedSetting.PrettyNames;
+    public string Description => Setting.Description ?? string.Empty;
 
-        public string Value
+    public IEnumerable<string> Values => FixedSetting.PrettyNames;
+
+    public string Value
+    {
+        get => FixedSetting.PrettyName ?? string.Empty;
+        set
         {
-            get => FixedSetting.PrettyName;
-            set
-            {
-                FixedSetting.SetFromPrettyName(value);
-                OnPropertyChanged();
-            }
-        }
-
-        public EnumSettingViewerViewModel(BlockSetting setting)
-        {
-            Setting = setting;
+            FixedSetting.SetFromPrettyName(value);
+            OnPropertyChanged();
         }
     }
 }

@@ -25,7 +25,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -63,7 +63,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -106,7 +106,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -140,7 +140,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist1 = new WordlistEntity
         {
             Name = "test1",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -148,7 +148,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist2 = new WordlistEntity
         {
             Name = "test2",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -186,7 +186,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist1 = new WordlistEntity
         {
             Name = "test1",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -195,7 +195,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist2 = new WordlistEntity
         {
             Name = "test2",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -204,7 +204,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist3 = new WordlistEntity
         {
             Name = "test3",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -233,7 +233,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var dbContext = GetRequiredService<ApplicationDbContext>();
-        var fileName = Path.GetTempFileName();
+        var fileName = GetRandomTempPath();
         await File.WriteAllLinesAsync(
             fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var wordlist = new WordlistEntity
@@ -304,7 +304,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        var fileName = Path.GetTempFileName();
+        var fileName = GetRandomTempPath();
         await File.WriteAllLinesAsync(
             fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var wordlist = new WordlistEntity
@@ -351,7 +351,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -386,7 +386,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var dbContext = GetRequiredService<ApplicationDbContext>();
-        var fileName = Path.GetTempFileName();
+        var fileName = GetRandomTempPath();
         await File.WriteAllLinesAsync(
             fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var dto = new CreateWordlistDto
@@ -475,7 +475,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        var fileName = Path.GetTempFileName();
+        var fileName = GetRandomTempPath();
         await File.WriteAllLinesAsync(
             fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var dto = new CreateWordlistDto
@@ -562,7 +562,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var dbContext = GetRequiredService<ApplicationDbContext>();
-        var fileName = Path.GetTempFileName();
+        var fileName = await CreateTempFileAsync();
         var wordlist = new WordlistEntity
         {
             Name = "test",
@@ -599,7 +599,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var dbContext = GetRequiredService<ApplicationDbContext>();
-        var fileName = Path.GetTempFileName();
+        var fileName = await CreateTempFileAsync();
         var wordlist = new WordlistEntity
         {
             Name = "test",
@@ -641,7 +641,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -677,7 +677,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist1 = new WordlistEntity
         {
             Name = "test1",
-            FileName = Path.GetTempFileName(), // Exists
+            FileName = await CreateTempFileAsync(), // Exists
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -723,7 +723,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist1 = new WordlistEntity
         {
             Name = "test1",
-            FileName = Path.GetTempFileName(), // Exists
+            FileName = await CreateTempFileAsync(), // Exists
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -789,7 +789,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default"
@@ -831,7 +831,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var wordlist = new WordlistEntity
         {
             Name = "test",
-            FileName = Path.GetTempFileName(),
+            FileName = GetRandomTempPath(),
             Purpose = "test",
             Total = 10,
             Type = "Default",
@@ -859,6 +859,16 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.False(result.IsSuccess);
         Assert.Equal(HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
         Assert.Equal(ErrorCode.WordlistNotFound, result.Error.Content!.ErrorCode);
+    }
+
+    private static string GetRandomTempPath(string extension = ".tmp")
+        => Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}{extension}");
+
+    private static async Task<string> CreateTempFileAsync(string extension = ".tmp")
+    {
+        var path = GetRandomTempPath(extension);
+        await File.WriteAllTextAsync(path, string.Empty);
+        return path;
     }
 }
 

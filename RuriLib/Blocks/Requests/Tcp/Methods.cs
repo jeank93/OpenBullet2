@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -21,6 +22,8 @@ namespace RuriLib.Blocks.Requests.Tcp;
 [BlockCategory("TCP", "Blocks to send data over TCP", "#e0b0ff")]
 public static class Methods
 {
+    internal static RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
+
     /// <summary>
     /// Establishes a TCP connection with the given server.
     /// </summary>
@@ -46,6 +49,7 @@ public static class Methods
             await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
             {
                 TargetHost = host,
+                RemoteCertificateValidationCallback = ServerCertificateValidationCallback
             }, data.CancellationToken).ConfigureAwait(false);
 
             data.SetObject("sslStream", sslStream);

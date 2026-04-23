@@ -1,4 +1,5 @@
 using RuriLib.Exceptions;
+using RuriLib.Blocks.Requests.Tcp;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
@@ -15,6 +16,7 @@ using Xunit;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
+[Collection(nameof(TcpRequestBlocksCollection))]
 public class TcpRequestBlocksTests
 {
     [Fact]
@@ -177,6 +179,53 @@ public class TcpRequestBlocksTests
             $"Unexpected exception type: {ex.GetType().FullName}");
     }
 
+    [Fact]
+    public async Task TcpConnect_WithSsl_AndTrustedTestCertificate_Succeeds()
+    {
+        using var certificate = TestTcpServer.CreateSelfSignedCertificate("localhost");
+        await using var server = TestTcpServer.CreateTlsEchoServer(certificate);
+        var data = NewBotData();
+        Methods.ServerCertificateValidationCallback = (_, _, _, _) => true;
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, "localhost", server.Port, useSSL: true);
+
+            var response = await TcpMethods.TcpSendRead(data, "TLS");
+
+            Assert.Equal("TLS\r\n", response);
+        }
+        finally
+        {
+            Methods.ServerCertificateValidationCallback = null;
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
+    [Fact]
+    public async Task TcpConnect_WithSsl_SendReadBytes_EchoesBinaryPayload()
+    {
+        using var certificate = TestTcpServer.CreateSelfSignedCertificate("localhost");
+        await using var server = TestTcpServer.CreateTlsEchoServer(certificate);
+        var data = NewBotData();
+        var payload = new byte[] { 5, 10, 15, 20, 25 };
+        Methods.ServerCertificateValidationCallback = (_, _, _, _) => true;
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, "localhost", server.Port, useSSL: true);
+
+            var response = await TcpMethods.TcpSendReadBytes(data, payload, bytesToRead: payload.Length);
+
+            Assert.Equal(payload, response);
+        }
+        finally
+        {
+            Methods.ServerCertificateValidationCallback = null;
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
     private static BotData NewBotData()
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
@@ -188,3 +237,6 @@ public class TcpRequestBlocksTests
             new BotLogger(),
             new DataLine("hello", new WordlistType()));
 }
+
+[CollectionDefinition(nameof(TcpRequestBlocksCollection), DisableParallelization = true)]
+public class TcpRequestBlocksCollection;

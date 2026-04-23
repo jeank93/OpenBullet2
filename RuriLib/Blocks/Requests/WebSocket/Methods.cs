@@ -190,6 +190,8 @@ public static class Methods
 
         var ws = GetSocket(data);
         ws.Stop(WebSocketCloseStatus.NormalClosure, "User requested");
+        ws.Dispose();
+        data.SetObject("webSocket", null, disposeExisting: false);
 
         data.Logger.Log("Closed the WebSocket", LogColors.MossGreen);
     }

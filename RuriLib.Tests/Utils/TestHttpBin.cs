@@ -51,13 +51,6 @@ internal static class TestHttpBin
                 return;
             }
 
-            var configuredBaseUrl = Environment.GetEnvironmentVariable("OB2_HTTPBIN_BASE_URL");
-            if (!string.IsNullOrWhiteSpace(configuredBaseUrl))
-            {
-                baseUrl = configuredBaseUrl;
-                return;
-            }
-
             try
             {
                 container = new ContainerBuilder(ContainerImage)

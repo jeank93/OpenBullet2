@@ -13,27 +13,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      httpbin:
-        image: kennethreitz/httpbin:latest
-        ports:
-          - 8081:80
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Wait for local httpbin
-      run: |
-        for i in {1..30}; do
-          if curl -fsS http://127.0.0.1:8081/anything > /dev/null; then
-            exit 0
-          fi
-          sleep 1
-        done
-        exit 1
     - name: Unit and integration tests
-      env:
-        OB2_HTTPBIN_BASE_URL: http://127.0.0.1:8081
       run: dotnet test

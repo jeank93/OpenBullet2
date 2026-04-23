@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Conversion;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -21,7 +21,7 @@ public static class Methods
     public static string ConstantString(BotData data, [MultiLine] string value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {value}", LogColors.YellowGreen);
         return value;
     }
@@ -33,7 +33,7 @@ public static class Methods
     public static int ConstantInteger(BotData data, int value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {value}", LogColors.YellowGreen);
         return value;
     }
@@ -45,7 +45,7 @@ public static class Methods
     public static float ConstantFloat(BotData data, float value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {value.ToString(CultureInfo.InvariantCulture)}", LogColors.YellowGreen);
         return value;
     }
@@ -57,7 +57,7 @@ public static class Methods
     public static bool ConstantBool(BotData data, bool value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {value}", LogColors.YellowGreen);
         return value;
     }
@@ -69,7 +69,7 @@ public static class Methods
     public static byte[] ConstantByteArray(BotData data, byte[] value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {HexConverter.ToHexString(value)}", LogColors.YellowGreen);
         return value;
     }
@@ -81,7 +81,7 @@ public static class Methods
     public static List<string> ConstantList(BotData data, List<string> value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {string.Join(", ", value)}", LogColors.YellowGreen);
         return value.Select(i => i).ToList(); // Clone the list
     }
@@ -93,7 +93,7 @@ public static class Methods
     public static Dictionary<string, string> ConstantDictionary(BotData data, Dictionary<string, string> value)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log($"Set constant value {string.Join(", ", value.Select(kvp => $"({kvp.Key}, {kvp.Value})"))}", LogColors.YellowGreen);
         return value.Select(i => i).ToDictionary(i => i.Key, i => i.Value);
     }

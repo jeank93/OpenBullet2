@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
@@ -64,7 +64,7 @@ public class HitsViewModel : ViewModelBase
 
     public IEnumerable<string> HitTypes => new string[] { "All" }.Concat(
         HitsCollection.GroupBy(h => h.Type).Select(g => g.First().Type ?? string.Empty));
-    
+
     private string typeFilter = "All";
     public string TypeFilter
     {

@@ -1,4 +1,4 @@
-﻿using BCrypt.Net;
+using BCrypt.Net;
 using JWT.Algorithms;
 using Newtonsoft.Json;
 using RuriLib.Attributes;
@@ -27,7 +27,7 @@ public static class Methods
     public static byte[] XOR(BotData data, byte[] bytes, byte[] key)
     {
         data.Logger.LogHeader();
-        
+
         var xor = RuriLib.Functions.Crypto.Crypto.XOR(bytes, key);
         data.Logger.Log($"XORed the two byte arrays and got {HexConverter.ToHexString(xor)}", LogColors.YellowGreen);
         return xor;
@@ -40,7 +40,7 @@ public static class Methods
     public static string XORStrings(BotData data, string text, string key)
     {
         data.Logger.LogHeader();
-        
+
         var xor = RuriLib.Functions.Crypto.Crypto.XORStrings(text, key);
         data.Logger.Log($"XORed: {text} with {key} with the outcome {xor}", LogColors.YellowGreen);
         return xor;
@@ -53,7 +53,7 @@ public static class Methods
     public static byte[] Hash(BotData data, byte[] input, HashFunction hashFunction = HashFunction.MD5)
     {
         data.Logger.LogHeader();
-        
+
         var hashed = Hash(input, hashFunction);
         data.Logger.Log($"Computed hash: {HexConverter.ToHexString(hashed)}", LogColors.YellowGreen);
         return hashed;
@@ -66,7 +66,7 @@ public static class Methods
     public static string HashString(BotData data, string input, HashFunction hashFunction = HashFunction.MD5)
     {
         data.Logger.LogHeader();
-        
+
         var hashed = HexConverter.ToHexString(Hash(Encoding.UTF8.GetBytes(input), hashFunction));
         data.Logger.Log($"Computed hash: {hashed}", LogColors.YellowGreen);
         return hashed;
@@ -79,7 +79,7 @@ public static class Methods
     public static byte[] NTLMHash(BotData data, string input)
     {
         data.Logger.LogHeader();
-        
+
         var hashed = RuriLib.Functions.Crypto.Crypto.NTLM(input);
         data.Logger.Log($"Computed hash: {HexConverter.ToHexString(hashed)}", LogColors.YellowGreen);
         return hashed;
@@ -92,7 +92,7 @@ public static class Methods
     public static byte[] Hmac(BotData data, byte[] input, byte[] key, HashFunction hashFunction = HashFunction.MD5)
     {
         data.Logger.LogHeader();
-        
+
         var hmac = Hmac(input, key, hashFunction);
         data.Logger.Log($"Computed HMAC: {HexConverter.ToHexString(hmac)}", LogColors.YellowGreen);
         return hmac;
@@ -105,12 +105,12 @@ public static class Methods
     public static string HmacString(BotData data, string input, byte[] key, HashFunction hashFunction = HashFunction.MD5)
     {
         data.Logger.LogHeader();
-        
+
         var hmac = HexConverter.ToHexString(Hmac(Encoding.UTF8.GetBytes(input), key, hashFunction));
         data.Logger.Log($"Computed HMAC: {hmac}", LogColors.YellowGreen);
         return hmac;
     }
-    
+
     private static byte[] Hash(byte[] input, HashFunction function)
     {
         return function switch
@@ -148,7 +148,7 @@ public static class Methods
     public static string ScryptString(BotData data, string password, string salt, int iterationCount = 16384, int blockSize = 8, int threadCount = 1)
     {
         data.Logger.LogHeader();
-        
+
         var rng = new FakeRng(salt);
         var encoder = new ScryptEncoder(iterationCount, blockSize, threadCount, rng);
         var hashed = encoder.Encode(password);
@@ -182,7 +182,7 @@ public static class Methods
     public static byte[] RSAEncrypt(BotData data, byte[] plainText, byte[] modulus, byte[] exponent, bool useOAEP)
     {
         data.Logger.LogHeader();
-        
+
         var cipherText = RuriLib.Functions.Crypto.Crypto.RSAEncrypt(plainText, modulus, exponent, useOAEP);
         data.Logger.Log($"Encrypted: {HexConverter.ToHexString(cipherText)}", LogColors.YellowGreen);
         return cipherText;
@@ -195,7 +195,7 @@ public static class Methods
     public static byte[] RSADecrypt(BotData data, byte[] cipherText, byte[] modulus, byte[] d, bool useOAEP)
     {
         data.Logger.LogHeader();
-        
+
         var plainText = RuriLib.Functions.Crypto.Crypto.RSADecrypt(cipherText, modulus, d, useOAEP);
         data.Logger.Log($"Decrypted: {HexConverter.ToHexString(plainText)}", LogColors.YellowGreen);
         return plainText;
@@ -208,7 +208,7 @@ public static class Methods
     public static byte[] RSAPkcs1Pad2(BotData data, string plainText, string hexModulus, string hexExponent)
     {
         data.Logger.LogHeader();
-        
+
         var encrypted = RuriLib.Functions.Crypto.Crypto.RSAPkcs1Pad2(plainText, hexModulus, hexExponent);
         data.Logger.Log($"Encrypted: {HexConverter.ToHexString(encrypted)}", LogColors.YellowGreen);
         return encrypted;
@@ -222,7 +222,7 @@ public static class Methods
         int iterations = 1, int keyLength = 16, HashFunction type = HashFunction.SHA1)
     {
         data.Logger.LogHeader();
-        
+
         var derived = RuriLib.Functions.Crypto.Crypto.PBKDF2PKCS5(password, salt, saltSize, iterations, keyLength, type);
         data.Logger.Log($"Derived: {HexConverter.ToHexString(derived)}", LogColors.YellowGreen);
         return derived;
@@ -236,12 +236,12 @@ public static class Methods
         CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
     {
         data.Logger.LogHeader();
-        
+
         var cipherText = RuriLib.Functions.Crypto.Crypto.AESEncrypt(plainText, key, iv, mode, padding, keySize);
         data.Logger.Log($"Encrypted: {HexConverter.ToHexString(cipherText)}", LogColors.YellowGreen);
         return cipherText;
     }
-    
+
     /// <summary>
     /// Encrypts a string with AES.
     /// </summary>
@@ -250,7 +250,7 @@ public static class Methods
         CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
     {
         data.Logger.LogHeader();
-        
+
         var cipherText = RuriLib.Functions.Crypto.Crypto.AESEncryptString(plainText, key, iv, mode, padding, keySize);
         data.Logger.Log($"Encrypted: {HexConverter.ToHexString(cipherText)}", LogColors.YellowGreen);
         return cipherText;
@@ -264,7 +264,7 @@ public static class Methods
         CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
     {
         data.Logger.LogHeader();
-        
+
         var plainText = RuriLib.Functions.Crypto.Crypto.AESDecrypt(cipherText, key, iv, mode, padding, keySize);
         data.Logger.Log($"Decrypted: {HexConverter.ToHexString(plainText)}", LogColors.YellowGreen);
         return plainText;
@@ -278,7 +278,7 @@ public static class Methods
         CipherMode mode = CipherMode.CBC, PaddingMode padding = PaddingMode.None, int keySize = 256)
     {
         data.Logger.LogHeader();
-        
+
         var plainText = RuriLib.Functions.Crypto.Crypto.AESDecryptString(cipherText, key, iv, mode, padding, keySize);
         data.Logger.Log($"Decrypted: {plainText}", LogColors.YellowGreen);
         return plainText;
@@ -292,10 +292,10 @@ public static class Methods
     public static string JwtEncode(BotData data, JwtAlgorithmName algorithm, string secret, string extraHeaders = "{}", string payload = "{}")
     {
         data.Logger.LogHeader();
-        
+
         var extraHeadersDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(extraHeaders);
         var payloadDictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload);
-        
+
         ArgumentNullException.ThrowIfNull(extraHeadersDictionary, nameof(extraHeadersDictionary));
         ArgumentNullException.ThrowIfNull(payloadDictionary, nameof(payloadDictionary));
 
@@ -353,15 +353,15 @@ public static class Methods
     /// <summary>
     /// Generates an AWS4 Signature from a key, date, region and service.
     /// </summary>
-    [Block("Generates an AWS4 Signature from a key, date, region and service", name = "AWS4 Signature", 
+    [Block("Generates an AWS4 Signature from a key, date, region and service", name = "AWS4 Signature",
         extraInfo = "It returns a byte array and it expects the date to be in the following format: YYYYMMDD")]
     public static byte[] AWS4Signature(BotData data, string key, string date, string region, string service)
     {
         data.Logger.LogHeader();
-        
+
         var signature = RuriLib.Functions.Crypto.Crypto.AWS4Encrypt(key, date, region, service);
         data.Logger.Log($"Hashed: {HexConverter.ToHexString(signature)}", LogColors.YellowGreen);
-            
+
         return signature;
     }
 }

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -107,7 +107,7 @@ public class WordlistController(IWordlistRepository wordlistRepo,
         [FromServices] IValidator<CreateWordlistDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var apiUser = HttpContext.GetApiUser();
 
         // If the user is a guest, make sure they are not accessing
@@ -135,7 +135,8 @@ public class WordlistController(IWordlistRepository wordlistRepo,
                 Path.GetFileName(dto.FilePath), dto.FilePath);
         }
 
-        var entity = new WordlistEntity {
+        var entity = new WordlistEntity
+        {
             Name = dto.Name,
             FileName = path,
             Purpose = dto.Purpose,
@@ -194,7 +195,7 @@ public class WordlistController(IWordlistRepository wordlistRepo,
         EnsureOwnership(entity);
 
         await _wordlistRepo.DeleteAsync(entity, alsoDeleteFile);
-        
+
         _logger.LogInformation("Deleted the wordlist with id {Id}", id);
 
         return Ok();
@@ -225,7 +226,7 @@ public class WordlistController(IWordlistRepository wordlistRepo,
                 await _wordlistRepo.DeleteAsync(entity);
             }
         }
-        
+
         _logger.LogInformation(
             "Deleted {DeletedCount} wordlists that referenced files that were moved or deleted",
             deletedCount);
@@ -244,7 +245,7 @@ public class WordlistController(IWordlistRepository wordlistRepo,
         [FromServices] IValidator<UpdateWordlistInfoDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var entity = await GetEntityAsync(dto.Id);
 
         EnsureOwnership(entity);

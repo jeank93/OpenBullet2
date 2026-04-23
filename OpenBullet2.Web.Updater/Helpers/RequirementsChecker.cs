@@ -14,11 +14,11 @@ namespace OpenBullet2.Web.Updater.Helpers;
 public static class RequirementsChecker
 {
     private static readonly Version _dotnetVersion = new(8, 0);
-    
+
     public static async Task EnsureOb2WebNotRunningAsync()
     {
         var isRunning = false;
-        
+
         await AnsiConsole.Status()
             .StartAsync("[yellow]Checking if OpenBullet 2 is running...[/]", async ctx =>
             {
@@ -29,11 +29,11 @@ public static class RequirementsChecker
                     ctx.Status("[yellow]OpenBullet 2 is running, waiting for it to close...[/]")
                         .Spinner(Spinner.Known.Dots)
                         .Refresh();
-                    
+
                     await Task.Delay(1000);
                     timeout -= TimeSpan.FromSeconds(1);
                 }
-                
+
                 if (Process.GetProcessesByName("OpenBullet2.Web").Length > 0)
                 {
                     isRunning = true;
@@ -61,17 +61,17 @@ public static class RequirementsChecker
             && AnsiConsole.Prompt(
                 new ConfirmationPrompt($"The .NET Runtime and ASP.NET Core Runtime version {_dotnetVersion} are required to run OpenBullet 2. " +
                                        "Do you want to download and install them now?"));
-        
+
         if (!installRuntime)
         {
             Utils.ExitWithError($"The .NET Runtime and ASP.NET Core Runtime version {_dotnetVersion} are required to run OpenBullet 2. " +
                                 $"Please install them from https://dotnet.microsoft.com/en-us/download/dotnet/{_dotnetVersion} " +
                                 "and relaunch the Updater");
         }
-        
+
         await InstallDotNetRuntimeAsync();
     }
-    
+
     private static async Task<bool> IsRuntimeInstalledAsync()
     {
         try
@@ -93,7 +93,7 @@ public static class RequirementsChecker
             return false;
         }
     }
-    
+
     // We need to install both the .NET Runtime and the ASP.NET Core Runtime
     private static async Task InstallDotNetRuntimeAsync()
     {
@@ -107,7 +107,7 @@ public static class RequirementsChecker
         };
 
         var downloadUrl = $"https://aka.ms/dotnet/{_dotnetVersion}/{runtimeFileName}";
-        
+
         await using var runtimeStream = await DownloadRuntimeAsync(downloadUrl);
 
         var tempPath = Path.GetTempFileName() + ".exe";
@@ -115,12 +115,12 @@ public static class RequirementsChecker
         {
             await runtimeStream.CopyToAsync(tempStream);
         }
-        
+
         await Cli.Wrap("cmd")
             .WithArguments($"/c {tempPath}")
             .WithValidation(CommandResultValidation.None)
             .ExecuteBufferedAsync();
-        
+
         // Download and install the ASP.NET Core Runtime
         runtimeFileName = RuntimeInformation.OSArchitecture switch
         {
@@ -131,7 +131,7 @@ public static class RequirementsChecker
         };
 
         downloadUrl = $"https://aka.ms/dotnet/{_dotnetVersion}/{runtimeFileName}";
-        
+
         await using var aspNetCoreRuntimeStream = await DownloadRuntimeAsync(downloadUrl);
 
         tempPath = Path.GetTempFileName() + ".exe";
@@ -139,13 +139,13 @@ public static class RequirementsChecker
         {
             await aspNetCoreRuntimeStream.CopyToAsync(tempStream);
         }
-        
+
         await Cli.Wrap("cmd")
             .WithArguments($"/c {tempPath}")
             .WithValidation(CommandResultValidation.None)
             .ExecuteBufferedAsync();
     }
-    
+
     private static async Task<Stream> DownloadRuntimeAsync(string url)
     {
         return await AnsiConsole.Progress()
@@ -154,7 +154,7 @@ public static class RequirementsChecker
                 new ProgressBarColumn(),
                 new PercentageColumn()
             ])
-            .StartAsync(async ctx => 
+            .StartAsync(async ctx =>
             {
                 var downloadTask = ctx.AddTask("[green]Downloading[/]");
 
@@ -162,10 +162,10 @@ public static class RequirementsChecker
                 {
                     downloadTask.Value = p;
                 });
-                
+
                 using var client = new HttpClient();
 
-                return await FileDownloader.DownloadAsync(client, url, progress); 
+                return await FileDownloader.DownloadAsync(client, url, progress);
             });
     }
 }

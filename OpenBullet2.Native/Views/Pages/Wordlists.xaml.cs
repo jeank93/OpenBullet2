@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
@@ -96,7 +96,7 @@ public partial class Wordlists : Page
         {
             return;
         }
-        
+
         if (listViewSortCol != null)
         {
             AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
@@ -104,7 +104,7 @@ public partial class Wordlists : Page
         }
 
         var newDir = ListSortDirection.Ascending;
-        
+
         if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using OpenBullet2.Web.Dtos.Config.Blocks;
 using OpenBullet2.Web.Dtos.Config.Blocks.HttpRequest;
 using OpenBullet2.Web.Dtos.Config.Blocks.Keycheck;
@@ -145,7 +145,8 @@ internal static class BlockMapper
             foreach (var k in keychainDto.Keys)
             {
                 var keyDto = PolyMapper.ConvertPolyDto<KeyDto>((JsonElement)k);
-                Key key = keyDto switch {
+                Key key = keyDto switch
+                {
                     StringKeyDto x => new StringKey { Comparison = x.Comparison },
                     IntKeyDto x => new IntKey { Comparison = x.Comparison },
                     FloatKeyDto x => new FloatKey { Comparison = x.Comparison },

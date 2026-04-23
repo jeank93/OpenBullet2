@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -76,7 +76,7 @@ public class ParallelBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, T
         {
             throw new NotSupportedException("You cannot change the DoP while this parallelizer is running");
         }
-        
+
         DegreeOfParallelism = newValue;
     }
     #endregion

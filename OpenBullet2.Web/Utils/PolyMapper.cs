@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using OpenBullet2.Web.Dtos;
 using OpenBullet2.Web.Exceptions;
 using System.Text.Json;

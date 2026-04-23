@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RuriLib;
@@ -25,7 +25,7 @@ public class GenericComparer<T> : IEqualityComparer<T>
         {
             return false;
         }
-            
+
         return x.GetHashCode() == y.GetHashCode();
     }
 

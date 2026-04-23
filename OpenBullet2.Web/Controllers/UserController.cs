@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Helpers;
 using OpenBullet2.Core.Repositories;
@@ -36,7 +36,7 @@ public class UserController(OpenBulletSettingsService obSettingsService,
         [FromServices] IValidator<UserLoginDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         // Admin user
         if (string.Equals(_obSettingsService.Settings.SecuritySettings.AdminUsername, dto.Username,
                 StringComparison.CurrentCultureIgnoreCase))
@@ -67,9 +67,9 @@ public class UserController(OpenBulletSettingsService obSettingsService,
 
         var lifetimeHours = Math.Clamp(_obSettingsService.Settings.SecuritySettings.AdminSessionLifetimeHours, 0, 9999);
         var token = _authService.GenerateToken(claims, TimeSpan.FromHours(lifetimeHours));
-        
+
         _logger.LogInformation("Admin user logged in");
-        
+
         return Task.FromResult(new LoggedInUserDto { Token = token });
     }
 
@@ -125,7 +125,7 @@ public class UserController(OpenBulletSettingsService obSettingsService,
             accessExpiration < lifetimeSpan ? accessExpiration : lifetimeSpan);
 
         _logger.LogInformation("Guest user {Username} logged in", dto.Username);
-        
+
         return new LoggedInUserDto { Token = token };
     }
 }

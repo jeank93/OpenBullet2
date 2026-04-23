@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Settings;
+using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.DTOs;
 using OpenBullet2.Native.Helpers;
@@ -31,13 +31,13 @@ public partial class Configs : Page
     private SortAdorner? listViewSortAdorner;
 
     private ConfigViewModel? HoveredItem => configsListView.SelectedItem as ConfigViewModel;
-    
+
     private string ListViewSortBy
     {
         get => volatileSettings.ListViewSorting["configs"].By;
         set => volatileSettings.ListViewSorting["configs"].By = value;
     }
-    
+
     private ListSortDirection ListViewSortDir
     {
         get => volatileSettings.ListViewSorting["configs"].Direction;
@@ -51,7 +51,7 @@ public partial class Configs : Page
         volatileSettings = SP.GetService<VolatileSettingsService>();
         vm = SP.GetService<ViewModelsService>().Configs;
         DataContext = vm;
-        
+
         InitializeComponent();
     }
 
@@ -155,7 +155,7 @@ public partial class Configs : Page
             ConfigSection.Settings => MainWindowPage.ConfigSettings,
             ConfigSection.CSharpCode => mode switch
             {
-                ConfigMode.LoliCode or ConfigMode.Stack or ConfigMode.CSharp  => MainWindowPage.ConfigLoliCode,
+                ConfigMode.LoliCode or ConfigMode.Stack or ConfigMode.CSharp => MainWindowPage.ConfigLoliCode,
                 ConfigMode.Legacy => MainWindowPage.ConfigLoliScript,
                 _ => MainWindowPage.ConfigMetadata
             },

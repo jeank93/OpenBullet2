@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core;
@@ -139,10 +139,10 @@ public partial class App : Application
 
     private void OnTaskException(object? sender, UnobservedTaskExceptionEventArgs e) =>
         e.SetObserved(); // Comment this line to close the app on task exception.
-    
+
     // I decided to disable the code below since usually task exceptions
     // are not critical to the application.
-        
+
     /*
     if (e.Exception.InnerException is not null)
     {

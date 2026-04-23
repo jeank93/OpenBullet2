@@ -1,4 +1,4 @@
-﻿using IronPython.Compiler;
+using IronPython.Compiler;
 using IronPython.Hosting;
 using IronPython.Runtime;
 using Jint;
@@ -694,7 +694,7 @@ public class LoliScript
 
     // Checks if the LoliScript can proceed with the next lines basing on the status
     private static bool CanContinue(BotData data)
-        => data.STATUS == "SUCCESS" || data.STATUS == "NONE" || 
+        => data.STATUS == "SUCCESS" || data.STATUS == "NONE" ||
         (IsCustomStatus(data.STATUS) && data.ConfigSettings.GeneralSettings.ContinueStatuses.Contains("CUSTOM"));
 }
 

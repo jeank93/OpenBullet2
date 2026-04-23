@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -151,7 +151,7 @@ public class ProxyClientHandler : HttpMessageHandler
 
         await CreateConnection(request, cancellationToken).ConfigureAwait(false);
         await SendDataAsync(request, cancellationToken).ConfigureAwait(false);
-            
+
         var responseMessage = await ReceiveDataAsync(request, cancellationToken).ConfigureAwait(false);
 
         try
@@ -164,7 +164,7 @@ public class ProxyClientHandler : HttpMessageHandler
                     throw new RLHttpException($"Status code was {(int)responseMessage.StatusCode} but no Location header received. " +
                                               $"Disable auto redirect and try again.");
                 }
-                
+
                 // Compute the redirection URI
                 var redirectUri = responseMessage.Headers.Location!.IsAbsoluteUri
                     ? responseMessage.Headers.Location
@@ -214,7 +214,7 @@ public class ProxyClientHandler : HttpMessageHandler
     }
 
     private async Task SendDataAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
-    {   
+    {
         using var ms = new MemoryStream();
 
         // Send the first line
@@ -255,7 +255,7 @@ public class ProxyClientHandler : HttpMessageHandler
         {
             await _connectionCommonStream.DisposeAsync().ConfigureAwait(false);
         }
-        
+
         if (_connectionNetworkStream is not null)
         {
             await _connectionNetworkStream.DisposeAsync().ConfigureAwait(false);

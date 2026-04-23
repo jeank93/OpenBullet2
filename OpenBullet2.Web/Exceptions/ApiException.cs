@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Web.Exceptions;
+namespace OpenBullet2.Web.Exceptions;
 
 /// <summary>
 /// A generic API exception.
@@ -43,7 +43,7 @@ public static class ErrorCode
     /// Unauthorized IP address.
     /// </summary>
     public const string UnauthorizedIpAddress = "UNAUTHORIZED_IP_ADDRESS";
-    
+
     /// <summary>
     /// Validation error.
     /// </summary>
@@ -58,7 +58,7 @@ public static class ErrorCode
     /// Invalid auth token.
     /// </summary>
     public const string InvalidAuthToken = "INVALID_AUTH_TOKEN";
-    
+
     /// <summary>
     /// Not authenticated.
     /// </summary>
@@ -88,7 +88,7 @@ public static class ErrorCode
     /// The guest account is invalid (probably missing from the database).
     /// </summary>
     public const string InvalidGuestAccount = "INVALID_GUEST_ACCOUNT";
-    
+
     /// <summary>
     /// The user has no permission to perform this action.
     /// </summary>
@@ -158,7 +158,7 @@ public static class ErrorCode
     /// Hit not found.
     /// </summary>
     public const string HitNotFound = "HIT_NOT_FOUND";
-    
+
     /// <summary>
     /// No hits selected.
     /// </summary>
@@ -223,7 +223,7 @@ public static class ErrorCode
     /// Missing job id.
     /// </summary>
     public const string MissingJobId = "MISSING_JOB_ID";
-    
+
     /// <summary>
     /// Captcha service error.
     /// </summary>

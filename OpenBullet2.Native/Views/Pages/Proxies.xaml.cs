@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Native.DTOs;
 using OpenBullet2.Native.Extensions;
@@ -96,7 +96,7 @@ public partial class Proxies : Page
             Alert.Exception(ex);
         }
     }
-    
+
     private void Import(object sender, RoutedEventArgs e)
     {
         if (!vm.GroupIsValid)

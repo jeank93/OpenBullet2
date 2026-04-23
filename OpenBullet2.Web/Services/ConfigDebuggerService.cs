@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.ConfigDebugger;
@@ -133,7 +133,8 @@ public sealed class ConfigDebuggerService : IDisposable
         // Right now, only when the status goes back to idle, we
         // update the variables.
         // TODO: In the future it would be nice to update them more often.
-        var varMessage = new DbgVariablesChangedMessage {
+        var varMessage = new DbgVariablesChangedMessage
+        {
             Variables = (sender as ConfigDebugger)!.Options.Variables.Select(MapVariable)
         };
 
@@ -151,11 +152,13 @@ public sealed class ConfigDebuggerService : IDisposable
     /// Maps a <see cref="Variable" /> to a <see cref="VariableDto" />.
     /// </summary>
     public static VariableDto MapVariable(Variable v)
-        => new() {
+        => new()
+        {
             Name = v.Name,
             MarkedForCapture = v.MarkedForCapture,
             Type = v.Type,
-            Value = v switch {
+            Value = v switch
+            {
                 StringVariable x => x.AsString(),
                 IntVariable x => x.AsInt(),
                 FloatVariable x => x.AsFloat(),
@@ -193,7 +196,8 @@ public sealed class ConfigDebuggerService : IDisposable
             }
             catch (Exception ex)
             {
-                var message = new ErrorMessage {
+                var message = new ErrorMessage
+                {
                     Type = ex.GetType().Name, Message = ex.Message, StackTrace = ex.ToString()
                 };
 
@@ -202,7 +206,7 @@ public sealed class ConfigDebuggerService : IDisposable
             }
         });
     }
-    
+
     /// <summary>
     /// Creates a new debugger for the given config with the given options.
     /// </summary>
@@ -213,13 +217,14 @@ public sealed class ConfigDebuggerService : IDisposable
         var config = _configService.Configs.Find(c => c.Id == configId) ?? throw new ArgumentException($"Invalid config id: {configId}");
 
         // Create the new instance
-        var debugger = new ConfigDebugger(config, options) {
+        var debugger = new ConfigDebugger(config, options)
+        {
             PluginRepo = _pluginRepo,
             RandomUAProvider = _randomUAProvider,
             RNGProvider = _rngProvider,
             RuriLibSettings = _rlSettingsService
         };
-        
+
         return debugger;
     }
 
@@ -245,7 +250,8 @@ public sealed class ConfigDebuggerService : IDisposable
         }
 
         // Create the new instance
-        var debugger = new ConfigDebugger(config, options) {
+        var debugger = new ConfigDebugger(config, options)
+        {
             PluginRepo = _pluginRepo,
             RandomUAProvider = _randomUAProvider,
             RNGProvider = _rngProvider,

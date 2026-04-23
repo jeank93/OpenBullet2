@@ -11,10 +11,10 @@ public class HealthIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var response = await client.GetAsync("/api/v1/health");
-        
+
         // Assert
         Assert.True(response.IsSuccessStatusCode);
     }

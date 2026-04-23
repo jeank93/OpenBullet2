@@ -1,4 +1,4 @@
-﻿using MailKit;
+using MailKit;
 using MailKit.Net.Pop3;
 using MailKit.Net.Proxy;
 using RuriLib.Attributes;
@@ -439,7 +439,7 @@ Body:
                 _ => throw new NotImplementedException(),
             };
         }
-        
+
         var credentials = new NetworkCredential(proxy.Username, proxy.Password);
 
         return proxy.Type switch

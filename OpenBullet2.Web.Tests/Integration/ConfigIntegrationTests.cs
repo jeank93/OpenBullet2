@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -33,7 +33,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
                                              => VAR @result
                                            ENDBLOCK
                                            """;
-    
+
     /// <summary>
     /// Admin can read all configs' overview info.
     /// </summary>
@@ -43,7 +43,8 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var configService = GetRequiredService<ConfigService>();
-        var config1 = new Config {
+        var config1 = new Config
+        {
             Id = Guid.NewGuid().ToString(),
             Metadata = new ConfigMetadata
             {
@@ -94,16 +95,16 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             LoliCodeScript = "int n = 1;"
         };
         configService.Configs.AddRange([config1, config2]);
-        
+
         // Act
         var result = await GetJsonAsync<IEnumerable<ConfigInfoDto>>(
             client, "/api/v1/config/all");
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         var configs = result.Value.ToList();
         Assert.Equal(2, configs.Count);
-        
+
         // The returned configs are sorted by last modified date (desc)
         Assert.Equal(config1.Id, configs[0].Id);
         Assert.Equal("TestConfig1", configs[0].Name);
@@ -117,7 +118,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.False(configs[0].IsRemote);
         Assert.Equal(ConfigMode.Stack, configs[0].Mode);
         Assert.False(configs[0].Dangerous);
-        
+
         Assert.Equal(config2.Id, configs[1].Id);
         Assert.Equal("TestConfig2", configs[1].Name);
         Assert.Equal("TestAuthor2", configs[1].Author);
@@ -132,7 +133,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(ConfigMode.LoliCode, configs[1].Mode);
         Assert.True(configs[1].Dangerous);
     }
-    
+
     /// <summary>
     /// Admin can read all configs' overview info when reloaded
     /// from the repository.
@@ -184,7 +185,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         configService.Configs.AddRange([config1, config2]);
         await configRepository.SaveAsync(config1);
-        
+
         // Act
         var queryParams = new
         {
@@ -192,14 +193,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await GetJsonAsync<IEnumerable<ConfigInfoDto>>(
             client, "/api/v1/config/all".ToUri(queryParams));
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         var configs = result.Value.ToList();
         Assert.Single(configs);
         Assert.Equal(config1.Id, configs[0].Id);
     }
-    
+
     /// <summary>
     /// Guest can read all configs' overview info.
     /// </summary>
@@ -215,21 +216,21 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         await dbContext.SaveChangesAsync();
         var config = new Config { Id = Guid.NewGuid().ToString() };
         configService.Configs.Add(config);
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var result = await GetJsonAsync<IEnumerable<ConfigInfoDto>>(
             client, "/api/v1/config/all");
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         var configs = result.Value.ToList();
         Assert.Single(configs);
         Assert.Equal(config.Id, configs[0].Id);
     }
-    
+
     /// <summary>
     /// Admin can get config's metadata.
     /// </summary>
@@ -256,7 +257,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         configService.Configs.Add(config);
         await configRepository.SaveAsync(config);
-        
+
         // Act
         var queryParams = new
         {
@@ -264,7 +265,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await GetJsonAsync<ConfigMetadataDto>(
             client, "/api/v1/config/metadata".ToUri(queryParams));
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(config.Metadata.Name, result.Value.Name);
@@ -274,7 +275,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Single(result.Value.Plugins);
         Assert.Contains("OB2TestPlugin", result.Value.Plugins[0]);
     }
-    
+
     /// <summary>
     /// Guest can get config's metadata.
     /// </summary>
@@ -326,7 +327,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Single(result.Value.Plugins);
         Assert.Contains("OB2TestPlugin", result.Value.Plugins[0]);
     }
-    
+
     /// <summary>
     /// Admin can get config's readme
     /// </summary>
@@ -359,7 +360,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(config.Readme, result.Value.MarkdownText);
     }
-    
+
     /// <summary>
     /// // Guest can get config's readme.
     /// </summary>
@@ -399,7 +400,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(config.Readme, result.Value.MarkdownText);
     }
-    
+
     /// <summary>
     /// Admin can get a config's full data.
     /// </summary>
@@ -436,7 +437,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(config.LoliCodeScript, result.Value.LoliCodeScript);
         Assert.Equal(config.Mode, result.Value.Mode);
     }
-    
+
     /// <summary>
     /// Guest cannot get a config's full data (forbidden).
     /// </summary>
@@ -479,7 +480,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can update a config in LoliCode mode.
     /// </summary>
@@ -535,7 +536,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             x => Assert.Equal(
                 "LOG \"Hello, world! 2\"", ((LoliCodeBlockInstance)x).Script));
     }
-    
+
     /// <summary>
     /// Admin can update a config in LoliCode mode, with persistency.
     /// </summary>
@@ -594,7 +595,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             x => Assert.Equal(
                 "LOG \"Hello, world! 2\"", ((LoliCodeBlockInstance)x).Script));
     }
-    
+
     /// <summary>
     /// Guest cannot update a config (forbidden).
     /// </summary>
@@ -645,7 +646,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin cannot update a remote config.
     /// </summary>
@@ -690,7 +691,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.ActionNotAllowedForRemoteConfig, result.Error.Content.ErrorCode);
     }
-    
+
     // We are missing the display of the X-Application-Warning header in the frontend
     [Fact]
     public async Task UpdateConfig_Admin_MissingPlugin_Warning()
@@ -729,7 +730,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(warning);
         Assert.Contains("MissingPlugin", warning);
     }
-    
+
     [Fact]
     public async Task UpdateConfig_Admin_InvalidLoliCode_BadRequest()
     {
@@ -767,7 +768,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         // TODO: Needs a more talking error
     }
-    
+
     /// <summary>
     /// Admin can create a config.
     /// </summary>
@@ -778,7 +779,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         var configService = GetRequiredService<ConfigService>();
         var configRepository = GetRequiredService<IConfigRepository>();
-        
+
         // Act
         var result = await PostJsonAsync<ConfigDto>(
             client, "/api/v1/config", new { });
@@ -796,7 +797,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var createdConfigInService = configService.Configs.Find(c => c.Id == config.Id);
         Assert.NotNull(createdConfigInService);
     }
-    
+
     /// <summary>
     /// Guest cannot create a config (forbidden).
     /// </summary>
@@ -823,7 +824,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// // Admin can delete a config.
     /// </summary>
@@ -858,7 +859,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Empty(await configRepository.GetAllAsync());
         Assert.Empty(configService.Configs);
     }
-    
+
     /// <summary>
     /// Guest cannot delete a config (forbidden).
     /// </summary>
@@ -902,7 +903,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(await configRepository.GetAsync(config.Id));
         Assert.NotNull(configService.Configs.Find(c => c.Id == config.Id));
     }
-    
+
     /// <summary>
     /// Admin can clone a config.
     /// </summary>
@@ -936,7 +937,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         configService.Configs.Add(config);
         await configRepository.SaveAsync(config);
-        
+
         // Act
         var queryParams = new
         {
@@ -944,7 +945,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConfigDto>(
             client, "/api/v1/config/clone".ToUri(queryParams), new { });
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         var clonedConfig = result.Value;
@@ -954,15 +955,15 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(config.Settings.DataSettings.AllowedWordlistTypes, clonedConfig.Settings.DataSettings.AllowedWordlistTypes);
         Assert.Equal(config.LoliCodeScript, clonedConfig.LoliCodeScript);
         Assert.Equal(config.Mode, clonedConfig.Mode);
-        
+
         // Make sure the cloned config was created both in the service and in the repository
         var createdConfig = await configRepository.GetAsync(clonedConfig.Id);
         Assert.NotNull(createdConfig);
-        
+
         var createdConfigInService = configService.Configs.Find(c => c.Id == clonedConfig.Id);
         Assert.NotNull(createdConfigInService);
     }
-    
+
     /// <summary>
     /// Admin cannot clone a remote config.
     /// </summary>
@@ -982,7 +983,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             IsRemote = true
         };
         configService.Configs.Add(config);
-        
+
         // Act
         var queryParams = new
         {
@@ -996,7 +997,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(error.Content);
         Assert.Equal(ErrorCode.ActionNotAllowedForRemoteConfig, error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Guest cannot clone a config (forbidden).
     /// </summary>
@@ -1019,10 +1020,10 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             }
         };
         configService.Configs.Add(config);
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var queryParams = new
         {
@@ -1036,7 +1037,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(error.Content);
         Assert.Equal(ErrorCode.NotAdmin, error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can download a config.
     /// </summary>
@@ -1055,7 +1056,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             }
         };
         configService.Configs.Add(config);
-        
+
         // Act
         var queryParams = new
         {
@@ -1063,11 +1064,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var response = await client.GetAsync(
             "/api/v1/config/download".ToUri(queryParams));
-        
+
         // Assert
         Assert.True(response.IsSuccessStatusCode);
         Assert.Equal("application/octet-stream", response.Content.Headers.ContentType!.MediaType);
-        
+
         var downloadedConfig = await ConfigPacker.UnpackAsync(
             await response.Content.ReadAsStreamAsync());
 
@@ -1075,7 +1076,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         // config but it's the name of the file
         Assert.Equal(config.Metadata.Name, downloadedConfig.Metadata.Name);
     }
-    
+
     /// <summary>
     /// Admin cannot download a remote config.
     /// </summary>
@@ -1095,7 +1096,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             IsRemote = true
         };
         configService.Configs.Add(config);
-        
+
         // Act
         var queryParams = new
         {
@@ -1103,11 +1104,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var response = await client.GetAsync(
             "/api/v1/config/download".ToUri(queryParams));
-        
+
         // Assert
         Assert.False(response.IsSuccessStatusCode);
     }
-    
+
     /// <summary>
     /// Guest cannot download a config.
     /// </summary>
@@ -1130,10 +1131,10 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             }
         };
         configService.Configs.Add(config);
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var queryParams = new
         {
@@ -1141,11 +1142,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var response = await client.GetAsync(
             "/api/v1/config/download".ToUri(queryParams));
-        
+
         // Assert
         Assert.False(response.IsSuccessStatusCode);
     }
-    
+
     /// <summary>
     /// Admin can download all configs (except remote).
     /// </summary>
@@ -1176,20 +1177,20 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         configService.Configs.AddRange([config1, config2]);
         await configRepository.SaveAsync(config1);
         await configRepository.SaveAsync(config2);
-        
+
         // Act
         var response = await client.GetAsync("/api/v1/config/download/all");
-        
+
         // Assert
         Assert.True(response.IsSuccessStatusCode);
         Assert.Equal("application/zip", response.Content.Headers.ContentType!.MediaType);
-        
+
         await using var zipStream = await response.Content.ReadAsStreamAsync();
         var zipArchive = new ZipArchive(zipStream, ZipArchiveMode.Read);
         Assert.Single(zipArchive.Entries);
         Assert.Equal("TestConfig1.opk", zipArchive.Entries[0].Name);
     }
-    
+
     /// <summary>
     /// Guest cannot download all configs (forbidden).
     /// </summary>
@@ -1223,20 +1224,20 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         configService.Configs.AddRange([config1, config2]);
         await configRepository.SaveAsync(config1);
         await configRepository.SaveAsync(config2);
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var response = await client.GetAsync("/api/v1/config/download/all");
-        
+
         // Assert
         Assert.False(response.IsSuccessStatusCode);
         var error = await response.Content.ReadFromJsonAsync<ApiError>();
         Assert.NotNull(error);
         Assert.Equal(ErrorCode.NotAdmin, error.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can upload configs (with all kinds of modes).
     /// </summary>
@@ -1288,7 +1289,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             Mode = ConfigMode.DLL
         };
         configService.Configs.AddRange([loliCodeConfig, cSharpConfig, legacyConfig, dllConfig]);
-        
+
         // Act
         var packedLoliCodeConfig = await ConfigPacker.PackAsync(loliCodeConfig);
         var packedCSharpConfig = await ConfigPacker.PackAsync(cSharpConfig);
@@ -1302,17 +1303,17 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             { new ByteArrayContent(packedDllConfig), "files", "TestConfig4.opk" }
         };
         var response = await client.PostAsync("/api/v1/config/upload/many", formData);
-        
+
         // Assert
         Assert.True(response.IsSuccessStatusCode);
         var affectedEntries = await response.Content.ReadFromJsonAsync<AffectedEntriesDto>(JsonSerializerOptions);
         Assert.NotNull(affectedEntries);
         Assert.Equal(4, affectedEntries.Count);
-        
+
         var configs = await configRepository.GetAllAsync();
         Assert.Equal(4, configs.Count());
     }
-    
+
     /// <summary>
     /// Guest cannot upload configs (forbidden).
     /// </summary>
@@ -1325,21 +1326,21 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var response = await client.PostAsync("/api/v1/config/upload/many",
             new MultipartFormDataContent());
-        
+
         // Assert
         Assert.False(response.IsSuccessStatusCode);
         var error = await response.Content.ReadFromJsonAsync<ApiError>();
         Assert.NotNull(error);
         Assert.Equal(ErrorCode.NotAdmin, error.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can convert LoliCode to C#.
     /// </summary>
@@ -1357,19 +1358,19 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedCSharpDto>(
             client, "/api/v1/config/convert/lolicode/csharp", dto);
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Contains("data.Logger.LogObject(\"Hello, world!\");",
             result.Value.CSharpScript);
     }
-    
+
     [Fact]
     public async Task ConvertLoliCodeToCSharp_Admin_InvalidLoliCode_BadRequest()
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var dto = new ConvertLoliCodeToCSharpDto
         {
@@ -1378,13 +1379,13 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedCSharpDto>(
             client, "/api/v1/config/convert/lolicode/csharp", dto);
-        
+
         // Assert
         Assert.False(result.IsSuccess);
-        
+
         // TODO: This needs a more talking error
     }
-    
+
     /// <summary>
     /// Guest cannot convert LoliCode to C# (forbidden).
     /// </summary>
@@ -1397,10 +1398,10 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var dto = new ConvertLoliCodeToCSharpDto
         {
@@ -1409,14 +1410,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedCSharpDto>(
             client, "/api/v1/config/convert/lolicode/csharp", dto);
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can convert LoliCode to Stack.
     /// </summary>
@@ -1425,7 +1426,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var dto = new ConvertLoliCodeToStackDto
         {
@@ -1433,19 +1434,19 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedStackDto>(
             client, "/api/v1/config/convert/lolicode/stack", dto);
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Collection(result.Value.Stack,
             x => Assert.Equal("LOG \"Hello, world!\"", ((JsonElement)x).GetProperty("script").GetString()));
     }
-    
+
     [Fact]
     public async Task ConvertLoliCodeToStack_Admin_InvalidLoliCode_BadRequest()
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var dto = new ConvertLoliCodeToStackDto
         {
@@ -1453,11 +1454,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedStackDto>(
             client, "/api/v1/config/convert/lolicode/stack", dto);
-        
+
         // Assert
         Assert.False(result.IsSuccess);
     }
-    
+
     /// <summary>
     /// Guest cannot convert LoliCode to Stack (forbidden).
     /// </summary>
@@ -1470,10 +1471,10 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var dto = new ConvertLoliCodeToStackDto
         {
@@ -1481,14 +1482,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedStackDto>(
             client, "/api/v1/config/convert/lolicode/stack", dto);
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can convert Stack to LoliCode.
     /// </summary>
@@ -1497,48 +1498,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
-        // Act
-        var block = new 
-        {
-            Script = "LOG \"Hello, world!\"",
-            Id = "loliCode",
-            Disabled = false,
-            Label = "Log",
-            Settings = new { },
-            Type = "loliCode"
-        };
-        var dto = new ConvertStackToLoliCodeDto
-        {
-            Stack = [
-                JsonSerializer.SerializeToElement(block, JsonSerializerOptions)
-            ]
-        };
-        var result = await PostJsonAsync<ConvertedLoliCodeDto>(
-            client, "/api/v1/config/convert/stack/lolicode", dto);
-        
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal("LOG \"Hello, world!\"", 
-            result.Value.LoliCode.Trim('\n', '\r', ' '));
-    }
-    
-    /// <summary>
-    /// Guest cannot convert Stack to LoliCode (forbidden).
-    /// </summary>
-    [Fact]
-    public async Task ConvertStackToLoliCode_Guest_Forbidden()
-    {
-        // Arrange
-        using var client = Factory.CreateClient();
-        var dbContext = GetRequiredService<ApplicationDbContext>();
-        var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
-        dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
-        
-        RequireLogin();
-        ImpersonateGuest(client, guest);
-        
+
         // Act
         var block = new
         {
@@ -1557,14 +1517,55 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await PostJsonAsync<ConvertedLoliCodeDto>(
             client, "/api/v1/config/convert/stack/lolicode", dto);
-        
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal("LOG \"Hello, world!\"",
+            result.Value.LoliCode.Trim('\n', '\r', ' '));
+    }
+
+    /// <summary>
+    /// Guest cannot convert Stack to LoliCode (forbidden).
+    /// </summary>
+    [Fact]
+    public async Task ConvertStackToLoliCode_Guest_Forbidden()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
+        dbContext.Guests.Add(guest);
+        await dbContext.SaveChangesAsync();
+
+        RequireLogin();
+        ImpersonateGuest(client, guest);
+
+        // Act
+        var block = new
+        {
+            Script = "LOG \"Hello, world!\"",
+            Id = "loliCode",
+            Disabled = false,
+            Label = "Log",
+            Settings = new { },
+            Type = "loliCode"
+        };
+        var dto = new ConvertStackToLoliCodeDto
+        {
+            Stack = [
+                JsonSerializer.SerializeToElement(block, JsonSerializerOptions)
+            ]
+        };
+        var result = await PostJsonAsync<ConvertedLoliCodeDto>(
+            client, "/api/v1/config/convert/stack/lolicode", dto);
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can get all block descriptors, including ones from plugins.
     /// </summary>
@@ -1574,18 +1575,18 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         await AddTestPluginAsync();
-        
+
         // Act
         var result = await GetJsonAsync<Dictionary<string, BlockDescriptorDto>>(
             client, "/api/v1/config/block-descriptors");
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value);
         Assert.Contains("Parse", result.Value.Keys);
         Assert.Contains("Addition", result.Value.Keys);
     }
-    
+
     /// <summary>
     /// Guest cannot get all block descriptors.
     /// </summary>
@@ -1599,21 +1600,21 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
         await AddTestPluginAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var result = await GetJsonAsync<Dictionary<string, BlockDescriptorDto>>(
             client, "/api/v1/config/block-descriptors");
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can get the category tree, including plugins.
     /// </summary>
@@ -1623,11 +1624,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         await AddTestPluginAsync();
-        
+
         // Act
         var result = await GetJsonAsync<CategoryTreeNodeDto>(
             client, "/api/v1/config/category-tree");
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         var root = result.Value;
@@ -1644,7 +1645,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
                 .SubCategories.First(sc => sc.Name == "Functions")
                 .DescriptorIds);
     }
-    
+
     /// <summary>
     /// Guest cannot get the category tree.
     /// </summary>
@@ -1658,21 +1659,21 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
         await AddTestPluginAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var result = await GetJsonAsync<CategoryTreeNodeDto>(
             client, "/api/v1/config/category-tree");
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can get a new block instance.
     /// </summary>
@@ -1681,7 +1682,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var queryParams = new
         {
@@ -1689,20 +1690,20 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await GetJsonAsync<BlockInstanceDto>(
             client, "/api/v1/config/block-instance".ToUri(queryParams));
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal("ConstantString", result.Value.Id);
         Assert.Contains("value", result.Value.Settings.Keys);
     }
-    
+
     [Fact]
     public async Task GetBlockInstance_Admin_InvalidId_NotFound()
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var queryParams = new
         {
@@ -1710,14 +1711,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await GetJsonAsync<BlockInstanceDto>(
             client, "/api/v1/config/block-instance".ToUri(queryParams));
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.InvalidBlockId, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Guest cannot get a new block instance (forbidden).
     /// </summary>
@@ -1730,10 +1731,10 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var queryParams = new
         {
@@ -1741,14 +1742,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var result = await GetJsonAsync<BlockInstanceDto>(
             client, "/api/v1/config/block-instance".ToUri(queryParams));
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
+
     /// <summary>
     /// Admin can get block snippets.
     /// </summary>
@@ -1757,17 +1758,17 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
     {
         // Arrange
         using var client = Factory.CreateClient();
-        
+
         // Act
         var result = await GetJsonAsync<Dictionary<string, string>>(
             client, "/api/v1/config/block-snippets");
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotEmpty(result.Value);
         Assert.Contains("ConstantString", result.Value.Keys);
     }
-    
+
     /// <summary>
     /// Guest cannot get block snippets.
     /// </summary>
@@ -1780,14 +1781,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         // Act
         var result = await GetJsonAsync<Dictionary<string, string>>(
             client, "/api/v1/config/block-snippets");
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
@@ -1804,7 +1805,8 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var configService = GetRequiredService<ConfigService>();
-        var config = new Config {
+        var config = new Config
+        {
             Id = Guid.NewGuid().ToString(),
             Metadata = new ConfigMetadata(),
             Settings = new ConfigSettings
@@ -1819,35 +1821,35 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             LoliCodeScript = "LOG \"Hello, World!\"\nSET VAR \"TEST\" @input.DATA"
         };
         configService.Configs.Add(config);
-        
+
         var dto = new DebugConfigDto
         {
             ConfigId = config.Id,
             TestData = "Test data",
             WordlistType = "Default",
         };
-        
+
         // Act
         var result = await PostJsonAsync<DebugConfigResultDto>(
             client, "/api/v1/config/debug", dto);
-        
+
         // Assert
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
-        
+
         var variables = result.Value.Variables.ToList();
 
         Assert.Single(variables);
 
         var variable = variables[0];
-        
+
         Assert.Equal("TEST", variable.Name);
         Assert.IsType<JsonElement>(variable.Value);
-        
+
         var jsonElement = (JsonElement)variable.Value!;
-        
+
         Assert.Equal("Test data", jsonElement.GetString());
-        
+
         Assert.Contains(result.Value.Log, l => l.Message.Contains("Hello, World!"));
     }
 
@@ -1863,27 +1865,28 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
         await dbContext.SaveChangesAsync();
-        
+
         RequireLogin();
         ImpersonateGuest(client, guest);
-        
+
         var dto = new DebugConfigDto
         {
             ConfigId = Guid.NewGuid().ToString(),
         };
-        
+
         // Act
         var result = await PostJsonAsync<DebugConfigResultDto>(
             client, "/api/v1/config/debug", dto);
-        
+
         // Assert
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
     }
-    
-    private async Task AddTestPluginAsync() {
+
+    private async Task AddTestPluginAsync()
+    {
         var pluginRepo = GetRequiredService<PluginRepository>();
         var file = new FileInfo("Resources/OB2TestPlugin.zip");
         await using var fs = file.OpenRead();

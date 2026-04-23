@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using RuriLib.Functions.Crypto;
 using RuriLib.Models.Jobs.Monitor;
 using System;
@@ -51,7 +51,7 @@ public class JobMonitorService : IDisposable
         for (var i = 0; i < TriggeredActions.Count; i++)
         {
             var action = TriggeredActions[i];
-            
+
             if (action.IsActive && !action.IsExecuting && (action.IsRepeatable || action.Executions == 0))
             {
                 action.CheckAndExecute(jobManager.Jobs).ConfigureAwait(false);

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using OpenBullet2.Core.Models.Settings;
 using System.Collections.Generic;
 using System.IO;

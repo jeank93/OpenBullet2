@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace RuriLib.Extensions;
@@ -17,7 +17,7 @@ public static class ListExtensions
     {
         var rand = rng ?? new Random();
         var n = list.Count;
-        
+
         while (n > 1)
         {
             n--;

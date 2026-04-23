@@ -1,4 +1,4 @@
-﻿using MahApps.Metro.IconPacks;
+using MahApps.Metro.IconPacks;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Data;
 using RuriLib.Models.Data.Rules;
@@ -31,7 +31,7 @@ public partial class TestDataRulesDialog : Page
 public class TestDataRulesDialogViewModel : ViewModelBase
 {
     public string WordlistType { get; init; }
-    
+
     private RegexValidationViewModel regexValidation = new(false);
     public RegexValidationViewModel RegexValidation
     {
@@ -42,7 +42,7 @@ public class TestDataRulesDialogViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-    
+
     private ObservableCollection<SliceViewModel> slicesCollection = [];
     public ObservableCollection<SliceViewModel> SlicesCollection
     {
@@ -72,7 +72,7 @@ public class TestDataRulesDialogViewModel : ViewModelBase
         var env = SP.GetService<RuriLibSettingsService>().Environment;
         var wt = env.WordlistTypes.First(w => w.Name == wordlistType);
         var dataLine = new DataLine(testData, wt);
-        var slices =dataLine.GetVariables().Select(v => new SliceViewModel(v.Name, v.AsString()));
+        var slices = dataLine.GetVariables().Select(v => new SliceViewModel(v.Name, v.AsString()));
 
         RegexValidation = new(dataLine.IsValid);
         SlicesCollection = new ObservableCollection<SliceViewModel>(slices);

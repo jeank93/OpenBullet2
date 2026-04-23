@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -28,7 +28,7 @@ public class Socks4aProxyClient : Socks4ProxyClient
     {
         var dstPort = HostHelper.GetPortBytes(destinationPort);
         var userId = Array.Empty<byte>();
-            
+
         if (Settings.Credentials != null && !string.IsNullOrEmpty(Settings.Credentials.UserName))
         {
             userId = Encoding.ASCII.GetBytes(Settings.Credentials.UserName);
@@ -68,7 +68,7 @@ public class Socks4aProxyClient : Socks4ProxyClient
         {
             throw new ProxyException("The proxy server did not respond correctly");
         }
-        
+
         var reply = response[1];
 
         // Если запрос не выполнен.

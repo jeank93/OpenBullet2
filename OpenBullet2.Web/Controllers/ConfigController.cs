@@ -134,7 +134,7 @@ public class ConfigController : ApiController
     public ActionResult<ConfigDto> GetConfig(string id)
     {
         var config = GetConfigFromService(id);
-        
+
         // This is just a safety check for low-skill users
         // that might try to get the data of a remote config
         // through the API, but if they put enough effort they can
@@ -145,12 +145,12 @@ public class ConfigController : ApiController
         {
             _logger.LogWarning(
                 "Attempted to get a remote config with id {Id}", id);
-            
+
             throw new ActionNotAllowedException(
                 ErrorCode.ActionNotAllowedForRemoteConfig,
                 "You cannot get a remote config's data");
         }
-        
+
         return _mapper.Map<ConfigDto>(config);
     }
 
@@ -164,7 +164,7 @@ public class ConfigController : ApiController
         [FromServices] IValidator<UpdateConfigDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         // Make sure a config with this id exists
         var config = GetConfigFromService(dto.Id);
 
@@ -468,7 +468,7 @@ public class ConfigController : ApiController
 
         return dto;
     }
-    
+
     /// <summary>
     /// Get the block snippets.
     /// </summary>
@@ -477,7 +477,7 @@ public class ConfigController : ApiController
     [MapToApiVersion("1.0")]
     public ActionResult<FrozenDictionary<string, string>> GetBlockSnippets()
         => _loliCodeAutocompletionService.BlockSnippets;
-    
+
     /// <summary>
     /// Debug a config.
     /// </summary>
@@ -494,22 +494,23 @@ public class ConfigController : ApiController
             UseProxy = !string.IsNullOrWhiteSpace(dto.TestProxy),
             WordlistType = dto.WordlistType
         };
-        
+
         ErrorMessage? error = null;
 
         using var debugger = _configDebuggerService.Create(dto.ConfigId, options);
-        
+
         try
         {
             await debugger.Run();
         }
         catch (Exception ex)
         {
-            error = new ErrorMessage {
+            error = new ErrorMessage
+            {
                 Type = ex.GetType().Name, Message = ex.Message, StackTrace = ex.ToString()
             };
         }
-        
+
         return new DebugConfigResultDto
         {
             Log = debugger.Logger.Entries.ToList(),
@@ -517,7 +518,7 @@ public class ConfigController : ApiController
             Error = error
         };
     }
-    
+
     /// <summary>
     /// Get a remote image (used to bypass CORS).
     /// </summary>
@@ -528,12 +529,13 @@ public class ConfigController : ApiController
     {
         // ASP.NET Core will automatically dispose the stream
         var imageStream = await _httpClient.GetStreamAsync(url);
-        
+
         return File(imageStream, "image/png");
     }
 
     private static CategoryTreeNodeDto MapCategoryTreeNode(CategoryTreeNode node)
-        => new() {
+        => new()
+        {
             Name = node.Name,
             SubCategories = node.SubCategories.Select(MapCategoryTreeNode).ToList(),
             DescriptorIds = node.Descriptors.Select(d => d.Id).ToList()

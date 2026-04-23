@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
@@ -131,7 +131,7 @@ public class SelectWordlistDialogViewModel : ViewModelBase
             searchString = value;
 
             wordlistsViewModel.SearchString = value;
-            
+
             OnPropertyChanged();
             CollectionViewSource.GetDefaultView(WordlistsCollection).Refresh();
         }

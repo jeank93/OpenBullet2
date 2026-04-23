@@ -1,4 +1,4 @@
-﻿using CaptchaSharp.Enums;
+using CaptchaSharp.Enums;
 using CaptchaSharp.Models;
 using RuriLib.Attributes;
 using RuriLib.Logging;
@@ -30,11 +30,11 @@ public static class Methods
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
 
-        var response = await data.Providers.Captcha.SolveTextCaptchaAsync(question, 
+        var response = await data.Providers.Captcha.SolveTextCaptchaAsync(question,
             new TextCaptchaOptions
-            { 
+            {
                 CaptchaLanguage = language,
-                CaptchaLanguageGroup = languageGroup 
+                CaptchaLanguageGroup = languageGroup
             }, data.CancellationToken).ConfigureAwait(false);
 
         AddCaptchaId(data, response.Id, CaptchaType.TextCaptcha);
@@ -144,7 +144,7 @@ public static class Methods
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
     }
-    
+
     /// <summary>
     /// Solves a FunCaptcha (backwards compatibility).
     /// </summary>
@@ -157,7 +157,7 @@ public static class Methods
     /// Solves a HCaptcha.
     /// </summary>
     [Block("Solves a HCaptcha")]
-    public static async Task<string> SolveHCaptcha(BotData data, string siteKey, string siteUrl, 
+    public static async Task<string> SolveHCaptcha(BotData data, string siteKey, string siteUrl,
         string? enterprisePayload = null, bool isInvisible = false, bool useProxy = false,
         string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36")
     {
@@ -171,7 +171,7 @@ public static class Methods
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
     }
-    
+
     /// <summary>
     /// Solves a HCaptcha (backwards compatibility).
     /// </summary>
@@ -221,7 +221,7 @@ public static class Methods
         data.Logger.Log($"SecCode: {response.SecCode}", LogColors.ElectricBlue);
         return [response.Challenge, response.Validate, response.SecCode];
     }
-    
+
     /// <summary>
     /// Solves a Capy captcha.
     /// </summary>
@@ -243,7 +243,7 @@ public static class Methods
         data.Logger.Log($"Answer: {response.Answer}", LogColors.ElectricBlue);
         return [response.ChallengeKey, response.CaptchaKey, response.Answer];
     }
-    
+
     /// <summary>
     /// Solves a DataDome captcha.
     /// </summary>
@@ -274,10 +274,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveCloudflareTurnstileAsync(siteKey, siteUrl, action, cData, pageData,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.CloudflareTurnstile);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -288,24 +288,24 @@ public static class Methods
     /// </summary>
     [Block("Solves a Lemin Cropped captcha",
         extraInfo = "The response will be a list and its elements are (in order) answer, challenge ID")]
-    public static async Task<List<string>> SolveLeminCroppedCaptcha(BotData data, string captchaId, string siteUrl, 
+    public static async Task<List<string>> SolveLeminCroppedCaptcha(BotData data, string captchaId, string siteUrl,
         string apiServer = "https://api.leminnow.com/", string? divId = null, bool useProxy = false,
         string userAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36")
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveLeminCroppedAsync(captchaId, siteUrl, apiServer, divId,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.LeminCropped);
         data.Logger.Log("Got solution!", LogColors.ElectricBlue);
         data.Logger.Log($"Answer: {response.Answer}", LogColors.ElectricBlue);
         data.Logger.Log($"Challenge ID: {response.ChallengeId}", LogColors.ElectricBlue);
         return [response.Answer, response.ChallengeId];
     }
-    
+
     /// <summary>
     /// Solves an Amazon WAF captcha.
     /// </summary>
@@ -317,10 +317,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
-        var response = await data.Providers.Captcha.SolveAmazonWafAsync(siteKey, iv, context, siteUrl, challengeScript, 
+
+        var response = await data.Providers.Captcha.SolveAmazonWafAsync(siteKey, iv, context, siteUrl, challengeScript,
             captchaScript, CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.AmazonWaf);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -337,10 +337,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveCyberSiAraAsync(masterUrlId, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.CyberSiAra);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -356,10 +356,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveMtCaptchaAsync(siteKey, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.MtCaptcha);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -375,10 +375,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveCutCaptchaAsync(miseryKey, apiKey, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.CutCaptcha);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -394,10 +394,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveFriendlyCaptchaAsync(siteKey, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.FriendlyCaptcha);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -413,10 +413,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveAtbCaptchaAsync(appId, apiServer, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.AtbCaptcha);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -433,10 +433,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveTencentCaptchaAsync(appId, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.TencentCaptcha);
         data.Logger.Log("Got solution!", LogColors.ElectricBlue);
         data.Logger.Log($"App ID: {response.AppId}", LogColors.ElectricBlue);
@@ -455,12 +455,12 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveAudioCaptchaAsync(base64, new AudioCaptchaOptions
         {
             CaptchaLanguage = language
         }, data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.AudioCaptcha);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -476,10 +476,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveRecaptchaMobileAsync(appPackageName, appKey, appAction,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.ReCaptchaMobile);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -497,10 +497,10 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveGeeTestV4Async(captchaId, siteUrl,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.GeeTestV4);
         data.Logger.Log("Got solution!", LogColors.ElectricBlue);
         data.Logger.Log($"Captcha ID: {response.CaptchaId}", LogColors.ElectricBlue);
@@ -522,11 +522,11 @@ public static class Methods
     {
         data.Logger.LogHeader();
         await CheckBalanceAsync(data).ConfigureAwait(false);
-        
+
         var response = await data.Providers.Captcha.SolveCloudflareChallengePageAsync(
             siteUrl, pageHtml,
             CreateSessionParams(data, useProxy, userAgent), data.CancellationToken).ConfigureAwait(false);
-        
+
         AddCaptchaId(data, response.Id, CaptchaType.CloudflareChallengePage);
         data.Logger.Log($"Got solution: {response.Response}", LogColors.ElectricBlue);
         return response.Response;
@@ -539,9 +539,9 @@ public static class Methods
     public static async Task ReportLastSolution(BotData data)
     {
         data.Logger.LogHeader();
-        
+
         var lastCaptcha = data.TryGetObject<CaptchaInfo>("lastCaptchaInfo");
-        
+
         if (lastCaptcha is null)
         {
             data.Logger.Log("No captcha has been solved yet", LogColors.ElectricBlue);
@@ -552,7 +552,7 @@ public static class Methods
         {
             await data.Providers.Captcha.ReportSolutionAsync(
                 lastCaptcha.Id, lastCaptcha.Type, false, data.CancellationToken).ConfigureAwait(false);
-            
+
             data.Logger.Log($"Solution of task {lastCaptcha.Id} reported correctly!", LogColors.ElectricBlue);
         }
         catch (Exception ex)
@@ -585,7 +585,7 @@ public static class Methods
                 var innerException = aggEx.InnerException ?? ex;
                 ExceptionDispatchInfo.Capture(innerException).Throw();
             }
-             
+
             throw;
         }
     }

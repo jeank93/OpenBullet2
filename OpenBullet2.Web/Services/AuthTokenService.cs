@@ -1,4 +1,4 @@
-﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.Tokens;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Interfaces;
@@ -37,7 +37,8 @@ public class AuthTokenService : IAuthTokenService
     {
         var key = new SymmetricSecurityKey(_obSettingsService.Settings.SecuritySettings.JwtKey);
         var handler = new JwtSecurityTokenHandler();
-        var handlerParams = new TokenValidationParameters {
+        var handlerParams = new TokenValidationParameters
+        {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = key,
             ValidateIssuer = false,

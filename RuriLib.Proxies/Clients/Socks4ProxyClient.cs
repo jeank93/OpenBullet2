@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Net.Sockets;
@@ -110,7 +110,7 @@ public class Socks4ProxyClient : ProxyClient
         var response = new byte[8];
 
         var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-        
+
         if (bytesRead != response.Length)
         {
             throw new ProxyException("The proxy server did not respond correctly");

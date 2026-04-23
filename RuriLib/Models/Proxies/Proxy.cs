@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -14,27 +14,27 @@ public class Proxy
     /// The unique identifier of the proxy.
     /// </summary>
     public int Id { get; set; }
-    
+
     /// <summary>
     /// The host of the proxy.
     /// </summary>
     public string Host { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// The port of the proxy.
     /// </summary>
     public int Port { get; set; }
-    
+
     /// <summary>
     /// The username for authentication (if needed).
     /// </summary>
     public string? Username { get; set; }
-    
+
     /// <summary>
     /// The password for authentication (if needed).
     /// </summary>
     public string? Password { get; set; }
-    
+
     /// <summary>
     /// The type of the proxy.
     /// </summary>
@@ -44,12 +44,12 @@ public class Proxy
     /// The working status of the proxy.
     /// </summary>
     public ProxyWorkingStatus WorkingStatus { get; set; } = ProxyWorkingStatus.Untested;
-    
+
     /// <summary>
     /// The country of the proxy (Unknown by default).
     /// </summary>
     public string Country { get; set; } = "Unknown";
-    
+
     /// <summary>
     /// The ping of the proxy in milliseconds.
     /// </summary>
@@ -59,12 +59,12 @@ public class Proxy
     /// The last time the proxy was used.
     /// </summary>
     public DateTime? LastUsed { get; set; }
-    
+
     /// <summary>
     /// The last time the proxy was checked.
     /// </summary>
     public DateTime? LastChecked { get; set; }
-    
+
     /// <summary>
     /// The last time the proxy was banned.
     /// </summary>
@@ -74,12 +74,12 @@ public class Proxy
     /// The total number of times the proxy was used.
     /// </summary>
     public int TotalUses { get; set; } = 0;
-    
+
     /// <summary>
     /// How many bots are currently using the proxy.
     /// </summary>
     public int BeingUsedBy { get; set; } = 0;
-    
+
     /// <summary>
     /// The status of the proxy.
     /// </summary>
@@ -91,7 +91,7 @@ public class Proxy
     [Newtonsoft.Json.JsonIgnore]
     [JsonIgnore]
     public bool NeedsAuthentication => !string.IsNullOrWhiteSpace(Username);
-        
+
     /// <summary>
     /// The protocol of the proxy.
     /// </summary>

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using RuriLib.Proxies;
 using RuriLib.Proxies.Clients;
 using System;
@@ -148,7 +148,7 @@ public class ProxyClientHandlerTests
 
         var response = await RequestAsync(message);
         var actual = await GetJsonDictionaryValueAsync(response, "headers");
-        
+
         Assert.NotNull(actual);
         Assert.Equal(expected, actual["Accept-Encoding"]);
     }
@@ -232,7 +232,7 @@ public class ProxyClientHandlerTests
         var obj = JObject.Parse(source);
 
         var result = obj.TryGetValue(valueName, out var token);
-        
+
         return result
             ? token!.Value<string>()!
             : string.Empty;

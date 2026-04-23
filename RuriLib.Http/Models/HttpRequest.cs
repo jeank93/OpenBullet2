@@ -1,4 +1,4 @@
-﻿using RuriLib.Http.Extensions;
+using RuriLib.Http.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -96,7 +96,7 @@ public class HttpRequest : IDisposable
         {
             throw new RLHttpException($"HTTP/{Version.Major}.{Version.Minor} not supported yet");
         }
-        
+
         if (Uri is null)
         {
             throw new RLHttpException("Uri cannot be null");
@@ -114,7 +114,7 @@ public class HttpRequest : IDisposable
         {
             throw new RLHttpException("Uri cannot be null");
         }
-        
+
         // NOTE: Do not use AppendLine because it appends \n instead of \r\n
         // on Unix-like systems.
         var sb = new StringBuilder();

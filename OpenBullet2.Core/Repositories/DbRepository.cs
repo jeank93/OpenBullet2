@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ public class DbRepository<T>(ApplicationDbContext context) : IRepository<T> wher
     public virtual async Task AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-        
+
         try
         {
             context.Add(entity);

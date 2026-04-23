@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -234,13 +234,13 @@ public static class StringExtensions
     {
         var count = 0;
         var i = 0;
-        
+
         while ((i = input.IndexOf(text, i, StringComparison.Ordinal)) != -1)
         {
             i += text.Length;
             count++;
         }
-        
+
         return count;
     }
 

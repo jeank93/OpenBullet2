@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -59,7 +59,7 @@ public static class Methods
                     {
                         chromeop.AddArgument("--no-sandbox");
                     }
-                        
+
                     chromeop.AddArgument("--whitelisted-ips=''");
                     chromeop.AddArgument("--disable-dev-shm-usage");
                 }
@@ -327,7 +327,7 @@ public static class Methods
         {
             return;
         }
-        
+
         data.ADDRESS = browser.Url;
         data.SOURCE = browser.PageSource;
     }

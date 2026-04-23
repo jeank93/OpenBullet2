@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using OpenBullet2.Web.Interfaces;
 
 namespace OpenBullet2.Web.Services;
@@ -62,7 +62,8 @@ public class UpdateService : BackgroundService, IUpdateService
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    private static VersionType GetVersionType(Version version) => version switch {
+    private static VersionType GetVersionType(Version version) => version switch
+    {
         { Major: 0, Minor: 0 } => VersionType.Alpha,
         { Major: 0 } => VersionType.Beta,
         _ => VersionType.Release

@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
@@ -30,7 +30,7 @@ public partial class OBSettings : Page
     private async void Save(object sender, RoutedEventArgs e) => await vm.Save();
     private void Reset(object sender, RoutedEventArgs e) => vm.Reset();
     private void ResetCustomization(object sender, RoutedEventArgs e) => vm.ResetCustomization();
-    
+
     private void AddProxyCheckTarget(object sender, RoutedEventArgs e) => vm.AddProxyCheckTarget();
     private void RemoveProxyCheckTarget(object sender, RoutedEventArgs e)
     {
@@ -48,7 +48,7 @@ public partial class OBSettings : Page
             vm.RemoveCustomSnippet(snippet);
         }
     }
-    
+
     private void AddRemoteConfigsEndpoint(object sender, RoutedEventArgs e) => vm.AddRemoteConfigsEndpoint();
     private void RemoveRemoteConfigsEndpoint(object sender, RoutedEventArgs e)
     {

@@ -14,7 +14,7 @@ public class ParallelizerTests
 
     private readonly Func<int, CancellationToken, Task<bool>> _parityCheck
         = (number, _) => Task.FromResult(number % 2 == 0);
-        
+
     private readonly Func<int, CancellationToken, Task<bool>> _longTask
         = async (_, cancellationToken) => { await Task.Delay(100, cancellationToken); return true; };
 
@@ -25,13 +25,13 @@ public class ParallelizerTests
     private Exception? _lastException;
 
     private void OnProgress(object? sender, float value) => _progressCount++;
-    
+
     private void OnResult(object? sender, ResultDetails<int, bool> value) => _lastResult = value.Result;
-    
+
     private void OnCompleted(object? sender, EventArgs e) => _completedFlag = true;
-    
+
     private void OnException(object? sender, Exception ex) => _lastException = ex;
-    
+
     [Fact]
     public async Task Run_QuickTasks_CompleteAndCall()
     {
@@ -50,8 +50,8 @@ public class ParallelizerTests
         parallelizer.ProgressChanged += OnProgress;
         parallelizer.NewResult += OnResult;
         parallelizer.Completed += OnCompleted;
-        parallelizer.Error += OnException; 
-            
+        parallelizer.Error += OnException;
+
         await parallelizer.Start();
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
@@ -127,7 +127,7 @@ public class ParallelizerTests
             degreeOfParallelism: 10,
             totalAmount: 1000,
             skip: 0);
-            
+
         _progressCount = 0;
         _completedFlag = false;
         _lastException = null;
@@ -159,7 +159,7 @@ public class ParallelizerTests
             degreeOfParallelism: 1,
             totalAmount: 10,
             skip: 0);
-            
+
         var stopwatch = new Stopwatch();
 
         // Start with 1 concurrent task

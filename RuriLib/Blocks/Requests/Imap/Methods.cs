@@ -1,4 +1,4 @@
-﻿using MailKit;
+using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Net.Proxy;
 using MailKit.Search;
@@ -357,7 +357,7 @@ public static class Methods
         await client.Inbox.OpenAsync(FolderAccess.ReadWrite, data.CancellationToken).ConfigureAwait(false);
 
         SetCurrentFolder(data, client.Inbox);
-            
+
         data.Logger.Log($"Opened the inbox, there are {client.Inbox.Count} total messages", LogColors.DarkOrchid);
     }
 
@@ -456,7 +456,7 @@ public static class Methods
         var folder = GetCurrentFolder(data);
         var uniqueId = new UniqueId(uint.Parse(id));
         using var mail = await folder.GetMessageAsync(uniqueId, data.CancellationToken).ConfigureAwait(false);
-            
+
         using var ms = new MemoryStream();
         await mail.WriteToAsync(ms, data.CancellationToken);
         ms.Seek(0, SeekOrigin.Begin);
@@ -482,7 +482,7 @@ public static class Methods
 
         data.Logger.Log($"Deleted mail with id {id}", LogColors.DarkOrchid);
     }
-        
+
     /// <summary>
     /// Gets a list of folders.
     /// </summary>
@@ -512,10 +512,10 @@ public static class Methods
                     data.Logger.Log($"Failed to get folders in namespace {personalNamespace}", LogColors.DarkOrchid);
                 }
             }
-                
+
             data.SetObject("imapFolders", folders);
         }
-            
+
         var folderNames = folders.Select(folder => folder.FullName).ToList();
         data.Logger.Log($"Folders: {folderNames.AsString()}", LogColors.DarkOrchid);
         return folderNames;
@@ -534,8 +534,8 @@ public static class Methods
                      ?? throw new BlockExecutionException($"Folder '{folderName}' not found");
 
         await folder.OpenAsync(folderAccess, data.CancellationToken).ConfigureAwait(false);
-        data.Logger.Log(folder.IsOpen 
-                ? $"Folder '{folder.Name}' is opened (messages: {folder.Count})" 
+        data.Logger.Log(folder.IsOpen
+                ? $"Folder '{folder.Name}' is opened (messages: {folder.Count})"
                 : $"Folder '{folder.Name}' isn't opening",
             LogColors.DarkOrchid);
 
@@ -577,7 +577,7 @@ public static class Methods
         {
             await folder.OpenAsync(FolderAccess.ReadOnly, data.CancellationToken).ConfigureAwait(false);
         }
-            
+
         data.Logger.Log($"Mail count: {folder.Count}", LogColors.DarkOrchid);
 
         return folder.Count;
@@ -622,11 +622,11 @@ public static class Methods
     private static List<IMailFolder> GetFolders(BotData data)
         => data.TryGetObject<List<IMailFolder>>("imapFolders")
            ?? throw new BlockExecutionException("Get the list of folders first!");
-        
+
     private static IMailFolder GetCurrentFolder(BotData data)
         => data.TryGetObject<IMailFolder>("imapCurrentFolder")
            ?? throw new BlockExecutionException("Open a folder first!");
-        
+
     private static void SetCurrentFolder(BotData data, IMailFolder? folder)
         => data.SetObject("imapCurrentFolder", folder);
 
@@ -643,7 +643,7 @@ public static class Methods
                 _ => throw new NotImplementedException(),
             };
         }
-            
+
         var credentials = new NetworkCredential(proxy.Username, proxy.Password);
 
         return proxy.Type switch
@@ -669,7 +669,7 @@ public static class Methods
     {
         var ms = new MemoryStream();
         var protocolLogger = new ProtocolLogger(ms, true);
-        
+
         // ProtocolLogger automatically disposes of the stream when disposed
         data.SetObject("imapLogger", protocolLogger);
 

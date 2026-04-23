@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
@@ -37,7 +37,7 @@ public partial class Hits : Page
 
     private IEnumerable<HitEntity> SelectedHits => hitsListView.SelectedItems.Cast<HitEntity>().ToList();
 
-    private readonly Func<HitEntity, string> captureMapping = new (hit => $"{hit.Data} | {hit.CapturedData}");
+    private readonly Func<HitEntity, string> captureMapping = new(hit => $"{hit.Data} | {hit.CapturedData}");
     private readonly Func<HitEntity, string> fullMapping = new(hit =>
         "Data = " + hit.Data +
         " | Type = " + hit.Type +

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using OpenBullet2.Web.Dtos.Config.Blocks;
 using RuriLib.Models.Blocks.Settings;
 

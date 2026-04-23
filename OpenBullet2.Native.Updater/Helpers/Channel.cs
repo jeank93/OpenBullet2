@@ -11,7 +11,7 @@ public static class Channel
                 .Title("Please select the channel")
                 .PageSize(3)
                 .AddChoices(["Staging (early builds)", "Release (stable builds)"]));
-                
+
         return response switch
         {
             "Staging (early builds)" => BuildChannel.Staging,

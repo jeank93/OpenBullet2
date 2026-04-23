@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using System.Windows;

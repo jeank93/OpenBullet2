@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -95,7 +95,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             case ParallelizerStatus.Idle:
                 DegreeOfParallelism = newValue;
                 return;
-            
+
             case ParallelizerStatus.Paused:
                 _savedDop = newValue;
                 return;
@@ -111,7 +111,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             DegreeOfParallelism = newValue;
             return;
         }
-        
+
         if (newValue > DegreeOfParallelism)
         {
             _semaphore.Release(newValue - DegreeOfParallelism);
@@ -149,9 +149,9 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
 
         _semaphore = new SemaphoreSlim(DegreeOfParallelism, MaxDegreeOfParallelism);
-        
+
         try
-        {   
+        {
             // While there are items in the queue, and we didn't cancel, dequeue one, wait and then
             // queue another task if there are more to queue
             while (!_queue.IsEmpty && !SoftCts.IsCancellationRequested)

@@ -1,4 +1,4 @@
-﻿using MailKit.Net.Smtp;
+using MailKit.Net.Smtp;
 using MailKit.Net.Proxy;
 using RuriLib.Attributes;
 using RuriLib.Exceptions;
@@ -31,7 +31,7 @@ public static class Methods
 {
     private static readonly List<string> _subdomains =
         ["mail", "smtp-mail", "outbound", "out", "mx", "smtp", "smtps", "m"];
-        
+
     /// <summary>
     /// Connects to a SMTP server by automatically detecting the host and port.
     /// </summary>
@@ -226,7 +226,7 @@ public static class Methods
         {
             await client.ConnectAsync(entry.Host, entry.Port, MailKit.Security.SecureSocketOptions.Auto, data.CancellationToken).ConfigureAwait(false);
             data.Logger.Log($"Connected! SSL/TLS: {client.IsSecure}", LogColors.LightBrown);
-                
+
             if (!client.Capabilities.HasFlag(SmtpCapabilities.Authentication))
             {
                 data.Logger.Log($"Server doesn't support authentication, trying another one...");
@@ -380,7 +380,7 @@ public static class Methods
     /// <summary>
     /// Sends a mail in advanced mode with multiple senders, recipients, headers, and attachments.
     /// </summary>
-    [Block("Sends a mail in advanced mode", name = "Smtp Send Mail (Advanced)", 
+    [Block("Sends a mail in advanced mode", name = "Smtp Send Mail (Advanced)",
         extraInfo = "Senders/Recipients in the format name: address. For attachments, path to one file per line.")]
     public static async Task SmtpSendMailAdvanced(BotData data, Dictionary<string, string> senders,
         Dictionary<string, string> recipients, string subject, string textBody, string htmlBody,
@@ -435,7 +435,7 @@ public static class Methods
                 _ => throw new NotImplementedException(),
             };
         }
-        
+
         var credentials = new NetworkCredential(proxy.Username, proxy.Password);
 
         return proxy.Type switch
@@ -452,7 +452,7 @@ public static class Methods
     {
         var ms = new MemoryStream();
         var protocolLogger = new ProtocolLogger(ms, true);
-        
+
         // ProtocolLogger automatically disposes of the stream when disposed
         data.SetObject("smtpLogger", protocolLogger);
 

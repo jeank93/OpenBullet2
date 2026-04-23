@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace RuriLib.Http.Helpers;
 
@@ -30,12 +30,12 @@ internal static class SpanHelpers
         public bool MoveNext()
         {
             var span = _span;
-                
+
             if (span.Length == 0) // Reach the end of the string
                 return false;
-                
+
             var index = span.IndexOf(_crlfBytes);
-                
+
             if (index == -1) // The string is composed of only one line
             {
                 _span = ReadOnlySpan<byte>.Empty; // The remaining string is an empty string

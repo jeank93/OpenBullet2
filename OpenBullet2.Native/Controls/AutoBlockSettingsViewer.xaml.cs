@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.Helpers;
+using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
@@ -54,7 +54,7 @@ public partial class AutoBlockSettingsViewer : UserControl
                 {
                     Alert.Exception(ex);
                 }
-                
+
                 CreateSettings();
                 CreateImages();
                 vm.UpdateViewModel();

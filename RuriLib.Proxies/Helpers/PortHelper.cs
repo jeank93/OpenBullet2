@@ -1,4 +1,4 @@
-﻿namespace RuriLib.Proxies.Helpers;
+namespace RuriLib.Proxies.Helpers;
 
 internal static class PortHelper
 {

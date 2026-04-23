@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,7 +39,7 @@ public class DbProxyRepository(ApplicationDbContext context) : DbRepository<Prox
             .GroupBy(p => new { p.Type, p.Host, p.Port, p.Username, p.Password })
             .SelectMany(g => g.Skip(1))
             .ToList();
-        
+
         await DeleteAsync(duplicates);
 
         return duplicates.Count;

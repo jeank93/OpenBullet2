@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Extensions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -40,7 +40,7 @@ public static class Methods
     public static int CountOccurrences(BotData data, [Variable] string input, string word)
     {
         data.Logger.LogHeader();
-        
+
         var occurrences = input.CountOccurrences(word);
         data.Logger.Log($"Found {occurrences} occurrences of {word}", LogColors.YellowGreen);
         return occurrences;
@@ -53,7 +53,7 @@ public static class Methods
     public static string Substring(BotData data, [Variable] string input, int index, int length)
     {
         data.Logger.LogHeader();
-        
+
         var substring = input.Substring(index, length);
         data.Logger.Log($"Retrieved substring: {substring}", LogColors.YellowGreen);
         return substring;
@@ -66,7 +66,7 @@ public static class Methods
     public static string Reverse(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var charArray = input.ToCharArray();
         Array.Reverse(charArray);
         var reversed = new string(charArray);
@@ -81,7 +81,7 @@ public static class Methods
     public static string Trim(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var trimmed = input.Trim();
         data.Logger.Log("Trimmed the input string", LogColors.YellowGreen);
         return trimmed;
@@ -94,7 +94,7 @@ public static class Methods
     public static int Length(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var length = input.Length;
         data.Logger.Log($"Calculated length: {length}", LogColors.YellowGreen);
         return length;
@@ -107,7 +107,7 @@ public static class Methods
     public static string ToUppercase(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var upper = input.ToUpper();
         data.Logger.Log($"Converted the input string: {upper}", LogColors.YellowGreen);
         return upper;
@@ -120,7 +120,7 @@ public static class Methods
     public static string ToLowercase(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var lower = input.ToLower();
         data.Logger.Log($"Converted the input string: {lower}", LogColors.YellowGreen);
         return lower;
@@ -133,7 +133,7 @@ public static class Methods
     public static string Replace(BotData data, [Variable] string original, string toReplace, string replacement)
     {
         data.Logger.LogHeader();
-        
+
         var replaced = original.Replace(toReplace, replacement);
         data.Logger.Log($"Replaced string: {replaced}", LogColors.YellowGreen);
         return replaced;
@@ -147,7 +147,7 @@ public static class Methods
     public static string RegexReplace(BotData data, [Variable] string original, string pattern, string replacement)
     {
         data.Logger.LogHeader();
-        
+
         var replaced = Regex.Replace(original, pattern, replacement);
         data.Logger.Log($"Replaced string: {replaced}", LogColors.YellowGreen);
         return replaced;
@@ -161,10 +161,10 @@ public static class Methods
         bool replaceOne = false)
     {
         data.Logger.LogHeader();
-        
+
         var sb = new StringBuilder(input);
         var replacements = 0;
-            
+
         foreach (var entry in translations.OrderBy(e => e.Key.Length).Reverse())
         {
             if (input.Contains(entry.Key))
@@ -188,7 +188,7 @@ public static class Methods
     public static string UrlEncode(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         // The maximum allowed Uri size is 2083 characters, we use 2080 as a precaution
         var encoded = string.Join("", input.SplitInChunks(2080).Select(Uri.EscapeDataString));
         data.Logger.Log($"URL Encoded string: {encoded}", LogColors.YellowGreen);
@@ -202,7 +202,7 @@ public static class Methods
     public static string UrlDecode(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var decoded = Uri.UnescapeDataString(input);
         data.Logger.Log($"URL Decoded string: {decoded}", LogColors.YellowGreen);
         return decoded;
@@ -215,7 +215,7 @@ public static class Methods
     public static string EncodeHTMLEntities(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var encoded = WebUtility.HtmlEncode(input);
         data.Logger.Log($"Encoded string: {encoded}", LogColors.YellowGreen);
         return encoded;
@@ -228,7 +228,7 @@ public static class Methods
     public static string DecodeHTMLEntities(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var decoded = WebUtility.HtmlDecode(input);
         data.Logger.Log($"Decoded string: {decoded}", LogColors.YellowGreen);
         return decoded;
@@ -242,7 +242,7 @@ public static class Methods
     public static string RandomString(BotData data, string input, string customCharset = "0123456789")
     {
         data.Logger.LogHeader();
-        
+
         // TODO: The performance of this method can be improved by using a StringBuilder
         input = Regex.Replace(input, @"\?l", m => _lowercase[data.Random.Next(_lowercase.Length)].ToString());
         input = Regex.Replace(input, @"\?u", m => _uppercase[data.Random.Next(_uppercase.Length)].ToString());
@@ -267,7 +267,7 @@ public static class Methods
     public static string Unescape(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var unescaped = Regex.Unescape(input);
         data.Logger.Log($"Unescaped: {unescaped}", LogColors.YellowGreen);
         return unescaped;
@@ -280,7 +280,7 @@ public static class Methods
     public static List<string> Split(BotData data, [Variable] string input, string separator)
     {
         data.Logger.LogHeader();
-        
+
         var split = input.Split(separator).ToList();
         data.Logger.Log($"Split the string into {split.Count}", LogColors.YellowGreen);
         return split;
@@ -293,7 +293,7 @@ public static class Methods
     public static string CharAt(BotData data, [Variable] string input, int index)
     {
         data.Logger.LogHeader();
-        
+
         var character = input[index].ToString();
         data.Logger.Log($"The character at index {index} is {character}", LogColors.YellowGreen);
         return character;

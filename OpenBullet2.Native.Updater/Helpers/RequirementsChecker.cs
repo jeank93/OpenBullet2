@@ -14,11 +14,11 @@ namespace OpenBullet2.Native.Updater.Helpers;
 public static class RequirementsChecker
 {
     private static readonly Version _dotnetVersion = new(8, 0);
-    
+
     public static async Task EnsureOb2NativeNotRunningAsync()
     {
         var isRunning = false;
-        
+
         await AnsiConsole.Status()
             .StartAsync("[yellow]Checking if OpenBullet 2 is running...[/]", async ctx =>
             {
@@ -29,11 +29,11 @@ public static class RequirementsChecker
                     ctx.Status("[yellow]OpenBullet 2 is running, waiting for it to close...[/]")
                         .Spinner(Spinner.Known.Dots)
                         .Refresh();
-                    
+
                     await Task.Delay(1000);
                     timeout -= TimeSpan.FromSeconds(1);
                 }
-                
+
                 if (Process.GetProcessesByName("OpenBullet2.Native").Length > 0)
                 {
                     isRunning = true;
@@ -56,7 +56,7 @@ public static class RequirementsChecker
         {
             return;
         }
-        
+
         var installRuntime = AnsiConsole.Prompt(
             new ConfirmationPrompt($"The .NET Windows Desktop Runtime version {_dotnetVersion} is required to run OpenBullet 2. " +
                                    "Do you want to download and install it now?"));
@@ -67,7 +67,7 @@ public static class RequirementsChecker
                                 $"Please install it from https://dotnet.microsoft.com/en-us/download/dotnet/{_dotnetVersion} " +
                                 "and relaunch the Updater");
         }
-        
+
         await InstallDotNetRuntimeAsync();
     }
 
@@ -80,7 +80,7 @@ public static class RequirementsChecker
                 .WithArguments("--list-runtimes")
                 .WithValidation(CommandResultValidation.None)
                 .ExecuteBufferedAsync();
-            
+
             // The output of the command is something like:
             // Microsoft.WindowsDesktop.App 8.0.0 [C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App]
             return result.ExitCode == 0 && result.StandardOutput.Split('\n').Any(line =>
@@ -91,7 +91,7 @@ public static class RequirementsChecker
             return false;
         }
     }
-    
+
     // The .NET Windows Desktop Runtime also includes the .NET Runtime
     private static async Task InstallDotNetRuntimeAsync()
     {
@@ -104,7 +104,7 @@ public static class RequirementsChecker
         };
 
         var downloadUrl = $"https://aka.ms/dotnet/{_dotnetVersion}/{runtimeFileName}";
-        
+
         await using var runtimeStream = await DownloadRuntimeAsync(downloadUrl);
 
         var tempPath = Path.GetTempFileName() + ".exe";
@@ -112,13 +112,13 @@ public static class RequirementsChecker
         {
             await runtimeStream.CopyToAsync(tempStream);
         }
-        
+
         await Cli.Wrap("cmd")
             .WithArguments($"/c {tempPath}")
             .WithValidation(CommandResultValidation.None)
             .ExecuteBufferedAsync();
     }
-    
+
     private static async Task<Stream> DownloadRuntimeAsync(string url)
     {
         return await AnsiConsole.Progress()
@@ -127,7 +127,7 @@ public static class RequirementsChecker
                 new ProgressBarColumn(),
                 new PercentageColumn()
             ])
-            .StartAsync(async ctx => 
+            .StartAsync(async ctx =>
             {
                 var downloadTask = ctx.AddTask("[green]Downloading[/]");
 
@@ -135,10 +135,10 @@ public static class RequirementsChecker
                 {
                     downloadTask.Value = p;
                 });
-                
+
                 using var client = new HttpClient();
 
-                return await FileDownloader.DownloadAsync(client, url, progress); 
+                return await FileDownloader.DownloadAsync(client, url, progress);
             });
     }
 }

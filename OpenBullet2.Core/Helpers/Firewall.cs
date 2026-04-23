@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Extensions;
+using OpenBullet2.Core.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;

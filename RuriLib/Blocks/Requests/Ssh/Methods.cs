@@ -1,4 +1,4 @@
-﻿using Renci.SshNet;
+using Renci.SshNet;
 using RuriLib.Attributes;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -40,7 +40,7 @@ public static class Methods
         info.Timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
         info.ChannelCloseTimeout = TimeSpan.FromMilliseconds(channelTimeoutMilliseconds);
         info.RetryAttempts = retryAttempts;
-            
+
         var client = new SshClient(info);
         client.Connect();
 
@@ -131,7 +131,7 @@ public static class Methods
         data.Logger.LogHeader();
 
         var client = data.TryGetObject<SshClient>("sshClient");
-        
+
         if (client is null)
         {
             throw new BlockExecutionException("The SSH client is not initialized");

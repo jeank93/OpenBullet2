@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ public static class Methods
     public static void AddKeyValuePair(BotData data, [Variable] Dictionary<string, string> dictionary, string key, string value)
     {
         data.Logger.LogHeader();
-        
+
         dictionary.Add(key, value);
         data.Logger.Log($"Added ({key}, {value})", LogColors.YellowGreen);
     }
@@ -45,7 +45,7 @@ public static class Methods
     public static string GetKey(BotData data, [Variable] Dictionary<string, string> dictionary, string value)
     {
         data.Logger.LogHeader();
-        
+
         var key = dictionary.FirstOrDefault(kvp => kvp.Value == value).Key ?? string.Empty;
         data.Logger.Log($"Got key: {key}", LogColors.YellowGreen);
         return key;

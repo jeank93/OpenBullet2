@@ -12,11 +12,11 @@ public class FileDownloader
         IProgress<double> progress)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            
+
         // We need to specify the Accept header as application/octet-stream
         // to get the raw file instead of the json response
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/octet-stream"));
-            
+
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
 
@@ -44,7 +44,7 @@ public class FileDownloader
                 progress.Report(downloaded / total.Value * 100);
             }
         } while (isMoreToRead);
-            
+
         memoryStream.Seek(0, SeekOrigin.Begin);
         return memoryStream;
     }

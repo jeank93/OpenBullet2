@@ -1,4 +1,4 @@
-﻿using RuriLib.Logging;
+using RuriLib.Logging;
 using RuriLib.Services;
 
 namespace RuriLib.Models.Jobs;

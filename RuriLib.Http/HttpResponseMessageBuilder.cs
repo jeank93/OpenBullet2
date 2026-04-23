@@ -40,10 +40,11 @@ internal class HttpResponseMessageBuilder
     }
 
     public async Task<HttpResponseMessage> GetResponseAsync(HttpRequestMessage request, Stream stream,
-        bool readResponseContent = true, CancellationToken cancellationToken = default)       {           
-           
+        bool readResponseContent = true, CancellationToken cancellationToken = default)
+    {
+
         _reader = PipeReader.Create(stream);
-            
+
         _response = new HttpResponseMessage();
         _contentHeaders = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -74,7 +75,7 @@ internal class HttpResponseMessageBuilder
         while (true)
         {
             var res = await _reader!.ReadAsync(cancellationToken).ConfigureAwait(false);
-                
+
             var buff = res.Buffer;
             var crlfIndex = buff.FirstSpan.IndexOf(_crlf);
             if (crlfIndex > -1)
@@ -102,7 +103,7 @@ internal class HttpResponseMessageBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
         }
@@ -136,12 +137,12 @@ internal class HttpResponseMessageBuilder
                 }
             }
             _reader.AdvanceTo(buff.Start, buff.End); // not adding this line might result in an infinite loop
-            
+
             if (res is { IsCanceled: false, IsCompleted: false })
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -154,17 +155,17 @@ internal class HttpResponseMessageBuilder
     private bool ReadHeadersFastPath(ref ReadOnlySequence<byte> buff)
     {
         int endOfHeadersIndex;
-        
+
         if ((endOfHeadersIndex = buff.FirstSpan.IndexOf(_doubleCrlfBytes)) <= -1)
         {
             return false;
         }
-        
+
         var spanLines = buff.FirstSpan[..(endOfHeadersIndex + 4)];
         var lines = spanLines.SplitLines(); // we use spanHelper class here to make a for each loop.
         foreach (var line in lines)
         {
-                   
+
             ProcessHeaderLine(line);
         }
 
@@ -212,7 +213,7 @@ internal class HttpResponseMessageBuilder
 
         var headerName = Encoding.UTF8.GetString(header[..separatorPos]);
         var headerValueSpan = header[(separatorPos + 1)..]; // skip ':'
-        var headerValue = headerValueSpan[0] == (byte)' ' 
+        var headerValue = headerValueSpan[0] == (byte)' '
             ? Encoding.UTF8.GetString(headerValueSpan[1..])
             : Encoding.UTF8.GetString(headerValueSpan); // trim the white space
 
@@ -258,7 +259,7 @@ internal class HttpResponseMessageBuilder
             SetCookie(cookie, cookies, uri);
         }
     }
-        
+
     /// <summary>
     /// Sets a single cookie.
     /// </summary>
@@ -288,7 +289,7 @@ internal class HttpResponseMessageBuilder
         else
         {
             cookieValue = value.Substring(separatorPos + 1, (endCookiePos - separatorPos) - 1);
-            
+
             var expiresPos = value.IndexOf("expires=", StringComparison.OrdinalIgnoreCase);
 
             if (expiresPos != -1)
@@ -303,7 +304,7 @@ internal class HttpResponseMessageBuilder
                     expires < DateTime.Now)
                 {
                     var collection = cookies.GetCookies(uri);
-                    
+
                     if (collection[cookieName] is not null)
                     {
                         collection[cookieName]!.Expired = true;
@@ -316,7 +317,7 @@ internal class HttpResponseMessageBuilder
             cookieValue.Equals("deleted", StringComparison.OrdinalIgnoreCase))
         {
             var collection = cookies.GetCookies(uri);
-            
+
             if (collection[cookieName] is not null)
             {
                 collection[cookieName]!.Expired = true;
@@ -374,7 +375,7 @@ internal class HttpResponseMessageBuilder
 
         // handle the case where sever never sent chunked encoding nor content-length headrs (that is not allowed by rfc but whatever)
         return _contentHeaders!.ContainsKey("Content-Encoding")
-            ? GetResponseStreamUntilCloseDecompressed(cancellationToken) 
+            ? GetResponseStreamUntilCloseDecompressed(cancellationToken)
             : GetResponseStreamUntilClose(cancellationToken);
 
     }
@@ -384,7 +385,7 @@ internal class HttpResponseMessageBuilder
         while (true)
         {
             var res = await _reader!.ReadAsync(cancellationToken).ConfigureAwait(false);
-          
+
             if (res.IsCanceled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -435,7 +436,7 @@ internal class HttpResponseMessageBuilder
     private async Task<Stream> ReceiveContentLength(CancellationToken cancellationToken)
     {
         var contentLengthStream = new MemoryStream(_contentLength);
-        
+
         if (_contentLength == 0)
         {
             return contentLengthStream;
@@ -468,20 +469,20 @@ internal class HttpResponseMessageBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
         }
     }
-    
+
     private int GetContentLength()
     {
         if (!_contentHeaders!.TryGetValue("Content-Length", out var values))
         {
             return -1;
         }
-        
+
         if (int.TryParse(values[0], out var length))
         {
             return length;
@@ -501,7 +502,7 @@ internal class HttpResponseMessageBuilder
 
         return encoding;
     }
-    
+
     private async Task<Stream> ReceiveMessageBodyChunked(CancellationToken cancellationToken)
     {
         var chunkedDecoder = new ChunkedDecoderOptimized();
@@ -521,7 +522,7 @@ internal class HttpResponseMessageBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
         }

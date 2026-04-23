@@ -1,4 +1,4 @@
-﻿using RuriLib.Extensions;
+using RuriLib.Extensions;
 using RuriLib.Models.Blocks.Settings.Interpolated;
 
 namespace RuriLib.Models.Blocks.Settings;
@@ -19,7 +19,7 @@ public class BlockSetting
     public string Name { get; set; } = string.Empty;
 
     private string? _readableName;
-    
+
     /// <summary>
     /// The readable name of the setting.
     /// </summary>
@@ -29,12 +29,12 @@ public class BlockSetting
         get => _readableName ?? Name.ToReadableName();
         set => _readableName = value;
     }
-    
+
     /// <summary>
     /// The description of the setting.
     /// </summary>
     public string? Description { get; set; }
-    
+
     /// <summary>
     /// The input variable name of the setting, in case it's in variable mode.
     /// </summary>
@@ -44,7 +44,7 @@ public class BlockSetting
     /// The fixed setting, in case it's in fixed mode.
     /// </summary>
     public Setting? FixedSetting { get; set; }
-    
+
     /// <summary>
     /// The interpolated setting, in case it's in interpolated mode.
     /// </summary>

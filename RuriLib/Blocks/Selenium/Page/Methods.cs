@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Interactions;
 using RuriLib.Attributes;
 using RuriLib.Logging;
@@ -276,7 +276,7 @@ public static class Methods
         {
             return;
         }
-        
+
         data.ADDRESS = browser.Url;
         data.SOURCE = browser.PageSource;
     }

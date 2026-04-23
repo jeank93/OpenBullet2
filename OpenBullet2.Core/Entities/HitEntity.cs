@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace OpenBullet2.Core.Entities;
 
@@ -75,7 +75,7 @@ public class HitEntity : Entity
         var id = ignoreWordlistName
             ? Data + ConfigName
             : Data + ConfigName + WordlistName;
-        
+
         return id.GetHashCode();
     }
 }

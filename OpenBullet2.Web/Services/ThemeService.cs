@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Web.Services;
+namespace OpenBullet2.Web.Services;
 
 /// <summary>
 /// Service to manage themes.

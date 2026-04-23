@@ -1,59 +1,58 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Views.Pages;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace OpenBullet2.Native.Views.Dialogs
+namespace OpenBullet2.Native.Views.Dialogs;
+
+/// <summary>
+/// Interaction logic for AddProxyGroupDialog.xaml
+/// </summary>
+public partial class AddProxyGroupDialog : Page
 {
-    /// <summary>
-    /// Interaction logic for AddProxyGroupDialog.xaml
-    /// </summary>
-    public partial class AddProxyGroupDialog : Page
+    private readonly object caller;
+    private ProxyGroupEntity entity;
+
+    public AddProxyGroupDialog(object caller)
     {
-        private readonly object caller;
-        private ProxyGroupEntity entity;
+        this.caller = caller;
+        InitializeComponent();
+    }
 
-        public AddProxyGroupDialog(object caller)
+    /// <summary>
+    /// Use this constructor for edit mode.
+    /// </summary>
+    public AddProxyGroupDialog(object caller, ProxyGroupEntity entity)
+    {
+        this.caller = caller;
+        InitializeComponent();
+
+        this.entity = entity;
+        nameTextbox.Text = entity.Name;
+    }
+
+    private void Accept(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(nameTextbox.Text))
         {
-            this.caller = caller;
-            InitializeComponent();
+            Alert.Error("Invalid name", "The name cannot be blank");
+            return;
         }
 
-        /// <summary>
-        /// Use this constructor for edit mode.
-        /// </summary>
-        public AddProxyGroupDialog(object caller, ProxyGroupEntity entity)
+        if (caller is Proxies page)
         {
-            this.caller = caller;
-            InitializeComponent();
-
-            this.entity = entity;
-            nameTextbox.Text = entity.Name;
-        }
-
-        private void Accept(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(nameTextbox.Text))
+            if (entity is null)
             {
-                Alert.Error("Invalid name", "The name cannot be blank");
-                return;
+                page.AddGroup(new ProxyGroupEntity { Name = nameTextbox.Text });
             }
-
-            if (caller is Proxies page)
+            else
             {
-                if (entity is null)
-                {
-                    page.AddGroup(new ProxyGroupEntity { Name = nameTextbox.Text });
-                }
-                else
-                {
-                    entity.Name = nameTextbox.Text;
-                    page.EditGroup(entity);
-                }
+                entity.Name = nameTextbox.Text;
+                page.EditGroup(entity);
             }
-
-            ((MainDialog)Parent).Close();
         }
+
+        ((MainDialog)Parent).Close();
     }
 }

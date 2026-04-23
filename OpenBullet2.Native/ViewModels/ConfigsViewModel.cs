@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Repositories;
+using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.DTOs;
 using OpenBullet2.Native.Utils;
@@ -50,13 +50,13 @@ public class ConfigsViewModel : ViewModelBase
     public ConfigViewModel? SelectedConfig
     {
         get => selectedConfig;
-            set
-            {
-                selectedConfig = value;
-                configService.SelectedConfig = value is null ? null! : value.Config;
+        set
+        {
+            selectedConfig = value;
+            configService.SelectedConfig = value is null ? null! : value.Config;
 
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsConfigSelected));
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsConfigSelected));
         }
     }
 

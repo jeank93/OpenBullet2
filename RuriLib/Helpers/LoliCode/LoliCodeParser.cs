@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Blocks;
+using RuriLib.Models.Blocks;
 using System.Text.RegularExpressions;
 using System;
 using System.Collections.Generic;
@@ -20,7 +20,7 @@ public static class LoliCodeParser
     /// Parses a setting from a LoliCode string and assigns it to the
     /// correct setting given a list of pre-initialized default settings.
     /// </summary>
-    public static void ParseSetting(ref string input, Dictionary<string, BlockSetting> settings, 
+    public static void ParseSetting(ref string input, Dictionary<string, BlockSetting> settings,
         BlockDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(input);
@@ -69,7 +69,7 @@ public static class LoliCodeParser
         if (input.Length > 0 && input[0] == '@') // VARIABLE
         {
             input = input[1..];
-                
+
             // If there is just @ without anything after it,
             // the variable name is empty. Do not throw an exception here
             // or it will prevent saving the config (even if invalid)

@@ -22,7 +22,7 @@ internal class HttpResponseBuilder
     private readonly byte[] _crlf = Encoding.UTF8.GetBytes(_newLine);
     private static readonly byte[] _doubleCrlfBytes = "\r\n\r\n"u8.ToArray();
     private HttpResponse? _response;
-    
+
     private Dictionary<string, List<string>>? _contentHeaders;
     private int _contentLength = -1;
 
@@ -101,7 +101,7 @@ internal class HttpResponseBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
             break;
@@ -135,12 +135,12 @@ internal class HttpResponseBuilder
                 }
             }
             _reader.AdvanceTo(buff.Start, buff.End); // not adding this line might result in infinit loop.
-            
+
             if (res is { IsCanceled: false, IsCompleted: false })
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
             break;
@@ -160,7 +160,7 @@ internal class HttpResponseBuilder
         {
             return false;
         }
-        
+
         var spanLines = buff.FirstSpan[..(endOfHeadersIndex + 4)];
         var lines = spanLines.SplitLines(); // we use spanHelper class here to make a for each loop.
 
@@ -201,7 +201,7 @@ internal class HttpResponseBuilder
         {
             return;
         }
-        
+
         // changed to use span directly to decrease the number of strings allocated (less GC activity)
         var separatorPos = header.IndexOf((byte)':');
 
@@ -245,7 +245,7 @@ internal class HttpResponseBuilder
             _response!.Headers[headerName] = headerValue;
         }
     }
-    
+
     /// <summary>
     /// Sets a list of comma-separated cookies.
     /// </summary>
@@ -280,7 +280,7 @@ internal class HttpResponseBuilder
         var cookieName = value[..separatorPos];
 
         var cookieValue = endCookiePos == -1
-            ? value[(separatorPos + 1)..] 
+            ? value[(separatorPos + 1)..]
             : value.Substring(separatorPos + 1, (endCookiePos - separatorPos) - 1);
 
         response.Request!.Cookies[cookieName] = cookieValue;
@@ -306,7 +306,7 @@ internal class HttpResponseBuilder
             {
                 _response!.Content = new ByteArrayContent([]);
             }
-                
+
             foreach (var pair in _contentHeaders)
             {
                 _response.Content.Headers.TryAddWithoutValidation(pair.Key, pair.Value);
@@ -319,7 +319,7 @@ internal class HttpResponseBuilder
         if (_response!.Headers.ContainsKey("Transfer-Encoding"))
         {
             return _contentHeaders!.ContainsKey("Content-Encoding")
-                ? GetChunkedDecompressedStream(cancellationToken) 
+                ? GetChunkedDecompressedStream(cancellationToken)
                 : ReceiveMessageBodyChunked(cancellationToken);
         }
 
@@ -336,14 +336,14 @@ internal class HttpResponseBuilder
             : GetResponseStreamUntilClose(cancellationToken);
     }
 
-    
+
     private async Task<Stream> GetResponseStreamUntilClose(CancellationToken cancellationToken)
     {
         var responseStream = new MemoryStream();
         while (true)
         {
             var res = await _reader!.ReadAsync(cancellationToken).ConfigureAwait(false);
-             
+
             if (res.IsCanceled)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -367,7 +367,7 @@ internal class HttpResponseBuilder
                 break;
             }
         }
-          
+
         return responseStream;
     }
 
@@ -428,7 +428,7 @@ internal class HttpResponseBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
             break;
@@ -442,7 +442,7 @@ internal class HttpResponseBuilder
         {
             return -1;
         }
-        
+
         if (int.TryParse(values[0], out var length))
         {
             return length;
@@ -483,7 +483,7 @@ internal class HttpResponseBuilder
             {
                 continue;
             }
-            
+
             await _reader.CompleteAsync();
             cancellationToken.ThrowIfCancellationRequested();
             break;

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Web.Auth;
@@ -50,7 +50,7 @@ public class SharedController : ApiController
         [FromServices] IValidator<EndpointDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var existing = _configSharingService.Endpoints.Find(
             e => e.Route == dto.Route);
 
@@ -80,7 +80,7 @@ public class SharedController : ApiController
         [FromServices] IValidator<EndpointDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var endpoint = _configSharingService.Endpoints.Find(
             e => e.Route == dto.Route);
 
@@ -117,7 +117,7 @@ public class SharedController : ApiController
 
         _configSharingService.Endpoints.Remove(endpoint);
         _configSharingService.Save();
-        
+
         _logger.LogInformation("Deleted shared endpoint at route {Route}", route);
 
         return Ok();

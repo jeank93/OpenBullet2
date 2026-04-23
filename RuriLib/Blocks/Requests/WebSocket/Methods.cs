@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Conversion;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -63,7 +63,7 @@ public static class Methods
                     client.Options.SetRequestHeader(header.Key, header.Value);
                 }
             }
-                
+
             return client;
         });
 

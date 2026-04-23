@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Jobs;
@@ -338,7 +338,7 @@ public class ProxyCheckJobViewModel(ProxyCheckJob job) : JobViewModel(job)
     /// </summary>
     public void UpdateStats()
     {
-       OnPropertyChanged(nameof(Progress));
+        OnPropertyChanged(nameof(Progress));
         OnPropertyChanged(nameof(ProgressString));
     }
 

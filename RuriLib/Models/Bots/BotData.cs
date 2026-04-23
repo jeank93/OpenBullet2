@@ -1,4 +1,4 @@
-﻿using AngleSharp.Text;
+using AngleSharp.Text;
 using RuriLib.Helpers;
 using RuriLib.Logging;
 using RuriLib.Models.Configs;
@@ -124,7 +124,7 @@ public class BotData
 
     // This dictionary will hold stateful objects like a captcha provider, a TCP client, a selenium webdriver...
     private readonly Dictionary<string, object?> _objects = new();
-        
+
     /// <summary>
     /// Gets the legacy object map used for backward compatibility.
     /// </summary>
@@ -186,7 +186,7 @@ public class BotData
         {
             return;
         }
-        
+
         MarkedForCapture.Add(name);
         Logger.Log($"Variable '{name}' marked for capture", LogColors.Tomato);
     }
@@ -204,7 +204,7 @@ public class BotData
         {
             return;
         }
-        
+
         MarkedForCapture.Remove(name);
         Logger.Log($"Variable '{name}' removed from capture", LogColors.Yellow);
     }
@@ -216,7 +216,7 @@ public class BotData
     public void ExecutingBlock(string label)
     {
         ExecutionInfo = $"Executing block {label}";
-            
+
         if (Logger != null)
         {
             Logger.ExecutingBlock = label;
@@ -271,7 +271,7 @@ public class BotData
     /// <typeparam name="T">The expected object type.</typeparam>
     /// <param name="name">The object name.</param>
     /// <returns>The stored object if it exists and matches the requested type; otherwise <see langword="null"/>.</returns>
-    public T? TryGetObject<T>(string name) where T : class 
+    public T? TryGetObject<T>(string name) where T : class
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 

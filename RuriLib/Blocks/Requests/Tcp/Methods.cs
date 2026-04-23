@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Exceptions;
 using RuriLib.Functions.Tcp;
 using RuriLib.Logging;
@@ -43,7 +43,7 @@ public static class Methods
         if (useSSL)
         {
             var sslStream = new SslStream(netStream);
-            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions 
+            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
             {
                 TargetHost = host,
             }, data.CancellationToken).ConfigureAwait(false);
@@ -172,7 +172,7 @@ public static class Methods
     /// Reads a message (ASCII) from the previously opened socket.
     /// </summary>
     [Block("Reads a message (ASCII) from the previously opened socket")]
-    public static async Task<string> TcpRead(BotData data, int bytesToRead = 4096, 
+    public static async Task<string> TcpRead(BotData data, int bytesToRead = 4096,
         int timeoutMilliseconds = 60000, [BlockParam("Use UTF8", "Enable to use UTF-8 encoding")] bool useUTF8 = false)
     {
         data.Logger.LogHeader();
@@ -275,7 +275,7 @@ public static class Methods
 
         data.Logger.Log($"Sent message\r\n{message}", LogColors.Mauve);
         data.Logger.Log($"The server says\r\n{response}", LogColors.Mauve);
-            
+
         return response;
     }
 

@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Configs;
+using RuriLib.Models.Configs;
 using System.ComponentModel.DataAnnotations;
 using FluentValidation;
 

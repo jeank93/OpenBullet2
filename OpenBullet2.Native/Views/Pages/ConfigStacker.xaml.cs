@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Repositories;
+using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Controls;
 using OpenBullet2.Native.Helpers;

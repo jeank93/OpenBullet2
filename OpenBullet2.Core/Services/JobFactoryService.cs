@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Jobs;
@@ -30,7 +30,7 @@ public class JobFactoryService
     private readonly IRNGProvider _rngProvider;
     private readonly IJobLogger _logger;
     private readonly PluginRepository _pluginRepo;
-    
+
     /// <summary>
     /// The maximum amount of bots that a job can use.
     /// </summary>
@@ -51,7 +51,7 @@ public class JobFactoryService
         _randomUaProvider = randomUaProvider;
         _rngProvider = rngProvider;
         _logger = logger;
-        
+
         var botLimit = config.GetSection("Resources")["BotLimit"];
 
         if (botLimit is not null)
@@ -59,7 +59,7 @@ public class JobFactoryService
             BotLimit = int.Parse(botLimit);
         }
     }
-    
+
     /// <summary>
     /// Creates a <see cref="Job"/> with the provided <paramref name="id"/> and <paramref name="ownerId"/>
     /// from <see cref="JobOptions"/>.
@@ -138,12 +138,12 @@ public class JobFactoryService
         };
 
         job.Proxies = _proxyReloadService.ReloadAsync(options.GroupId, job.OwnerId).Result;
-        
+
         // Update the stats
         var proxies = options.CheckOnlyUntested
             ? job.Proxies.Where(p => p.WorkingStatus == ProxyWorkingStatus.Untested)
             : job.Proxies;
-        
+
         var proxiesList = proxies.ToList();
         job.Total = proxiesList.Count;
         job.Tested = proxiesList.Count(p => p.WorkingStatus != ProxyWorkingStatus.Untested);

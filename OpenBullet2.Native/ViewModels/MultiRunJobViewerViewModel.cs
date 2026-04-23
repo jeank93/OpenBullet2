@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Proxies.Sources;
 using OpenBullet2.Core.Repositories;
@@ -226,7 +226,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
                 sb.Append(" | ");
             }
         }
-        
+
         HitOutputsInfo = sb.ToString();
         #endregion
 
@@ -396,7 +396,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
             }
             catch
             {
-                
+
             }
         }
     }
@@ -435,7 +435,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     public Task PauseAsync() => MultiRunJob.Pause();
     public Task ResumeAsync() => MultiRunJob.Resume();
     public void SkipWait() => MultiRunJob.SkipWait();
-    
+
     public async Task ChangeBotsAsync(int newValue)
     {
         // TODO: Also edit the job options! So the number of bots is persisted

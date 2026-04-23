@@ -1,4 +1,4 @@
-﻿namespace RuriLib.Parallelization;
+namespace RuriLib.Parallelization;
 
 /// <summary>
 /// The status of the parallelizer.

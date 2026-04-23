@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Extensions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -21,7 +21,7 @@ public static class Methods
     public static int Ceil(BotData data, [Variable] float input)
     {
         data.Logger.LogHeader();
-        
+
         var rounded = Convert.ToInt32(Math.Ceiling(input));
         data.Logger.Log($"Rounded {input.AsString()} to {rounded}", LogColors.YellowGreen);
         return rounded;
@@ -34,7 +34,7 @@ public static class Methods
     public static int Floor(BotData data, [Variable] float input)
     {
         data.Logger.LogHeader();
-        
+
         var rounded = Convert.ToInt32(Math.Floor(input));
         data.Logger.Log($"Rounded {input.AsString()} to {rounded}", LogColors.YellowGreen);
         return rounded;
@@ -47,7 +47,7 @@ public static class Methods
     public static int RoundToInteger(BotData data, [Variable] float input)
     {
         data.Logger.LogHeader();
-        
+
         var rounded = Convert.ToInt32(Round(data, input, 0));
         data.Logger.Log($"Rounded {input.AsString()} to {rounded}", LogColors.YellowGreen);
         return rounded;
@@ -60,7 +60,7 @@ public static class Methods
     public static float Round(BotData data, [Variable] float input, int decimalPlaces = 2)
     {
         data.Logger.LogHeader();
-        
+
         var rounded = Convert.ToSingle(Math.Round(input, decimalPlaces, MidpointRounding.AwayFromZero));
         data.Logger.Log($"Rounded {input.AsString()} to {rounded.AsString()}", LogColors.YellowGreen);
         return rounded;
@@ -73,7 +73,7 @@ public static class Methods
     public static float Compute(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         var result = Convert.ToSingle(new DataTable().Compute(input.Replace(',', '.'), null));
         data.Logger.Log($"Computed {input} with result {result.AsString()}", LogColors.YellowGreen);
         return result;
@@ -86,7 +86,7 @@ public static class Methods
     public static float RandomFloat(BotData data, float minimum = 0, float maximum = 1)
     {
         data.Logger.LogHeader();
-        
+
         var random = Convert.ToSingle(data.Random.NextDouble()) * (maximum - minimum) + minimum;
         data.Logger.Log($"Generated random value {random.AsString()} in the interval ({minimum.AsString()},{maximum.AsString()})", LogColors.YellowGreen);
         return random;
@@ -99,7 +99,7 @@ public static class Methods
     public static float TakeMaxFloat(BotData data, float first, float second)
     {
         data.Logger.LogHeader();
-        
+
         var max = Math.Max(first, second);
         data.Logger.Log($"The maximum between {first} and {second} is {max}", LogColors.YellowGreen);
         return max;
@@ -112,7 +112,7 @@ public static class Methods
     public static float TakeMinFloat(BotData data, float first, float second)
     {
         data.Logger.LogHeader();
-        
+
         var min = Math.Min(first, second);
         data.Logger.Log($"The minimum between {first} and {second} is {min}", LogColors.YellowGreen);
         return min;

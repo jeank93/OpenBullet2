@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,7 +35,7 @@ public static class ParallelizerFactory<TInput, TOutput>
             _ => throw new NotImplementedException()
         };
 
-        var instance = Activator.CreateInstance(pType, workItems, workFunction, degreeOfParallelism, 
+        var instance = Activator.CreateInstance(pType, workItems, workFunction, degreeOfParallelism,
             totalAmount, skip, maxDegreeOfParallelism);
 
         return (instance as Parallelizer<TInput, TOutput>)!;

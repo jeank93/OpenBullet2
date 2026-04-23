@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Conditions.Comparisons;
+using RuriLib.Models.Conditions.Comparisons;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -48,10 +48,10 @@ public static class Conditions
             case StrComparison.NotEqualTo:
                 return leftTerm != rightTerm;
         }
-        
+
         ArgumentNullException.ThrowIfNull(leftTerm, nameof(leftTerm));
         ArgumentNullException.ThrowIfNull(rightTerm, nameof(rightTerm));
-        
+
         return comparison switch
         {
             StrComparison.Contains => leftTerm.Contains(rightTerm),
@@ -77,9 +77,9 @@ public static class Conditions
             case ListComparison.DoesNotExist:
                 return leftTerm is null;
         }
-        
+
         ArgumentNullException.ThrowIfNull(leftTerm, nameof(leftTerm));
-        
+
         return comparison switch
         {
             ListComparison.Contains => leftTerm.Contains(rightTerm!),
@@ -159,9 +159,9 @@ public static class Conditions
             case DictComparison.DoesNotExist:
                 return leftTerm is null;
         }
-        
+
         ArgumentNullException.ThrowIfNull(leftTerm, nameof(leftTerm));
-        
+
         return comparison switch
         {
             DictComparison.HasKey => leftTerm.ContainsKey(rightTerm!),

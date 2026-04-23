@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Extensions;
 using RuriLib.Functions.Files;
 using RuriLib.Logging;
@@ -25,9 +25,9 @@ public static class Methods
     public static bool FileExists(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
-        var exists = ExecuteFileOperation(data, path, true, (p, _) 
+        var exists = ExecuteFileOperation(data, path, true, (p, _)
             => Task.FromResult(File.Exists(p))).Result;
 
         data.Logger.Log(path + (exists ? " exists" : " does not exist"), LogColors.Flavescent);
@@ -42,9 +42,9 @@ public static class Methods
     public static async Task<string> FileRead(BotData data, string path, FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
-        var text = await ExecuteFileOperation(data, path, true, async (p, _) 
+        var text = await ExecuteFileOperation(data, path, true, async (p, _)
             => await File.ReadAllTextAsync(p, MapEncoding(encoding), data.CancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
 
         data.Logger.Log($"Read {path}: {text.TruncatePretty(200)}", LogColors.Flavescent);
@@ -58,9 +58,9 @@ public static class Methods
     public static async Task<List<string>> FileReadLines(BotData data, string path, FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
-        var lines = await ExecuteFileOperation(data, path, true, async (p, _) 
+        var lines = await ExecuteFileOperation(data, path, true, async (p, _)
             => await File.ReadAllLinesAsync(p, MapEncoding(encoding), data.CancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
 
         data.Logger.Log($"Read {lines.Length} lines from {path}", LogColors.Flavescent);
@@ -74,9 +74,9 @@ public static class Methods
     public static async Task<byte[]> FileReadBytes(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
-        var bytes = await ExecuteFileOperation(data, path, true, async (p, _) 
+        var bytes = await ExecuteFileOperation(data, path, true, async (p, _)
             => await File.ReadAllBytesAsync(p, data.CancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
 
         data.Logger.Log($"Read {bytes.Length} bytes from {path}", LogColors.Flavescent);
@@ -94,7 +94,7 @@ public static class Methods
         FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
         await ExecuteFileOperation(data, path, content, async (p, c) =>
         {
@@ -114,7 +114,7 @@ public static class Methods
         FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
         await ExecuteFileOperation(data, path, lines, async (p, c) =>
         {
@@ -133,7 +133,7 @@ public static class Methods
     public static async Task FileWriteBytes(BotData data, string path, [Variable] byte[] content)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
         await ExecuteFileOperation(data, path, content, async (p, c) =>
         {
@@ -154,7 +154,7 @@ public static class Methods
         FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
         await ExecuteFileOperation(data, path, content, async (p, c) =>
         {
@@ -173,7 +173,7 @@ public static class Methods
         FileEncoding encoding = FileEncoding.UTF8)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
         await ExecuteFileOperation(data, path, lines, async (p, c) =>
         {
@@ -193,7 +193,7 @@ public static class Methods
     public static void FileCopy(BotData data, string originPath, string destinationPath)
     {
         data.Logger.LogHeader();
-        
+
         originPath = SanitizePath(originPath);
         destinationPath = SanitizePath(destinationPath);
 
@@ -223,7 +223,7 @@ public static class Methods
     public static void FileMove(BotData data, string originPath, string destinationPath)
     {
         data.Logger.LogHeader();
-        
+
         originPath = SanitizePath(originPath);
         destinationPath = SanitizePath(destinationPath);
 
@@ -253,7 +253,7 @@ public static class Methods
     public static void FileDelete(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
 
         if (data.Providers.Security.RestrictBlocksToCWD)
@@ -278,7 +278,7 @@ public static class Methods
     public static bool FolderExists(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
 
         if (data.Providers.Security.RestrictBlocksToCWD)
@@ -298,7 +298,7 @@ public static class Methods
     public static void CreatePath(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
 
         if (data.Providers.Security.RestrictBlocksToCWD)
@@ -317,7 +317,7 @@ public static class Methods
     public static List<string> GetFilesInFolder(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
 
         if (data.Providers.Security.RestrictBlocksToCWD)
@@ -337,7 +337,7 @@ public static class Methods
     public static void FolderDelete(BotData data, string path)
     {
         data.Logger.LogHeader();
-        
+
         path = SanitizePath(path);
 
         if (data.Providers.Security.RestrictBlocksToCWD)

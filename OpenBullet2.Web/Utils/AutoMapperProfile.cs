@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using BCrypt.Net;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
@@ -240,14 +240,16 @@ internal class AutoMapperProfile : Profile
         CreateMap<InputSettings, ConfigInputSettingsDto>().ReverseMap();
         CreateMap<DataSettings, ConfigDataSettingsDto>()
             .ForMember(dto => dto.DataRules, e => e.MapFrom(
-                (s, d, i, ctx) => new DataRulesDto {
+                (s, d, i, ctx) => new DataRulesDto
+                {
                     Simple = ctx.Mapper.Map<List<SimpleDataRuleDto>>(
                         s.DataRules.OfType<SimpleDataRule>().ToList()),
                     Regex = ctx.Mapper.Map<List<RegexDataRuleDto>>(
                         s.DataRules.OfType<RegexDataRule>().ToList())
                 }))
             .ForMember(dto => dto.Resources, e => e.MapFrom(
-                (s, d, i, ctx) => new ResourcesDto {
+                (s, d, i, ctx) => new ResourcesDto
+                {
                     LinesFromFile = ctx.Mapper.Map<List<LinesFromFileResourceDto>>(
                         s.Resources.OfType<LinesFromFileResourceOptions>().ToList()),
                     RandomLinesFromFile = ctx.Mapper.Map<List<RandomLinesFromFileResourceDto>>(
@@ -275,7 +277,7 @@ internal class AutoMapperProfile : Profile
         // Allow conversion between PagedLists with different generic type
         // (the types must be mapped separately)
         CreateMap(typeof(PagedList<>), typeof(PagedList<>));
-        
+
         CreateMap<PaginatedHitFiltersDto, HitFiltersDto>();
 
         // Triggered Actions
@@ -395,7 +397,8 @@ internal class AutoMapperProfile : Profile
     {
         if (setting.InputMode is SettingInputMode.Interpolated)
         {
-            return setting.InterpolatedSetting switch {
+            return setting.InterpolatedSetting switch
+            {
                 InterpolatedStringSetting x => x.Value ?? string.Empty,
                 InterpolatedListOfStringsSetting x => x.Value ?? [],
                 InterpolatedDictionaryOfStringsSetting x => x.Value ?? [],
@@ -403,7 +406,8 @@ internal class AutoMapperProfile : Profile
             };
         }
 
-        return setting.FixedSetting switch {
+        return setting.FixedSetting switch
+        {
             StringSetting x => x.Value ?? string.Empty,
             IntSetting x => x.Value,
             FloatSetting x => x.Value,
@@ -420,7 +424,8 @@ internal class AutoMapperProfile : Profile
     {
         if (setting.InputMode is SettingInputMode.Interpolated)
         {
-            return setting.InterpolatedSetting switch {
+            return setting.InterpolatedSetting switch
+            {
                 InterpolatedStringSetting => BlockSettingType.String,
                 InterpolatedListOfStringsSetting => BlockSettingType.ListOfStrings,
                 InterpolatedDictionaryOfStringsSetting => BlockSettingType.DictionaryOfStrings,
@@ -428,7 +433,8 @@ internal class AutoMapperProfile : Profile
             };
         }
 
-        return setting.FixedSetting switch {
+        return setting.FixedSetting switch
+        {
             StringSetting => BlockSettingType.String,
             IntSetting => BlockSettingType.Int,
             FloatSetting => BlockSettingType.Float,
@@ -458,7 +464,8 @@ internal class AutoMapperProfile : Profile
         ];
 
     private static BlockInstanceType GetBlockInstanceType(BlockInstance instance) =>
-        instance switch {
+        instance switch
+        {
             AutoBlockInstance => BlockInstanceType.Auto,
             ParseBlockInstance => BlockInstanceType.Parse,
             ScriptBlockInstance => BlockInstanceType.Script,

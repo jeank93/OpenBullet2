@@ -1,15 +1,14 @@
-﻿using System.Windows.Controls;
+using System.Windows.Controls;
 
-namespace OpenBullet2.Native.Views.Pages
+namespace OpenBullet2.Native.Views.Pages;
+
+/// <summary>
+/// Interaction logic for Monitor.xaml
+/// </summary>
+public partial class Monitor : Page
 {
-    /// <summary>
-    /// Interaction logic for Monitor.xaml
-    /// </summary>
-    public partial class Monitor : Page
+    public Monitor()
     {
-        public Monitor()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

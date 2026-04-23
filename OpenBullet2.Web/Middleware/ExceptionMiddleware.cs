@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Web.Exceptions;
+using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Models.Errors;
 using System.Net;
 using System.Text.Json;

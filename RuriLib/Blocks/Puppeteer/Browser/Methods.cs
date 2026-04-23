@@ -1,4 +1,4 @@
-﻿using Yove.Proxy;
+using Yove.Proxy;
 using PuppeteerExtraSharp;
 using PuppeteerExtraSharp.Plugins.ExtraStealth;
 using PuppeteerSharp;
@@ -62,7 +62,7 @@ public static class Methods
                 var proxyType = data.Proxy.Type == ProxyType.Socks5 ? Yove.Proxy.ProxyType.Socks5 : Yove.Proxy.ProxyType.Socks4;
                 var proxyClient = new ProxyClient(
                     data.Proxy.Host, data.Proxy.Port,
-                    data.Proxy.Username, data.Proxy.Password, 
+                    data.Proxy.Username, data.Proxy.Password,
                     proxyType);
                 data.SetObject("puppeteer.yoveproxy", proxyClient);
                 args += $" --proxy-server={proxyClient.GetProxy(null!)!.Authority}";
@@ -142,10 +142,10 @@ public static class Methods
 
         var browser = GetBrowser(data);
         var page = GetPage(data);
-            
+
         // Close the page
         await page.CloseAsync();
-            
+
         // Set the first page as active
         page = (await browser.PagesAsync()).FirstOrDefault();
         SetPageAndFrame(data, page);
@@ -167,13 +167,13 @@ public static class Methods
         data.Logger.LogHeader();
 
         var browser = GetBrowser(data);
-            
+
         // Workaround https://github.com/hardkoded/puppeteer-sharp/issues/1587
         await browser.GetVersionAsync();
-            
+
         var pages = await browser.PagesAsync();
         var page = pages[index];
-            
+
         await page.BringToFrontAsync();
         SetPageAndFrame(data, page);
 
@@ -249,7 +249,7 @@ public static class Methods
         page.Request += (_, e) =>
         {
             // If we only want documents and scripts but the resource is not one of those, block
-            if (data.ConfigSettings.BrowserSettings.LoadOnlyDocumentAndScript && 
+            if (data.ConfigSettings.BrowserSettings.LoadOnlyDocumentAndScript &&
                 e.Request.ResourceType != ResourceType.Document && e.Request.ResourceType != ResourceType.Script)
             {
                 e.Request.AbortAsync();

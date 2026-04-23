@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Conversion;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -20,11 +20,11 @@ public static class Methods
     public static byte[] MergeByteArrays(BotData data, byte[] first, byte[] second)
     {
         data.Logger.LogHeader();
-        
+
         var merged = new byte[first.Length + second.Length];
         Buffer.BlockCopy(first, 0, merged, 0, first.Length);
         Buffer.BlockCopy(second, 0, merged, first.Length, second.Length);
-            
+
         data.Logger.Log($"Merged {HexConverter.ToHexString(first)} and {HexConverter.ToHexString(second)} into {HexConverter.ToHexString(merged)}", LogColors.YellowGreen);
         return merged;
     }

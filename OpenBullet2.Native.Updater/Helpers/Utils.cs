@@ -12,7 +12,7 @@ public static class Utils
         Console.ReadKey();
         Environment.Exit(1);
     }
-        
+
     public static void ExitWithError(Exception ex)
         => ExitWithError(ex.Message);
 }

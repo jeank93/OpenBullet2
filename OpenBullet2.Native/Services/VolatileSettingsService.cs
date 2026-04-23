@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.Helpers;
+using OpenBullet2.Native.Helpers;
 using RuriLib.Models.Blocks;
 using System.Collections.Generic;
 using System.ComponentModel;

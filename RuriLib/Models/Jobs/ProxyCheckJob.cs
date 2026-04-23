@@ -1,4 +1,4 @@
-﻿using RuriLib.Functions.Http;
+using RuriLib.Functions.Http;
 using RuriLib.Logging;
 using RuriLib.Models.Proxies;
 using RuriLib.Services;
@@ -173,7 +173,7 @@ public class ProxyCheckJob : Job
 
             using var handler = HttpFactory.GetProxiedHandler(input.Proxy, options, new CookieContainer());
             using var http = new HttpClient(handler) { Timeout = input.Timeout };
-            
+
             try
             {
                 // Use 2 cancellation tokens since we need to control the proxy connect timeout as well
@@ -325,93 +325,93 @@ public class ProxyCheckJob : Job
 
     /// <inheritdoc />
     public override async Task Stop()
+    {
+        try
         {
-            try
+            if (parallelizer is not null)
             {
-                if (parallelizer is not null)
-                {
-                    await parallelizer.Stop().ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(this, ex);
-                throw;
-            }
-            finally
-            {
-                StopTimer();
-                logger?.LogInfo(Id, "Execution stopped");
+                await parallelizer.Stop().ConfigureAwait(false);
             }
         }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(this, ex);
+            throw;
+        }
+        finally
+        {
+            StopTimer();
+            logger?.LogInfo(Id, "Execution stopped");
+        }
+    }
 
     /// <inheritdoc />
     public override async Task Abort()
+    {
+        try
         {
-            try
+            if (parallelizer is not null)
             {
-                if (parallelizer is not null)
-                {
-                    await parallelizer.Abort().ConfigureAwait(false);
-                }
-                
-                if (startCts is not null)
-                {
-                    await startCts.CancelAsync();
-                }
+                await parallelizer.Abort().ConfigureAwait(false);
             }
-            catch (Exception ex)
+
+            if (startCts is not null)
             {
-                OnError?.Invoke(this, ex);
-                throw;
-            }
-            finally
-            {
-                StopTimer();
-                logger?.LogInfo(Id, "Execution aborted");
+                await startCts.CancelAsync();
             }
         }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(this, ex);
+            throw;
+        }
+        finally
+        {
+            StopTimer();
+            logger?.LogInfo(Id, "Execution aborted");
+        }
+    }
 
     /// <inheritdoc />
     public override async Task Pause()
+    {
+        try
         {
-            try
+            if (parallelizer is not null)
             {
-                if (parallelizer is not null)
-                {
-                    await parallelizer.Pause().ConfigureAwait(false);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(this, ex);
-                throw;
-            }
-            finally
-            {
-                StopTimer();
-                logger?.LogInfo(Id, "Execution paused");
+                await parallelizer.Pause().ConfigureAwait(false);
             }
         }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(this, ex);
+            throw;
+        }
+        finally
+        {
+            StopTimer();
+            logger?.LogInfo(Id, "Execution paused");
+        }
+    }
 
     /// <inheritdoc />
     public override async Task Resume()
+    {
+        try
         {
-            try
+            if (parallelizer is not null)
             {
-                if (parallelizer is not null)
-                {
-                    await parallelizer.Resume().ConfigureAwait(false);
-                }   
+                await parallelizer.Resume().ConfigureAwait(false);
             }
-            catch (Exception ex)
-            {
-                OnError?.Invoke(this, ex);
-                throw;
-            }
+        }
+        catch (Exception ex)
+        {
+            OnError?.Invoke(this, ex);
+            throw;
+        }
 
-            StartTimer();
-            logger?.LogInfo(Id, "Execution resumed");
+        StartTimer();
+        logger?.LogInfo(Id, "Execution resumed");
     }
     #endregion
 
@@ -436,84 +436,84 @@ public class ProxyCheckJob : Job
 
     #region Propagation of TaskManager events
     private void PropagateTaskError(object? _, ErrorDetails<ProxyCheckInput> details)
-        {
-            OnTaskError?.Invoke(this, details);
-            logger?.LogException(Id, details.Exception);
-        }
+    {
+        OnTaskError?.Invoke(this, details);
+        logger?.LogException(Id, details.Exception);
+    }
 
     private void PropagateError(object? _, Exception ex)
-        {
-            OnError?.Invoke(this, ex);
-            logger?.LogException(Id, ex);
-        }
+    {
+        OnError?.Invoke(this, ex);
+        logger?.LogException(Id, ex);
+    }
 
     private void PropagateResult(object? _, ResultDetails<ProxyCheckInput, Proxy> result)
-        {
-            OnResult?.Invoke(this, result);
-            // We're not logging results to the IJobLogger because they could arrive at a very high rate
-            // and not be very useful, we're mostly interested in errors here.
-        }
+    {
+        OnResult?.Invoke(this, result);
+        // We're not logging results to the IJobLogger because they could arrive at a very high rate
+        // and not be very useful, we're mostly interested in errors here.
+    }
 
     private void PropagateProgress(object? _, float progress)
-        {
-            OnProgress?.Invoke(this, progress);
-        }
+    {
+        OnProgress?.Invoke(this, progress);
+    }
 
     private void PropagateCompleted(object? _, EventArgs e)
-        {
-            OnCompleted?.Invoke(this, e);
-            logger?.LogInfo(Id, "Execution completed");
+    {
+        OnCompleted?.Invoke(this, e);
+        logger?.LogInfo(Id, "Execution completed");
     }
     #endregion
 
     #region Private Methods
     private void StartTimer()
-        {
-            tickTimer = new Timer(new TimerCallback(_ => OnTimerTick?.Invoke(this, EventArgs.Empty)),
-                null, (int)TickInterval.TotalMilliseconds, (int)TickInterval.TotalMilliseconds);
-        }
+    {
+        tickTimer = new Timer(new TimerCallback(_ => OnTimerTick?.Invoke(this, EventArgs.Empty)),
+            null, (int)TickInterval.TotalMilliseconds, (int)TickInterval.TotalMilliseconds);
+    }
 
-        private void StopTimer()
-        {
-            tickTimer?.Dispose();
-        }
+    private void StopTimer()
+    {
+        tickTimer?.Dispose();
+    }
 
-        private void ResetStats()
-        {
-            Tested = 0;
-            Working = 0;
-            NotWorking = 0;
-        }
+    private void ResetStats()
+    {
+        Tested = 0;
+        Working = 0;
+        NotWorking = 0;
+    }
 
     private void StatusChanged(object? sender, ParallelizerStatus status)
+    {
+        Status = status switch
         {
-            Status = status switch
-            {
-                ParallelizerStatus.Idle => JobStatus.Idle,
-                ParallelizerStatus.Starting => JobStatus.Starting,
-                ParallelizerStatus.Running => JobStatus.Running,
-                ParallelizerStatus.Pausing => JobStatus.Pausing,
-                ParallelizerStatus.Paused => JobStatus.Paused,
-                ParallelizerStatus.Stopping => JobStatus.Stopping,
-                ParallelizerStatus.Resuming => JobStatus.Resuming,
-                _ => throw new NotImplementedException()
-            };
+            ParallelizerStatus.Idle => JobStatus.Idle,
+            ParallelizerStatus.Starting => JobStatus.Starting,
+            ParallelizerStatus.Running => JobStatus.Running,
+            ParallelizerStatus.Pausing => JobStatus.Pausing,
+            ParallelizerStatus.Paused => JobStatus.Paused,
+            ParallelizerStatus.Stopping => JobStatus.Stopping,
+            ParallelizerStatus.Resuming => JobStatus.Resuming,
+            _ => throw new NotImplementedException()
+        };
 
-            OnStatusChanged?.Invoke(this, Status);
-        }
+        OnStatusChanged?.Invoke(this, Status);
+    }
 
     private void UpdateProxy(object? sender, ResultDetails<ProxyCheckInput, Proxy> details)
-        {
-            var proxy = details.Result;
+    {
+        var proxy = details.Result;
 
-            if (proxy.WorkingStatus == ProxyWorkingStatus.Working) Working++;
-            else NotWorking++;
+        if (proxy.WorkingStatus == ProxyWorkingStatus.Working) Working++;
+        else NotWorking++;
 
-            Tested++;
+        Tested++;
 
-            // This is fire and forget
-            _ = ProxyOutput?.StoreAsync(proxy);
-        }
+        // This is fire and forget
+        _ = ProxyOutput?.StoreAsync(proxy);
+    }
     #endregion
 }
 

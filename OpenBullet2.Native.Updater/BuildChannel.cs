@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Native.Updater;
+namespace OpenBullet2.Native.Updater;
 
 public enum BuildChannel
 {

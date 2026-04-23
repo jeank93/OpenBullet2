@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.ViewModels;
+using OpenBullet2.Native.ViewModels;
 using RuriLib.Extensions;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
@@ -93,11 +93,11 @@ public partial class ListOfStringsSettingViewer : UserControl
 
 public class ListOfStringsSettingViewerViewModel : ViewModelBase
 {
-        public BlockSetting Setting { get; init; }
+    public BlockSetting Setting { get; init; }
 
     public string Name => Setting.ReadableName;
 
-        public string Description => Setting.Description ?? string.Empty;
+    public string Description => Setting.Description ?? string.Empty;
 
     public IEnumerable<string> Suggestions => Utils.Suggestions.GetInputVariableSuggestions(Setting);
 
@@ -116,10 +116,10 @@ public class ListOfStringsSettingViewerViewModel : ViewModelBase
 
     public string VariableName
     {
-            get => Setting.InputVariableName ?? string.Empty;
-            set
-            {
-                Setting.InputVariableName = value;
+        get => Setting.InputVariableName ?? string.Empty;
+        set
+        {
+            Setting.InputVariableName = value;
             OnPropertyChanged();
         }
     }
@@ -152,7 +152,7 @@ public class ListOfStringsSettingViewerViewModel : ViewModelBase
     public ListOfStringsSettingViewerViewModel(BlockSetting setting)
     {
         Setting = setting;
-        
+
         if (Setting.InputMode == SettingInputMode.Fixed)
         {
             value = FixedSetting.Value is null ? string.Empty : string.Join(Environment.NewLine, FixedSetting.Value);
@@ -165,7 +165,7 @@ public class ListOfStringsSettingViewerViewModel : ViewModelBase
         }
     }
 
-        private ListOfStringsSetting FixedSetting => (ListOfStringsSetting)Setting.FixedSetting!;
-        private InterpolatedListOfStringsSetting InterpolatedSetting
-            => (InterpolatedListOfStringsSetting)Setting.InterpolatedSetting!;
+    private ListOfStringsSetting FixedSetting => (ListOfStringsSetting)Setting.FixedSetting!;
+    private InterpolatedListOfStringsSetting InterpolatedSetting
+        => (InterpolatedListOfStringsSetting)Setting.InterpolatedSetting!;
 }

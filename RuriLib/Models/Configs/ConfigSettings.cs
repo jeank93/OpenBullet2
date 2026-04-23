@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Configs.Settings;
+using RuriLib.Models.Configs.Settings;
 using System.Text.Json.Serialization;
 
 namespace RuriLib.Models.Configs;

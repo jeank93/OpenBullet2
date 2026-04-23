@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -20,7 +20,7 @@ public class DBIPProxyGeolocationProvider(string dbFile) : IProxyGeolocationProv
         if (!IPAddress.TryParse(host, out var _))
         {
             var addresses = await Dns.GetHostAddressesAsync(host);
-            
+
             if (addresses.Length > 0)
             {
                 host = addresses.First().MapToIPv4().ToString();

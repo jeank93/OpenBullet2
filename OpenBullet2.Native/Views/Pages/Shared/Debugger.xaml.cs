@@ -31,7 +31,7 @@ public partial class Debugger : Page
         logRTB.Font = new System.Drawing.Font("Consolas", 10);
         logRTB.BackColor = System.Drawing.Color.FromArgb(22, 22, 22);
         logRTB.HandleCreated += (_, _) => FixAutoWordSelection(logRTB);
-        
+
         variablesRTB.Font = new System.Drawing.Font("Consolas", 10);
         variablesRTB.BackColor = System.Drawing.Color.FromArgb(22, 22, 22);
         variablesRTB.HandleCreated += (_, _) => FixAutoWordSelection(variablesRTB);
@@ -50,7 +50,7 @@ public partial class Debugger : Page
     private void ShowHTML(object sender, RoutedEventArgs e) => tabControl.SelectedIndex = 2;
 
     private async void Start(object sender, RoutedEventArgs e)
-    {   
+    {
         if (!vm.PersistLog)
         {
             logRTB.Clear();

@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
@@ -19,45 +19,45 @@ public class IntegrationTests : IDisposable
 {
     private readonly IServiceScope _serviceScope;
     private readonly ITestOutputHelper _testOutputHelper;
-    
+
     protected IntegrationTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
-        
+
         var enumConverter = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
         JsonSerializerOptions.Converters.Add(enumConverter);
         JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         JsonSerializerOptions.IncludeFields = true;
-        
+
         // Override the user data folder and connection string
         // to avoid conflicts with other tests
         UserDataFolder = Path.Combine(Path.GetTempPath(), $"OB2_UserData_{Guid.NewGuid():N}");
         Environment.SetEnvironmentVariable("Settings__UserDataFolder", UserDataFolder);
-        
+
         Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection",
             $"Data Source={UserDataFolder}/OpenBullet.db;");
 
         Factory = new WebApplicationFactory<Program>();
-        
+
         _serviceScope = Factory.Services.CreateScope();
     }
-    
+
     protected WebApplicationFactory<Program> Factory { get; }
     protected JsonSerializerOptions JsonSerializerOptions { get; } = new();
     protected string UserDataFolder { get; }
-    
+
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    
+
     protected void RequireLogin()
     {
         var obSettingsService = GetRequiredService<OpenBulletSettingsService>();
         obSettingsService.Settings.SecuritySettings.RequireAdminLogin = true;
     }
-    
+
     /// <summary>
     /// Sets the Authorization header of the given HttpClient to a JWT
     /// with the claims of the given guest user.
@@ -71,10 +71,10 @@ public class IntegrationTests : IDisposable
             new Claim(ClaimTypes.Role, "Guest"),
             new Claim("IPAtLogin", "::1")
         };
-        
+
         var authService = GetRequiredService<IAuthTokenService>();
         var token = authService.GenerateToken(claims, TimeSpan.FromHours(6));
-        
+
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
@@ -85,16 +85,16 @@ public class IntegrationTests : IDisposable
         var json = dto is null
             ? null
             : JsonContent.Create(dto, MediaTypeHeaderValue.Parse("application/json"), JsonSerializerOptions);
-        
+
         var request = new HttpRequestMessage(method, url) { Content = json };
         var response = await client.SendAsync(request);
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        
+
         if (!response.IsSuccessStatusCode)
         {
             _testOutputHelper.WriteLine($"API status code: {response.StatusCode}");
             _testOutputHelper.WriteLine($"API response: {jsonResponse}");
-            
+
             try
             {
                 return new ApiErrorResponse
@@ -111,26 +111,26 @@ public class IntegrationTests : IDisposable
                 };
             }
         }
-        
+
         return null;
     }
-    
+
     protected async Task<Result<T, ApiErrorResponse>> SendJsonAsync<T>(HttpClient client, Uri url, object? dto,
         HttpMethod method)
     {
         var json = dto is null
             ? null
             : JsonContent.Create(dto, MediaTypeHeaderValue.Parse("application/json"), JsonSerializerOptions);
-        
+
         var request = new HttpRequestMessage(method, url) { Content = json };
         var response = await client.SendAsync(request);
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        
+
         if (!response.IsSuccessStatusCode)
         {
             _testOutputHelper.WriteLine($"API status code: {response.StatusCode}");
             _testOutputHelper.WriteLine($"API response: {jsonResponse}");
-            
+
             try
             {
                 return new ApiErrorResponse
@@ -147,7 +147,7 @@ public class IntegrationTests : IDisposable
                 }!;
             }
         }
-        
+
         return JsonSerializer.Deserialize<T>(jsonResponse, JsonSerializerOptions)!;
     }
 
@@ -184,7 +184,7 @@ public class IntegrationTests : IDisposable
         _serviceScope.Dispose();
         Factory.Dispose();
     }
-    
+
     ~IntegrationTests()
     {
         Dispose(false);

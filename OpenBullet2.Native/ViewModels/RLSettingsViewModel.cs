@@ -1,4 +1,4 @@
-﻿using RuriLib.Functions.Captchas;
+using RuriLib.Functions.Captchas;
 using RuriLib.Models.Settings;
 using RuriLib.Parallelization;
 using RuriLib.Services;
@@ -41,7 +41,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public bool LogAllResults
     {
         get => General.LogAllResults;
@@ -204,7 +204,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string CapMonsterHost
     {
         get => Captcha.CapMonsterHost;
@@ -294,7 +294,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string CaptchaCoderApiKey
     {
         get => Captcha.CaptchaCoderApiKey;
@@ -304,7 +304,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string HumanCoderApiKey
     {
         get => Captcha.HumanCoderApiKey;
@@ -414,7 +414,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-    
+
     public string CapMonsterCloudApiKey
     {
         get => Captcha.CapMonsterCloudApiKey;
@@ -424,7 +424,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string MetaBypassTechClientId
     {
         get => Captcha.MetaBypassTechClientId;
@@ -434,7 +434,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string MetaBypassTechClientSecret
     {
         get => Captcha.MetaBypassTechClientSecret;
@@ -444,7 +444,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string MetaBypassTechUsername
     {
         get => Captcha.MetaBypassTechUsername;
@@ -454,7 +454,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string MetaBypassTechPassword
     {
         get => Captcha.MetaBypassTechPassword;
@@ -464,7 +464,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string NextCaptchaApiKey
     {
         get => Captcha.NextCaptchaApiKey;
@@ -474,7 +474,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string NoCaptchaAiApiKey
     {
         get => Captcha.NoCaptchaAiApiKey;
@@ -484,7 +484,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string NopechaApiKey
     {
         get => Captcha.NopechaApiKey;
@@ -494,7 +494,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string BestCaptchaSolverApiKey
     {
         get => Captcha.BestCaptchaSolverApiKey;
@@ -504,7 +504,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string CaptchaAiApiKey
     {
         get => Captcha.CaptchaAiApiKey;
@@ -514,7 +514,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string EzCaptchaApiKey
     {
         get => Captcha.EzCaptchaApiKey;
@@ -524,7 +524,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string EndCaptchaUsername
     {
         get => Captcha.EndCaptchaUsername;
@@ -534,7 +534,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string EndCaptchaPassword
     {
         get => Captcha.EndCaptchaPassword;
@@ -544,7 +544,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-        
+
     public string CapGuruApiKey
     {
         get => Captcha.CapGuruApiKey;
@@ -554,7 +554,7 @@ public class RLSettingsViewModel : ViewModelBase
             OnPropertyChanged();
         }
     }
-    
+
     public string AycdApiKey
     {
         get => Captcha.AycdApiKey;

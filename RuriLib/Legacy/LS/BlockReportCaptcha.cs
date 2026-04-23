@@ -1,4 +1,4 @@
-﻿using CaptchaSharp.Enums;
+using CaptchaSharp.Enums;
 using CaptchaSharp.Exceptions;
 using RuriLib.Legacy.LS;
 using RuriLib.Legacy.Models;

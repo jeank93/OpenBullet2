@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Helpers;
 using OpenBullet2.Core.Repositories;
@@ -24,7 +24,7 @@ public class ProxiesViewModel : ViewModelBase
     private bool initialized;
     private ProxyGroupEntity selectedGroup;
     private readonly ProxyGroupEntity allGroup = new() { Id = -1, Name = "All" };
-    
+
     public ObservableCollection<ProxyEntity> ProxiesCollection
     {
         get => proxiesCollection;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -119,7 +119,7 @@ public class Socks5ProxyClient : ProxyClient
         var response = new byte[2];
 
         var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-        
+
         if (bytesRead != response.Length)
         {
             throw new ProxyException("The proxy server did not respond correctly");
@@ -143,7 +143,7 @@ public class Socks5ProxyClient : ProxyClient
         {
             throw new ProxyException("No credentials provided");
         }
-        
+
         var uname = string.IsNullOrEmpty(Settings.Credentials.UserName)
             ? []
             : Encoding.ASCII.GetBytes(Settings.Credentials.UserName);
@@ -177,7 +177,7 @@ public class Socks5ProxyClient : ProxyClient
         var response = new byte[2];
 
         var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-        
+
         if (bytesRead != response.Length)
         {
             throw new ProxyException("The proxy server did not respond correctly");
@@ -229,7 +229,7 @@ public class Socks5ProxyClient : ProxyClient
         {
             throw new ProxyException("The proxy server did not respond correctly");
         }
-        
+
         var reply = response[1];
         if (reply != CommandReplySucceeded)
         {

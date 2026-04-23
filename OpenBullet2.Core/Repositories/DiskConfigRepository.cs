@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Configs;
+using RuriLib.Models.Configs;
 using RuriLib.Helpers;
 using System.Collections.Generic;
 using System.IO;
@@ -50,7 +50,7 @@ public class DiskConfigRepository : IConfigRepository
         }
 
         var tasks = Directory.GetFiles(BaseFolder).Where(file => file.EndsWith(".opk"))
-            .Select(async file => 
+            .Select(async file =>
             {
                 try
                 {
@@ -76,7 +76,7 @@ public class DiskConfigRepository : IConfigRepository
         {
             throw new FileNotFoundException();
         }
-        
+
         await using var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read);
 
         var config = await ConfigPacker.UnpackAsync(fileStream);
@@ -94,7 +94,7 @@ public class DiskConfigRepository : IConfigRepository
         {
             throw new FileNotFoundException();
         }
-        
+
         await using FileStream fileStream = new(file, FileMode.Open, FileAccess.Read);
         using var ms = new MemoryStream();
         await fileStream.CopyToAsync(ms);

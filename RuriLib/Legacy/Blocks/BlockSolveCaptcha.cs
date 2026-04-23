@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using CaptchaSharp.Enums;
 using CaptchaSharp.Exceptions;
@@ -216,7 +216,7 @@ public class BlockSolveCaptcha : BlockBase
                 SiteKey = LineParser.ParseLiteral(ref input, "SITE KEY");
                 SiteUrl = LineParser.ParseLiteral(ref input, "SITE URL");
                 break;
-            
+
             default:
                 throw new NotSupportedException(
                     $"The currently selected service does not support tasks of type {Type}");
@@ -347,7 +347,7 @@ public class BlockSolveCaptcha : BlockBase
                 Password = data.Proxy.Password,
             };
         }
-        
+
         var cookies = data.COOKIES.ToDictionary(cookie => cookie.Key, cookie => cookie.Value);
 
         foreach (var cookie in ls.GlobalCookies)
@@ -469,7 +469,7 @@ public class BlockSolveCaptcha : BlockBase
         return Type switch
         {
             CaptchaType.TextCaptcha => await provider.SolveTextCaptchaAsync(ReplaceValues(Question, ls), new TextCaptchaOptions
-                { CaptchaLanguage = Language, CaptchaLanguageGroup = LanguageGroup }),
+            { CaptchaLanguage = Language, CaptchaLanguageGroup = LanguageGroup }),
 
             CaptchaType.ImageCaptcha => await provider.SolveImageCaptchaAsync(ReplaceValues(Base64, ls), new ImageCaptchaOptions
             {
@@ -504,7 +504,7 @@ public class BlockSolveCaptcha : BlockBase
 
             CaptchaType.KeyCaptcha => await provider.SolveKeyCaptchaAsync(
                 ReplaceValues(UserId, ls), ReplaceValues(SessionId, ls),
-                ReplaceValues(WebServerSign1, ls), ReplaceValues(WebServerSign2, ls), 
+                ReplaceValues(WebServerSign1, ls), ReplaceValues(WebServerSign2, ls),
                 ReplaceValues(SiteUrl, ls), sessionParams),
 
             CaptchaType.GeeTest => await provider.SolveGeeTestAsync(

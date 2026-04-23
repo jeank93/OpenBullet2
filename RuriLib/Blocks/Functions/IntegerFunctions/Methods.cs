@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using System;
@@ -19,7 +19,7 @@ public static class Methods
     public static int RandomInteger(BotData data, int minimum = 0, int maximum = 10)
     {
         data.Logger.LogHeader();
-        
+
         var random = data.Random.Next(minimum, maximum + 1);
         data.Logger.Log($"Generated random value {random} in the interval ({minimum},{maximum})", LogColors.YellowGreen);
         return random;
@@ -32,7 +32,7 @@ public static class Methods
     public static int TakeMaxInt(BotData data, int first, int second)
     {
         data.Logger.LogHeader();
-        
+
         var max = Math.Max(first, second);
         data.Logger.Log($"The maximum between {first} and {second} is {max}", LogColors.YellowGreen);
         return max;
@@ -45,7 +45,7 @@ public static class Methods
     public static int TakeMinInt(BotData data, int first, int second)
     {
         data.Logger.LogHeader();
-        
+
         var min = Math.Min(first, second);
         data.Logger.Log($"The minimum between {first} and {second} is {min}", LogColors.YellowGreen);
         return min;

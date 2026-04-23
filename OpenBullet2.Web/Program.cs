@@ -89,7 +89,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "ApiKeyScheme"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -103,7 +103,7 @@ builder.Services.AddSwaggerGen(c =>
                 Scheme = "ApiKeyScheme",
                 Name = "X-Api-Key",
                 In = ParameterLocation.Header,
-                
+
             },
             new List<string>()
         }

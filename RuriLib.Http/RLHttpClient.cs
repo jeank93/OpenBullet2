@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -170,7 +170,7 @@ public class RLHttpClient : IDisposable
                 {
                     throw new Exception($"The Location header value '{responseMessage.Headers[locationHeaderName]}' is not a valid URI");
                 }
-                
+
                 var redirectUri = newLocation.IsAbsoluteUri
                     ? newLocation
                     : new Uri(request.Uri, newLocation);
@@ -236,19 +236,19 @@ public class RLHttpClient : IDisposable
         {
             await _connectionCommonStream.DisposeAsync().ConfigureAwait(false);
         }
-            
+
         if (_connectionNetworkStream is not null)
         {
             await _connectionNetworkStream.DisposeAsync().ConfigureAwait(false);
         }
 
         var uri = request.Uri;
-        
+
         if (uri is null)
         {
             throw new RLHttpException("The request URI is null");
         }
-        
+
         // Get the stream from the proxies TcpClient
         _tcpClient = await ProxyClient.ConnectAsync(uri.Host, uri.Port, null, cancellationToken);
         _connectionNetworkStream = _tcpClient.GetStream();

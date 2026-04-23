@@ -1,4 +1,4 @@
-﻿using RuriLib.Parallelization.Exceptions;
+using RuriLib.Parallelization.Exceptions;
 using RuriLib.Parallelization.Models;
 using System;
 using System.Collections.Generic;
@@ -63,7 +63,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// a single session yet).
     /// </summary>
     public DateTime? EndTime { get; private set; }
-        
+
     /// <summary>
     /// The Estimated Time of Arrival (when the parallelizer is expected to finish all the work).
     /// </summary>
@@ -90,7 +90,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     #endregion
 
     #region Protected Fields
-        /// <summary>
+    /// <summary>
     /// The number of items that can be processed concurrently.
     /// </summary>
     protected int DegreeOfParallelism;
@@ -150,7 +150,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// </summary>
     protected CancellationTokenSource HardCts = new();
     #endregion
-    
+
     #region Private Fields
     /// <summary>
     /// The status of the parallelizer.
@@ -310,9 +310,9 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// </summary>
     public virtual Task Stop()
     {
-        RequiredStatusException.ThrowIfNot(Status, 
+        RequiredStatusException.ThrowIfNot(Status,
         [
-            ParallelizerStatus.Running, 
+            ParallelizerStatus.Running,
             ParallelizerStatus.Paused
         ]);
 
@@ -384,11 +384,11 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
         {
             return;
         }
-        
+
         try
         {
             CheckedTimestamps = CheckedTimestamps.Where(t => Environment.TickCount - t < 60000).ToList();
-            CPM = CheckedTimestamps.Count;                                
+            CPM = CheckedTimestamps.Count;
         }
         finally
         {
@@ -396,14 +396,14 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
         }
     }
     #endregion
-    
+
     #region Private Methods
     private void Reset()
     {
         StartTime = DateTime.Now;
         EndTime = null;
         CheckedTimestamps.Clear();
-        
+
         SoftCts.Dispose();
         HardCts.Dispose();
         SoftCts = new CancellationTokenSource();

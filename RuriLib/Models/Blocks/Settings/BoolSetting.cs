@@ -1,4 +1,4 @@
-﻿namespace RuriLib.Models.Blocks.Settings;
+namespace RuriLib.Models.Blocks.Settings;
 
 /// <summary>
 /// Represents a boolean block setting.

@@ -1,4 +1,4 @@
-﻿using RuriLib.Services;
+using RuriLib.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;

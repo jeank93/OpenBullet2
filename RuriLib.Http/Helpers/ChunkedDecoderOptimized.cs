@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.IO;
 using System.Text;
@@ -24,7 +24,7 @@ internal class ChunkedDecoderOptimized : IDisposable
             _tempLength = GetChunkLength(ref buff);
             _isNewChunk = false;
         }
-        
+
         if (_tempLength == 0 && buff.Length >= 2)
         {
             Finished = true;
@@ -37,9 +37,9 @@ internal class ChunkedDecoderOptimized : IDisposable
             _isNewChunk = true;
             return;
         }
-        
+
         if (buff.Length > _tempLength + 2)
-        {              
+        {
             var chunk = buff.Slice(buff.Start, _tempLength);
             WriteToStream(chunk);
             _isNewChunk = true;
@@ -56,13 +56,13 @@ internal class ChunkedDecoderOptimized : IDisposable
         {
             var span = buff.FirstSpan;
             var index = span.IndexOf(_crlfBytes);
-            
+
             if (index == -1)
             {
                 // Console.WriteLine($"error payload: {Encoding.ASCII.GetString(buff.FirstSpan)}");
                 return -1;
             }
-            
+
             var line = span[..index];
             var pos = line.IndexOf((byte)';');
             if (pos != -1)
@@ -75,13 +75,13 @@ internal class ChunkedDecoderOptimized : IDisposable
         else
         {
             var reader = new SequenceReader<byte>(buff);
-            
+
             if (!reader.TryReadTo(out ReadOnlySpan<byte> line, _crlfBytes.AsSpan()))
             {
                 // Console.WriteLine($"error payload: {Encoding.ASCII.GetString(buff.FirstSpan)}");
                 return -1;
             }
-            
+
             var pos = line.IndexOf((byte)';');
             if (pos > 0)
             {

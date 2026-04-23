@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace RuriLib.Exceptions;
 
@@ -14,7 +14,7 @@ public class InvalidWordlistTypeException : Exception
     /// <param name="type">
     /// The invalid Wordlist Type that was not found in the Environment settings.
     /// </param>
-    public InvalidWordlistTypeException(string type) 
+    public InvalidWordlistTypeException(string type)
         : base($"The Wordlist Type {type} was not found in the Environment settings")
     {
 

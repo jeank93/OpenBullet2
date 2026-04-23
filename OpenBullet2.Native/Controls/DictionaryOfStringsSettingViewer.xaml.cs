@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.Extensions;
+using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Extensions;
 using RuriLib.Models.Blocks.Settings;
@@ -94,11 +94,11 @@ public partial class DictionaryOfStringsSettingViewer : UserControl
 
 public class DictionaryOfStringsSettingViewerViewModel : ViewModelBase
 {
-        public BlockSetting Setting { get; init; }
+    public BlockSetting Setting { get; init; }
 
     public string Name => Setting.ReadableName;
 
-        public string Description => Setting.Description ?? string.Empty;
+    public string Description => Setting.Description ?? string.Empty;
 
     public IEnumerable<string> Suggestions => Utils.Suggestions.GetInputVariableSuggestions(Setting);
 
@@ -117,10 +117,10 @@ public class DictionaryOfStringsSettingViewerViewModel : ViewModelBase
 
     public string VariableName
     {
-            get => Setting.InputVariableName ?? string.Empty;
-            set
-            {
-                Setting.InputVariableName = value;
+        get => Setting.InputVariableName ?? string.Empty;
+        set
+        {
+            Setting.InputVariableName = value;
             OnPropertyChanged();
         }
     }
@@ -173,12 +173,12 @@ public class DictionaryOfStringsSettingViewerViewModel : ViewModelBase
                 .DistinctBy(v => v[0])
                 .ToDictionary(v => v[0], v => v[1].StartsWith(' ') ? v[1][1..] : v[1]);
 
-        private static string MakeString(Dictionary<string, string>? dict)
-            => dict is null
-                ? string.Empty
-                : string.Join(Environment.NewLine, dict.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
+    private static string MakeString(Dictionary<string, string>? dict)
+        => dict is null
+            ? string.Empty
+            : string.Join(Environment.NewLine, dict.Select(kvp => $"{kvp.Key}: {kvp.Value}"));
 
-        private DictionaryOfStringsSetting FixedSetting => (DictionaryOfStringsSetting)Setting.FixedSetting!;
-        private InterpolatedDictionaryOfStringsSetting InterpolatedSetting
-            => (InterpolatedDictionaryOfStringsSetting)Setting.InterpolatedSetting!;
+    private DictionaryOfStringsSetting FixedSetting => (DictionaryOfStringsSetting)Setting.FixedSetting!;
+    private InterpolatedDictionaryOfStringsSetting InterpolatedSetting
+        => (InterpolatedDictionaryOfStringsSetting)Setting.InterpolatedSetting!;
 }

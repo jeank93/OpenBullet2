@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using OpenBullet2.Web.Dtos.Info;
 using OpenBullet2.Web.Extensions;
 using OpenBullet2.Web.SignalR;
@@ -36,7 +36,7 @@ public class PerformanceMonitorService : IHostedService
             {
                 return;
             }
-            
+
             _logger.LogError(new EventId(0), e, "Got an error while reading performance metrics");
         });
 
@@ -99,7 +99,8 @@ public class PerformanceMonitorService : IHostedService
             var cpu = await ReadCpuUsageAsync(_cts.Token);
             var (upload, download) = await ReadNetworkUsage();
 
-            var metrics = new PerformanceMetrics {
+            var metrics = new PerformanceMetrics
+            {
                 MemoryUsage = memory,
                 CpuUsage = cpu,
                 NetworkDownload = download,
@@ -148,7 +149,7 @@ public class PerformanceMonitorService : IHostedService
             {
                 return (0, 0);
             }
-            
+
             var interfaces = NetworkInterface.GetAllNetworkInterfaces();
             var startUpload = GetCurrentNetUpload(interfaces);
             var startDownload = GetCurrentNetDownload(interfaces);
@@ -157,7 +158,7 @@ public class PerformanceMonitorService : IHostedService
 
             var netUpload = GetCurrentNetUpload(interfaces) - startUpload;
             var netDownload = GetCurrentNetDownload(interfaces) - startDownload;
-            return (netUpload * 10, netDownload * 10);    
+            return (netUpload * 10, netDownload * 10);
         }
         catch
         {

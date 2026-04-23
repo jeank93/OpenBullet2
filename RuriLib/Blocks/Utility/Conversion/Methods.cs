@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Conversion;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -125,7 +125,7 @@ public static class Methods
     public static string Base64ToUTF8(BotData data, [Variable] string input)
     {
         data.Logger.LogHeader();
-        
+
         // Pad the input if the length is not a multiple of 4
         var toDecode = input.Replace(".", "");
         var remainder = toDecode.Length % 4;

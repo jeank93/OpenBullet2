@@ -150,7 +150,7 @@ Feel free to contribute to the versatility of this project by adding the missing
             Skip = opts.Skip,
             CurrentBotDatas = new BotData[opts.BotsNumber]
         };
-        
+
         // Ask custom inputs (if any)
         foreach (var input in config.Settings.InputSettings.CustomInputs)
         {

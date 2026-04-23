@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Data;
+using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Proxies;
 using RuriLib.Models.Jobs;
@@ -41,7 +41,7 @@ public class MultiRunJobOptions : JobOptions
     /// The behaviour that should be applied when no more valid proxies are present in the pool.
     /// </summary>
     public NoValidProxyBehaviour NoValidProxyBehaviour { get; set; } = NoValidProxyBehaviour.Reload;
-    
+
     /// <summary>
     /// How long should proxies be banned for. ONLY use this when <see cref="NoValidProxyBehaviour"/>
     /// is set to <see cref="NoValidProxyBehaviour.Unban"/>.

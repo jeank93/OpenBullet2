@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Web.Attributes;
+namespace OpenBullet2.Web.Attributes;
 
 /// <summary>
 /// Used to decorate a class that can be mapped from another class.

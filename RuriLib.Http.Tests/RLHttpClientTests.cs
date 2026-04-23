@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using RuriLib.Http.Models;
 using RuriLib.Proxies;
 using RuriLib.Proxies.Clients;
@@ -175,7 +175,7 @@ public class RLHttpClientTests
         var settings = new ProxySettings();
         var proxyClient = new NoProxyClient(settings);
         using var client = new RLHttpClient(proxyClient);
-            
+
         await client.SendAsync(message, TestCancellationToken);
 
         Assert.Single(cookies);
@@ -250,7 +250,7 @@ public class RLHttpClientTests
     {
         var settings = new ProxySettings();
         var proxyClient = new NoProxyClient(settings);
-            
+
         using var client = new RLHttpClient(proxyClient);
         return await client.SendAsync(request, TestCancellationToken);
     }

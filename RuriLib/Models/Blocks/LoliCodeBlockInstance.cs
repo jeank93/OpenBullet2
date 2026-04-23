@@ -24,7 +24,7 @@ public class LoliCodeBlockInstance : BlockInstance
     /// Gets or sets the raw LoliCode script.
     /// </summary>
     public string Script { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// Initializes a new <see cref="LoliCodeBlockInstance"/>.
     /// </summary>

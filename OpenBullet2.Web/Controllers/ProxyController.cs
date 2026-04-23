@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
@@ -61,7 +61,7 @@ public class ProxyController(IProxyRepository proxyRepo,
         AddProxiesFromListDto dto, [FromServices] IValidator<AddProxiesFromListDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId);
         EnsureOwnership(groupEntity);
 
@@ -90,7 +90,7 @@ public class ProxyController(IProxyRepository proxyRepo,
         AddProxiesFromRemoteDto dto, [FromServices] IValidator<AddProxiesFromRemoteDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId);
         EnsureOwnership(groupEntity);
 
@@ -275,7 +275,7 @@ public class ProxyController(IProxyRepository proxyRepo,
         {
             query = query.Where(p => p.Group != null && p.Group.Id == dto.ProxyGroupId);
         }
-        
+
         if (dto.SortBy is not null)
         {
             query = dto.SortBy switch

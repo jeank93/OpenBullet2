@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +22,7 @@ public class GuestController : ApiController
     private readonly ILogger<GuestController> _logger;
     private readonly IMapper _mapper;
     private readonly OpenBulletSettingsService _obSettingsService;
-    
+
     /// <summary></summary>
     public GuestController(IGuestRepository guestRepo, IMapper mapper,
         OpenBulletSettingsService obSettingsService,
@@ -43,7 +43,7 @@ public class GuestController : ApiController
         [FromServices] IValidator<CreateGuestDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var existing = await _guestRepo.GetAll()
             .FirstOrDefaultAsync(g => g.Username == dto.Username);
 
@@ -78,7 +78,7 @@ public class GuestController : ApiController
         [FromServices] IValidator<UpdateGuestInfoDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var entity = await GetEntityAsync(dto.Id);
 
         // If the username was changed, make sure it's not taken
@@ -120,7 +120,7 @@ public class GuestController : ApiController
         [FromServices] IValidator<UpdateGuestPasswordDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var entity = await GetEntityAsync(dto.Id);
 
         _mapper.Map(dto, entity);

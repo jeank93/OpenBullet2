@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace RuriLib.Parallelization.Exceptions;
@@ -28,7 +28,7 @@ public class RequiredStatusException : Exception
     {
 
     }
-        
+
     /// <summary>
     /// Throws a <see cref="RequiredStatusException"/> if the <paramref name="actualStatus"/> is not equal to the <paramref name="requiredStatus"/>.
     /// </summary>
@@ -39,7 +39,7 @@ public class RequiredStatusException : Exception
             throw new RequiredStatusException(actualStatus, requiredStatus);
         }
     }
-        
+
     /// <summary>
     /// Throws a <see cref="RequiredStatusException"/> if the <paramref name="actualStatus"/> is not one of the <paramref name="requiredStatuses"/>.
     /// </summary>

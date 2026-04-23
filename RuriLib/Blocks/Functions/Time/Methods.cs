@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Time;
 using RuriLib.Models.Bots;
 using System;
@@ -18,7 +18,7 @@ public static class Methods
     public static int CurrentUnixTime(BotData data, bool useUtc = false)
     {
         data.Logger.LogHeader();
-        
+
         var dateTime = useUtc ? DateTime.UtcNow : DateTime.Now;
         var time = (int)dateTime.ToUnixTime();
         data.Logger.Log($"Current unix time: {time}");
@@ -32,7 +32,7 @@ public static class Methods
     public static string UnixTimeToDate(BotData data, [Variable] int unixTime, string format = "yyyy-MM-dd:HH-mm-ss")
     {
         data.Logger.LogHeader();
-        
+
         var date = ((long)unixTime).ToDateTimeUtc().ToString(format);
         data.Logger.Log($"Formatted datetime: {date}");
         return date;
@@ -45,7 +45,7 @@ public static class Methods
     public static int DateToUnixTime(BotData data, [Variable] string datetime, string format)
     {
         data.Logger.LogHeader();
-        
+
         var time = (int)datetime.ToDateTime(format).ToUnixTime();
         data.Logger.Log($"Unix time: {time}");
         return time;
@@ -58,7 +58,7 @@ public static class Methods
     public static string UnixTimeToISO8601(BotData data, [Variable] int unixTime)
     {
         data.Logger.LogHeader();
-        
+
         var iso = ((long)unixTime).ToDateTimeUtc().ToISO8601();
         data.Logger.Log($"ISO8601 datetime: {iso}");
         return iso;

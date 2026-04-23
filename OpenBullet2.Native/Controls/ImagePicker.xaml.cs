@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+using Microsoft.Win32;
 using OpenBullet2.Core.Helpers;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Utils;

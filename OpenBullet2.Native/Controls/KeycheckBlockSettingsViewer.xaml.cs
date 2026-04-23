@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.ViewModels;
+using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using System;
@@ -51,7 +51,7 @@ public partial class KeycheckBlockSettingsViewer : UserControl
             vm.DeleteKeychain(view.Keychain);
             keychainsPanel.Children.Remove(view);
         };
-        
+
         view.OnMoveUp += (s, e) =>
         {
             var index = keychainsPanel.Children.IndexOf(view);
@@ -64,7 +64,7 @@ public partial class KeycheckBlockSettingsViewer : UserControl
 
             vm.MoveKeychainUp(keychain);
         };
-        
+
         view.OnMoveDown += (s, e) =>
         {
             var index = keychainsPanel.Children.IndexOf(view);

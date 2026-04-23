@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
@@ -41,7 +41,7 @@ public partial class MultiRunJobOptionsDialog : Page
         DataContext = vm;
 
         vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
-        
+
         InitializeComponent();
 
         startConditionTabControl.SelectedIndex = (int)vm.StartConditionMode;

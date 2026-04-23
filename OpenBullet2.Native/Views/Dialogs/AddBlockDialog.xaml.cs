@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.Services;
+using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Pages;
 using RuriLib.Models.Blocks;
@@ -180,7 +180,7 @@ public class AddBlockDialogViewModel : ViewModelBase
             descriptors = new ObservableCollection<BlockDescriptor>(RuriLib.Globals.DescriptorsRepository.Descriptors.Values
                 .Where(d => d.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)));
         }
-        
+
         var composite = new CompositeCollection
         {
             new CollectionContainer { Collection = subCategories },

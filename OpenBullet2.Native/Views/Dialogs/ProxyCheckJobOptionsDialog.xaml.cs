@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Repositories;

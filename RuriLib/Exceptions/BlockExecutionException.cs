@@ -18,7 +18,7 @@ public class BlockExecutionException : Exception
     {
 
     }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BlockExecutionException"/> class.
     /// </summary>

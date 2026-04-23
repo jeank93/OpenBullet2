@@ -1,4 +1,4 @@
-﻿namespace RuriLib.Parallelization;
+namespace RuriLib.Parallelization;
 
 /// <summary>
 /// The types of parallelizing techniques available.

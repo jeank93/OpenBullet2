@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
@@ -11,7 +11,7 @@ namespace RuriLib.Tests.Models.Blocks;
 public class AutoBlockInstanceTests
 {
     private readonly string _nl = Environment.NewLine;
-    
+
     [Fact]
     public void ToLC_ParseLRBlock_OutputScript()
     {
@@ -98,7 +98,7 @@ public class AutoBlockInstanceTests
 
         length.InputMode = SettingInputMode.Fixed;
         (length.FixedSetting as IntSetting)!.Value = 5;
-        
+
         var expected = $"string myOutput = Substring(data, myInput.AsString(), 3, 5);{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}data.MarkForCapture(nameof(myOutput));{_nl}";
         Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
     }
@@ -116,7 +116,7 @@ public class AutoBlockInstanceTests
         (port.FixedSetting as IntSetting)!.Value = 80;
         (ssl.FixedSetting as BoolSetting)!.Value = false;
         (timeout.FixedSetting as IntSetting)!.Value = 1000;
-        
+
         var expected = $"await TcpConnect(data, \"example.com\", 80, false, 1000).ConfigureAwait(false);{_nl}";
         Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
     }

@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Services;
+using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
@@ -192,7 +192,7 @@ public partial class MultiRunJobViewer : Page
             Alert.Error("Bot log unavailable", "The bot log is not available for pre-compiled configs");
             return;
         }
-        
+
         new MainDialog(new BotLogDialog(hitVM.Hit.BotLogger), $"Bot log for {hitVM.Data}").Show();
     }
 

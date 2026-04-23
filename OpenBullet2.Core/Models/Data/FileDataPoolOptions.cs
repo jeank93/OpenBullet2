@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Data.DataPools;
+using RuriLib.Models.Data.DataPools;
 using System.Runtime.InteropServices;
 
 namespace OpenBullet2.Core.Models.Data;
@@ -14,7 +14,7 @@ public class FileDataPoolOptions : DataPoolOptions
     /// The path to the file on disk.
     /// </summary>
     public string FileName
-    { 
+    {
         get => fileName;
         set
         {

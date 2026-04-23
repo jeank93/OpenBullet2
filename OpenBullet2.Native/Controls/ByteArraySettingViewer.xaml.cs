@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.ViewModels;
+using OpenBullet2.Native.ViewModels;
 using RuriLib.Extensions;
 using RuriLib.Functions.Conversion;
 using RuriLib.Models.Blocks.Settings;
@@ -78,11 +78,11 @@ public partial class ByteArraySettingViewer : UserControl
 
 public class ByteArraySettingViewerViewModel : ViewModelBase
 {
-        public BlockSetting Setting { get; init; }
+    public BlockSetting Setting { get; init; }
 
     public string Name => Setting.ReadableName;
 
-        public string Description => Setting.Description ?? string.Empty;
+    public string Description => Setting.Description ?? string.Empty;
 
     public IEnumerable<string> Suggestions => Utils.Suggestions.GetInputVariableSuggestions(Setting);
 
@@ -98,10 +98,10 @@ public class ByteArraySettingViewerViewModel : ViewModelBase
 
     public string VariableName
     {
-            get => Setting.InputVariableName ?? string.Empty;
-            set
-            {
-                Setting.InputVariableName = value;
+        get => Setting.InputVariableName ?? string.Empty;
+        set
+        {
+            Setting.InputVariableName = value;
             OnPropertyChanged();
         }
     }
@@ -123,14 +123,14 @@ public class ByteArraySettingViewerViewModel : ViewModelBase
                 }
                 catch
                 {
-                    
+
                 }
             }
             else
             {
                 FixedSetting.Value = null;
             }
-            
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(HexValue));
         }
@@ -153,7 +153,7 @@ public class ByteArraySettingViewerViewModel : ViewModelBase
                 }
                 catch
                 {
-                    
+
                 }
             }
             else
@@ -174,5 +174,5 @@ public class ByteArraySettingViewerViewModel : ViewModelBase
         hexValue = FixedSetting.Value is null ? string.Empty : HexConverter.ToHexString(FixedSetting.Value);
     }
 
-        private ByteArraySetting FixedSetting => (ByteArraySetting)Setting.FixedSetting!;
+    private ByteArraySetting FixedSetting => (ByteArraySetting)Setting.FixedSetting!;
 }

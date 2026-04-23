@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Core.Entities;
+namespace OpenBullet2.Core.Entities;
 
 /// <summary>
 /// This entity stores a record that matches a given config ID and wordlist ID

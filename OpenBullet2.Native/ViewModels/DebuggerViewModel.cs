@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Services;
+using OpenBullet2.Core.Services;
 using RuriLib.Logging;
 using RuriLib.Models.Debugger;
 using RuriLib.Models.Proxies;

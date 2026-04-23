@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Native.Extensions;
+using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;

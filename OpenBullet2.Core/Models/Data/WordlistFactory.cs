@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using RuriLib.Exceptions;
 using RuriLib.Models.Data;
 using RuriLib.Services;

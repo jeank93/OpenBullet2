@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Helpers;
+using OpenBullet2.Core.Helpers;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Utils;
 using RuriLib.Models.Configs;

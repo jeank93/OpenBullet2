@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Hits;
+using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Web.Attributes;
 
 namespace OpenBullet2.Web.Dtos.Job.MultiRun;

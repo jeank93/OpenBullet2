@@ -1,4 +1,4 @@
-﻿using RuriLib.Extensions;
+using RuriLib.Extensions;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;

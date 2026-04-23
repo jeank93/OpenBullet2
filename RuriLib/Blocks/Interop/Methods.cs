@@ -24,7 +24,7 @@ public static class Methods
     public static string ShellCommand(BotData data, string executable, string arguments)
     {
         data.Logger.LogHeader();
-        
+
         // For example executable is C:\Python27\python.exe and arguments is C:\sample_script.py
         var start = new ProcessStartInfo(executable, arguments)
         {
@@ -34,13 +34,13 @@ public static class Methods
         };
 
         using var process = Process.Start(start);
-        
+
         if (process is null)
         {
             data.Logger.Log("The process could not be started", LogColors.PaleChestnut);
             return string.Empty;
         }
-        
+
         using var reader = process.StandardOutput;
 
         var result = reader.ReadToEnd();
@@ -59,7 +59,7 @@ public static class Methods
     public static async Task<T?> InvokeNode<T>(BotData data, string scriptOrFile, object[] parameters, bool isScript = false, string? scriptHash = null)
     {
         data.Logger.LogHeader();
-        
+
         T? result;
 
         if (isScript)
@@ -80,26 +80,26 @@ public static class Methods
         if (string.IsNullOrEmpty(scriptHash))
         {
             return await StaticNodeJSService.InvokeFromStringAsync<T>(
-                script, 
-                scriptHash, 
-                null, 
-                parameters, 
+                script,
+                scriptHash,
+                null,
+                parameters,
                 data.CancellationToken
             ).ConfigureAwait(false);
         }
 
         var (isCached, cachedResult) = await StaticNodeJSService.TryInvokeFromCacheAsync<T>(
-            scriptHash, 
-            null, 
-            parameters, 
+            scriptHash,
+            null,
+            parameters,
             data.CancellationToken
         ).ConfigureAwait(false);
 
         return isCached ? cachedResult : await StaticNodeJSService.InvokeFromStringAsync<T>(
-            script, 
+            script,
             scriptHash,
-            null, 
-            parameters, 
+            null,
+            parameters,
             data.CancellationToken
         ).ConfigureAwait(false);
     }
@@ -120,7 +120,7 @@ public static class Methods
     public static Engine InvokeJint(BotData data, Engine engine, string scriptFile)
     {
         data.Logger.LogHeader();
-        
+
         var script = File.ReadAllText(scriptFile);
         var completionValue = engine.Evaluate(script);
         data.Logger.Log($"Executed Jint script with completion value: {completionValue}", LogColors.PaleChestnut);
@@ -133,15 +133,15 @@ public static class Methods
     public static ScriptScope GetIronPyScope(BotData data)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log("Getting a new IronPython scope.", LogColors.PaleChestnut);
         var engine = data.TryGetObject<ScriptEngine>("ironPyEngine");
-        
+
         if (engine is null)
         {
             throw new BlockExecutionException("The IronPython engine is not initialized");
         }
-        
+
         return engine.CreateScope();
     }
 
@@ -151,12 +151,12 @@ public static class Methods
     public static void ExecuteIronPyScript(BotData data, ScriptScope scope, string scriptFile)
     {
         var engine = data.TryGetObject<ScriptEngine>("ironPyEngine");
-        
+
         if (engine is null)
         {
             throw new BlockExecutionException("The IronPython engine is not initialized");
         }
-        
+
         var code = engine.CreateScriptSourceFromFile(scriptFile);
         var result = code.Execute(scope);
         data.Logger.Log($"Executed IronPython script with result {result}", LogColors.PaleChestnut);

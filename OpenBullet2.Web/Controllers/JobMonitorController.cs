@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Core.Models.Jobs;
@@ -84,7 +84,7 @@ public class JobMonitorController : ApiController
         [FromServices] IValidator<UpdateTriggeredActionDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var targetAction = GetTriggeredAction(dto.Id);
 
         var newAction = _mapper.Map(dto, targetAction);
@@ -178,7 +178,8 @@ public class JobMonitorController : ApiController
     }
 
     private static JobType GetJobType(Job job) =>
-        job switch {
+        job switch
+        {
             MultiRunJob => JobType.MultiRun,
             ProxyCheckJob => JobType.ProxyCheck,
             _ => throw new NotImplementedException()

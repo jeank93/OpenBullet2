@@ -1,4 +1,4 @@
-﻿using RuriLib.Proxies.Helpers;
+using RuriLib.Proxies.Helpers;
 using System;
 using System.Net.Sockets;
 using System.Threading;

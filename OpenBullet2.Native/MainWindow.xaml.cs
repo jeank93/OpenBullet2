@@ -1,4 +1,4 @@
-﻿using MahApps.Metro.Controls;
+using MahApps.Metro.Controls;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
@@ -49,7 +49,7 @@ public partial class MainWindow : MetroWindow
     private RLSettings? rlSettingsPage;
     private Plugins? pluginsPage;
     private About? aboutPage;
-    
+
     public Page? CurrentPage { get; private set; }
 
     public MainWindow()

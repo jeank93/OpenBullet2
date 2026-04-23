@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.Job;
@@ -257,7 +257,8 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
 
     private async Task OnTaskErrorAsync(object? sender, ErrorDetails<ProxyCheckInput> e)
     {
-        var message = new PcjTaskErrorMessage {
+        var message = new PcjTaskErrorMessage
+        {
             ProxyHost = e.Item.Proxy.Host, ProxyPort = e.Item.Proxy.Port, ErrorMessage = e.Exception.Message
         };
 
@@ -266,7 +267,8 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
 
     private async Task OnResultAsync(object? sender, ResultDetails<ProxyCheckInput, Proxy> e)
     {
-        var message = new PcjNewResultMessage {
+        var message = new PcjNewResultMessage
+        {
             ProxyHost = e.Result.Host,
             ProxyPort = e.Result.Port,
             WorkingStatus = e.Result.WorkingStatus,
@@ -281,7 +283,8 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
     {
         var job = (sender as ProxyCheckJob)!;
 
-        var message = new PcjStatsMessage {
+        var message = new PcjStatsMessage
+        {
             Tested = job.Tested,
             Working = job.Working,
             NotWorking = job.NotWorking,

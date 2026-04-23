@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Models.Bots;
 using RuriLib.Providers.UserAgents;
 
@@ -17,7 +17,7 @@ public static class Methods
     public static string RandomUserAgent(BotData data, UAPlatform platform = UAPlatform.All)
     {
         data.Logger.LogHeader();
-        
+
         data.Logger.Log("Getting random UA from the builtin provider");
         string ua;
 

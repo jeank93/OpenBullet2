@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Repositories;
+using OpenBullet2.Core.Repositories;
 using RuriLib.Models.Proxies;
 using System;
 using System.Threading;
@@ -62,7 +62,7 @@ public class DatabaseProxyCheckOutput : IProxyCheckOutput, IDisposable
              * 
              * In any case we don't want to save anything to the database.
              */
-            
+
             // TODO: Turn this into a log message using a logger
             Console.WriteLine($"Error while saving proxy {proxy.Id} to the database: {ex.Message}");
         }

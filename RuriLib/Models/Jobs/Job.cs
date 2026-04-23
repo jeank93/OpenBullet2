@@ -1,4 +1,4 @@
-﻿using RuriLib.Logging;
+using RuriLib.Logging;
 using RuriLib.Models.Jobs.StartConditions;
 using RuriLib.Services;
 using System;

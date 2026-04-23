@@ -1,4 +1,4 @@
-﻿using RuriLib.Proxies.Exceptions;
+using RuriLib.Proxies.Exceptions;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -24,7 +24,7 @@ internal static class HostHelper
         {
             return ipAddr.GetAddressBytes();
         }
-        
+
         try
         {
             var ips = await Dns.GetHostAddressesAsync(destinationHost).ConfigureAwait(false);

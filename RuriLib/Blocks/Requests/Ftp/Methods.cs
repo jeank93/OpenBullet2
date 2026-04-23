@@ -1,4 +1,4 @@
-﻿using FluentFTP;
+using FluentFTP;
 using RuriLib.Attributes;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -23,13 +23,13 @@ public static class Methods
     /// Connects to an FTP server.
     /// </summary>
     [Block("Connects to an FTP server")]
-    public static async Task FtpConnect(BotData data, string host, int port = 21, 
+    public static async Task FtpConnect(BotData data, string host, int port = 21,
         string username = "", string password = "", int timeoutMilliseconds = 10000)
     {
         data.Logger.LogHeader();
 
         AsyncFtpClient client;
-            
+
         var ftpConfig = new FtpConfig
         {
             ConnectTimeout = timeoutMilliseconds,
@@ -47,7 +47,7 @@ public static class Methods
                 ProxyCredentials = new NetworkCredential(data.Proxy.Username, data.Proxy.Password)
             };
 
-            client = data.Proxy.Type switch 
+            client = data.Proxy.Type switch
             {
                 ProxyType.Http => new AsyncFtpClientHttp11Proxy(proxyInfo),
                 ProxyType.Socks4 => new AsyncFtpClientSocks4Proxy(proxyInfo),
@@ -60,7 +60,7 @@ public static class Methods
         {
             client = new AsyncFtpClient();
         }
-            
+
         client.Host = host;
         client.Port = port;
         client.Credentials = new NetworkCredential(username, password);
@@ -69,7 +69,7 @@ public static class Methods
         data.SetObject("ftpClient", client);
         client.LegacyLogger = InitLogger(data);
         await client.AutoConnect(data.CancellationToken).ConfigureAwait(false);
-            
+
         if (!client.IsConnected)
         {
             throw new BlockExecutionException("Failed to connect to the FTP server with the given credentials");
@@ -97,7 +97,7 @@ public static class Methods
                     data.Logger.Log(item.FullName, LogColors.Maize);
                     list.Add(item.FullName);
                     break;
-                    
+
                 case FtpObjectType.File when kind is FtpItemKind.FilesAndFolders or FtpItemKind.File:
                     data.Logger.Log(item.FullName, LogColors.Maize);
                     list.Add(item.FullName);
@@ -116,7 +116,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
         var client = GetClient(data);
-        await client.DownloadFile(localFileName, remoteFileName, FtpLocalExists.Overwrite, 
+        await client.DownloadFile(localFileName, remoteFileName, FtpLocalExists.Overwrite,
             FtpVerify.None, null, data.CancellationToken).ConfigureAwait(false);
 
         data.Logger.Log($"{remoteFileName} downloaded to {localFileName}", LogColors.Maize);
@@ -126,7 +126,7 @@ public static class Methods
     /// Downloads a folder from the FTP server.
     /// </summary>
     [Block("Downloads a folder from the FTP server")]
-    public static async Task FtpDownloadFolder(BotData data, string remoteDir, string localDir, 
+    public static async Task FtpDownloadFolder(BotData data, string remoteDir, string localDir,
         FtpLocalExists existsPolicy = FtpLocalExists.Skip)
     {
         data.Logger.LogHeader();
@@ -146,7 +146,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
         var client = GetClient(data);
-        await client.UploadFile(localFileName, remoteFileName, existsPolicy, true, 
+        await client.UploadFile(localFileName, remoteFileName, existsPolicy, true,
             FtpVerify.None, null, data.CancellationToken).ConfigureAwait(false);
 
         data.Logger.Log($"{localFileName} uploaded to {remoteFileName}", LogColors.Maize);
@@ -174,12 +174,12 @@ public static class Methods
         data.Logger.LogHeader();
 
         var protocolLogger = data.TryGetObject<StringBuilder>("ftpLogger");
-        
+
         if (protocolLogger is null)
         {
             throw new BlockExecutionException("No log available. Make sure to connect to a server first!");
         }
-        
+
         var log = protocolLogger.ToString();
 
         data.Logger.Log(log, LogColors.Maize);

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
@@ -40,7 +40,7 @@ public class HitController : ApiController
     private readonly IJobRepository _jobRepo;
     private readonly JobFactoryService _jobFactoryService;
     private readonly JobManagerService _jobManagerService;
-    
+
     /// <summary></summary>
     public HitController(IHitRepository hitRepo, IGuestRepository guestRepo,
         IMapper mapper, ILogger<HitController> logger,
@@ -70,7 +70,7 @@ public class HitController : ApiController
         [FromServices] IValidator<CreateHitDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var apiUser = HttpContext.GetApiUser();
 
         var entity = _mapper.Map<HitEntity>(dto);
@@ -88,7 +88,7 @@ public class HitController : ApiController
 
         var hitDto = _mapper.Map<HitDto>(entity);
         var owner = await _guestRepo.GetAsync(apiUser.Id);
-        
+
         hitDto.OwnerId = owner?.Id ?? 0;
         return hitDto;
     }
@@ -108,7 +108,7 @@ public class HitController : ApiController
 
         return _mapper.Map<PagedList<HitDto>>(pagedEntities);
     }
-    
+
     /// <summary>
     /// Get the names of all the configs that have hits in the database.
     /// </summary>
@@ -153,7 +153,7 @@ public class HitController : ApiController
         var bytes = Encoding.UTF8.GetBytes(outputHits);
         return File(bytes, "text/plain", "hits.txt");
     }
-    
+
     /// <summary>
     /// Get all hits that match the filters with the provided format.
     /// </summary>
@@ -178,7 +178,7 @@ public class HitController : ApiController
         [FromServices] IValidator<UpdateHitDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var entity = await GetEntityAsync(dto.Id);
         EnsureOwnership(entity);
 
@@ -331,7 +331,7 @@ public class HitController : ApiController
 
         return new RecentHitsDto { Dates = dates, Hits = hits };
     }
-    
+
     /// <summary>
     /// Send all hits that match the filters to recheck by creating
     /// a temporary file and a MultiRun job. If the hits come from
@@ -344,38 +344,38 @@ public class HitController : ApiController
     {
         var apiUser = HttpContext.GetApiUser();
         var query = FilteredQuery(dto);
-        
+
         var hits = await query.ToListAsync();
-        
+
         if (hits.Count == 0)
         {
             throw new ApiException(ErrorCode.NoHitsSelected, "No hits selected to recheck");
         }
-        
+
         var jobOptions = new MultiRunJobOptions
         {
             Name = "Recheck"
         };
         var wordlistType = _rlSettingsService.Environment.WordlistTypes[0].Name;
-        
+
         // If all hits come from the same config, use that config
         if (hits.Select(h => h.ConfigId).Distinct().Count() == 1)
         {
             var config = _configService.Configs.Find(c => c.Id == hits[0].ConfigId);
-            
+
             // If we cannot find a config with that id anymore, don't set it
             if (config != null)
             {
                 jobOptions.ConfigId = config.Id;
                 jobOptions.Bots = config.Settings.GeneralSettings.SuggestedBots;
-                
+
                 if (config.Settings.DataSettings.AllowedWordlistTypes.Length > 0)
                 {
                     wordlistType = config.Settings.DataSettings.AllowedWordlistTypes[0];
                 }
             }
         }
-        
+
         // Write the hits to a temporary file
         var tempFile = Path.GetRandomFileName();
         await System.IO.File.WriteAllLinesAsync(tempFile, hits.Select(h => h.Data));
@@ -385,11 +385,11 @@ public class HitController : ApiController
             WordlistType = wordlistType
         };
         jobOptions.HitOutputs.Add(new DatabaseHitOutputOptions());
-        
+
         // Create the job entity and add it to the database
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
         var jobOptionsWrapper = new JobOptionsWrapper { Options = jobOptions };
-        
+
         var entity = new JobEntity
         {
             Owner = apiUser.Role is UserRole.Admin ? null : await _guestRepo.GetAsync(apiUser.Id),
@@ -397,12 +397,12 @@ public class HitController : ApiController
             JobType = JobType.MultiRun,
             JobOptions = JsonConvert.SerializeObject(jobOptionsWrapper, jsonSettings)
         };
-        
+
         await _jobRepo.AddAsync(entity);
-        
+
         var job = _jobFactoryService.FromOptions(entity.Id, apiUser.Id, jobOptions);
         _jobManagerService.AddJob(job);
-        
+
         return new SendToRecheckResultDto { JobId = entity.Id };
     }
 
@@ -423,7 +423,7 @@ public class HitController : ApiController
                 EF.Functions.Like(h.Proxy, $"%{dto.SearchTerm}%") ||
                 EF.Functions.Like(h.WordlistName, $"%{dto.SearchTerm}%"));
         }
-        
+
         if (!string.IsNullOrEmpty(dto.ConfigName))
         {
             query = query.Where(h => h.ConfigName == dto.ConfigName);

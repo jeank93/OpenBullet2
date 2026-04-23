@@ -1,4 +1,4 @@
-﻿using PuppeteerSharp;
+using PuppeteerSharp;
 using RuriLib.Attributes;
 using RuriLib.Exceptions;
 using RuriLib.Functions.Files;
@@ -326,7 +326,7 @@ public static class Methods
 
         var frame = GetFrame(data);
         var elem = await GetElement(frame, findBy, identifier, index);
-        await elem.ScreenshotAsync(fileName, new ScreenshotOptions 
+        await elem.ScreenshotAsync(fileName, new ScreenshotOptions
         {
             FullPage = fullPage,
             OmitBackground = omitBackground,
@@ -348,8 +348,8 @@ public static class Methods
 
         var frame = GetFrame(data);
         var elem = await GetElement(frame, findBy, identifier, index);
-        var base64 = await elem.ScreenshotBase64Async(new ScreenshotOptions 
-        { 
+        var base64 = await elem.ScreenshotBase64Async(new ScreenshotOptions
+        {
             FullPage = fullPage,
             OmitBackground = omitBackground,
             Type = omitBackground ? ScreenshotType.Png : ScreenshotType.Jpeg,

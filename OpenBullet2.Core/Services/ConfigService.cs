@@ -1,4 +1,4 @@
-﻿using Microsoft.Scripting.Utils;
+using Microsoft.Scripting.Utils;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Repositories;
 using RuriLib.Models.Configs;
@@ -69,7 +69,7 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
     {
         List<Config> remoteConfigs = [];
 
-        var func = new Func<RemoteConfigsEndpoint, Task>(async endpoint => 
+        var func = new Func<RemoteConfigsEndpoint, Task>(async endpoint =>
         {
             try
             {

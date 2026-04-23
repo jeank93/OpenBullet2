@@ -1,4 +1,4 @@
-﻿namespace RuriLib.Parallelization.Models;
+namespace RuriLib.Parallelization.Models;
 
 /// <summary>
 /// Details the result of the execution of the work functions on a given input.

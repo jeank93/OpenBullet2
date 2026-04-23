@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace OpenBullet2.Web.Dtos.JobMonitor;
 

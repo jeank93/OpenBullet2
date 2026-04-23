@@ -1,4 +1,4 @@
-﻿using RuriLib.Attributes;
+using RuriLib.Attributes;
 using RuriLib.Functions.Parsing;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -19,12 +19,12 @@ public static class Methods
     /// <summary>
     /// Parses all values between two delimiters.
     /// </summary>
-    public static List<string> ParseBetweenStringsRecursive(BotData data, string input, 
+    public static List<string> ParseBetweenStringsRecursive(BotData data, string input,
         string leftDelim, string rightDelim, bool caseSensitive = true, string prefix = "", string suffix = "",
         bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = LRParser.ParseBetween(input, leftDelim, rightDelim, caseSensitive)
             .Select(p => prefix + p + suffix).Select(p => urlEncodeOutput ? Uri.EscapeDataString(p) : p).ToList();
 
@@ -36,12 +36,12 @@ public static class Methods
     /// <summary>
     /// Parses the first value between two delimiters.
     /// </summary>
-    public static string ParseBetweenStrings(BotData data, string input, 
+    public static string ParseBetweenStrings(BotData data, string input,
         string leftDelim, string rightDelim, bool caseSensitive = true, string prefix = "", string suffix = "",
         bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = LRParser.ParseBetween(input, leftDelim, rightDelim, caseSensitive).FirstOrDefault() ?? string.Empty;
         parsed = prefix + parsed + suffix;
 
@@ -63,7 +63,7 @@ public static class Methods
         string cssSelector, string attributeName, string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = HtmlParser.QueryAttributeAll(htmlPage, cssSelector, attributeName)
             .Select(p => prefix + p + suffix).Select(p => urlEncodeOutput ? Uri.EscapeDataString(p) : p).ToList();
 
@@ -79,7 +79,7 @@ public static class Methods
         string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = HtmlParser.QueryAttributeAll(htmlPage, cssSelector, attributeName).FirstOrDefault() ?? string.Empty;
         parsed = prefix + parsed + suffix;
 
@@ -102,7 +102,7 @@ public static class Methods
         string xPath, string attributeName, string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = HtmlParser.QueryXPathAll(xmlPage, xPath, attributeName)
             .Select(p => prefix + p + suffix).Select(p => urlEncodeOutput ? Uri.EscapeDataString(p) : p).ToList();
 
@@ -118,7 +118,7 @@ public static class Methods
         string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = HtmlParser.QueryXPathAll(xmlPage, xPath, attributeName).FirstOrDefault() ?? string.Empty;
         parsed = prefix + parsed + suffix;
 
@@ -141,7 +141,7 @@ public static class Methods
         string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = JsonParser.GetValuesByKey(json, jToken)
             .Select(p => prefix + p + suffix).Select(p => urlEncodeOutput ? Uri.EscapeDataString(p) : p).ToList();
 
@@ -157,7 +157,7 @@ public static class Methods
         bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = JsonParser.GetValuesByKey(json, jToken).FirstOrDefault() ?? string.Empty;
         parsed = prefix + parsed + suffix;
 
@@ -179,7 +179,7 @@ public static class Methods
         string pattern, string outputFormat, bool multiLine, string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = RegexParser.MatchGroupsToString(input, pattern, outputFormat, multiLine ? RegexOptions.Multiline : RegexOptions.None)
             .Select(p => prefix + p + suffix).Select(p => urlEncodeOutput ? Uri.EscapeDataString(p) : p).ToList();
 
@@ -203,7 +203,7 @@ public static class Methods
         bool multiLine, string prefix = "", string suffix = "", bool urlEncodeOutput = false)
     {
         data.Logger.LogHeader();
-        
+
         var parsed = RegexParser.MatchGroupsToString(input, pattern, outputFormat, multiLine ? RegexOptions.Multiline : RegexOptions.None).FirstOrDefault() ?? string.Empty;
         parsed = prefix + parsed + suffix;
 

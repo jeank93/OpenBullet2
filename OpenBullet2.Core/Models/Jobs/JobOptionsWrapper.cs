@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Core.Models.Jobs;
+namespace OpenBullet2.Core.Models.Jobs;
 
 /// <summary>
 /// A wrapper around <see cref="JobOptions"/> for json serialization

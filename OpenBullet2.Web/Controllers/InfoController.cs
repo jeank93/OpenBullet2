@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
@@ -53,7 +53,8 @@ public class InfoController(IAnnouncementService announcementService,
             ip = ip.MapToIPv4();
         }
 
-        return new ServerInfoDto {
+        return new ServerInfoDto
+        {
             LocalUtcOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now),
             StartTime = Globals.StartTime,
             OperatingSystem = GetOperatingSystem(),
@@ -124,7 +125,8 @@ public class InfoController(IAnnouncementService announcementService,
     /// </summary>
     [HttpGet("update")]
     [MapToApiVersion("1.0")]
-    public ActionResult<UpdateInfoDto> GetUpdateInfo() => new UpdateInfoDto {
+    public ActionResult<UpdateInfoDto> GetUpdateInfo() => new UpdateInfoDto
+    {
         CurrentVersion = _updateService.CurrentVersion.ToString(),
         RemoteVersion = _updateService.RemoteVersion.ToString(),
         IsUpdateAvailable = _updateService.IsUpdateAvailable,
@@ -140,7 +142,7 @@ public class InfoController(IAnnouncementService announcementService,
     public async Task<ActionResult<CollectionInfoDto>> GetCollectionInfo()
     {
         var apiUser = HttpContext.GetApiUser();
-        
+
         var jobCount = apiUser.Role is UserRole.Admin
             ? _serviceProvider.GetRequiredService<JobManagerService>()
                 .Jobs.Count()
@@ -178,7 +180,7 @@ public class InfoController(IAnnouncementService announcementService,
         var configCount = _serviceProvider
             .GetRequiredService<ConfigService>().Configs.Count;
 
-        var guestCount = apiUser.Role is UserRole.Admin 
+        var guestCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IGuestRepository>().GetAll().CountAsync()
             : 1; // The guest shouldn't see the total number of guests
 
@@ -186,7 +188,8 @@ public class InfoController(IAnnouncementService announcementService,
             ? _serviceProvider.GetRequiredService<PluginRepository>().GetPlugins().Count()
             : 0; // The guest shouldn't see the total number of plugins
 
-        return new CollectionInfoDto {
+        return new CollectionInfoDto
+        {
             JobsCount = jobCount,
             ProxiesCount = proxyCount,
             WordlistsCount = wordlistCount,

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Web.Exceptions;
 using RuriLib.Helpers;

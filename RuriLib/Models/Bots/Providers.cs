@@ -1,4 +1,4 @@
-﻿using RuriLib.Providers.Captchas;
+using RuriLib.Providers.Captchas;
 using RuriLib.Providers.Emails;
 using RuriLib.Providers.Proxies;
 using RuriLib.Providers.Puppeteer;

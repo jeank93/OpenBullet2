@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using RuriLib.Providers.UserAgents;
 using System;
 using System.Collections.Generic;
@@ -37,14 +37,14 @@ public class IntoliRandomUAProvider : IRandomUAProvider
 
             agents.Add(new UserAgent(userAgent, ConvertPlatform(platform), elem.Value<double>("weight"), 0));
         }
-        
+
         rand = new Random();
-        
+
         if (agents.Count == 0)
         {
             throw new MissingUserAgentsException("No valid user agents found in user-agents.json");
         }
-        
+
         foreach (var platform in (UAPlatform[])Enum.GetValues(typeof(UAPlatform)))
         {
             distributions[platform] = ComputeDistribution(agents, platform);

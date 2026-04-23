@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Net;
@@ -22,7 +22,7 @@ internal static class HttpRequestMessageBuilder
         {
             throw new RLHttpException($"HTTP/{request.Version.Major}.{request.Version.Minor} not supported yet");
         }
-        
+
         if (request.RequestUri is null)
         {
             throw new RLHttpException("Uri cannot be null");
@@ -40,7 +40,7 @@ internal static class HttpRequestMessageBuilder
         {
             throw new RLHttpException("Uri cannot be null");
         }
-        
+
         // NOTE: Do not use AppendLine because it appends \n instead of \r\n
         // on Unix-like systems.
         var sb = new StringBuilder();

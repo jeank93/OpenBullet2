@@ -1,4 +1,4 @@
-﻿namespace OpenBullet2.Core.Entities;
+namespace OpenBullet2.Core.Entities;
 
 /// <summary>
 /// This entity stores the metadata of a wordlist in OpenBullet 2.

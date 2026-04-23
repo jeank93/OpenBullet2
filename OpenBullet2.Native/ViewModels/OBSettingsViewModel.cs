@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Settings;
+using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using System;
@@ -171,7 +171,7 @@ public class OBSettingsViewModel : ViewModelBase
         set
         {
             Customization.BackgroundMain = value;
-            
+
             // Call this instead of SetAppColor because otherwise it will not
             // update the background if we previously set an image
             RefreshTheme();

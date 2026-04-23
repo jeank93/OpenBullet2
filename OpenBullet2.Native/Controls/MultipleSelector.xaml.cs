@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -125,7 +125,7 @@ public partial class MultipleSelector : UserControl
         {
             return;
         }
-        
+
         if (SelectedValues.Contains(value))
         {
             SelectedValues.Remove(value);

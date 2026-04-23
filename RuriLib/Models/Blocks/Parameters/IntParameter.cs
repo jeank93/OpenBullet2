@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Blocks.Settings;
+using RuriLib.Models.Blocks.Settings;
 
 namespace RuriLib.Models.Blocks.Parameters;
 

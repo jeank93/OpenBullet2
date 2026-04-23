@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
@@ -28,7 +28,7 @@ public class SettingsController : ApiController
     private readonly RuriLibSettingsService _ruriLibSettingsService;
     private readonly ThemeService _themeService;
     private readonly ILogger<SettingsController> _logger;
-    
+
     /// <summary></summary>
     public SettingsController(RuriLibSettingsService ruriLibSettingsService,
         OpenBulletSettingsService obSettingsService, IMapper mapper,
@@ -43,7 +43,7 @@ public class SettingsController : ApiController
         _themeService = themeService;
         _logger = logger;
     }
-    
+
     /// <summary>
     /// Get the system settings.
     /// </summary>
@@ -53,14 +53,14 @@ public class SettingsController : ApiController
     public ActionResult<SystemSettingsDto> GetSystemSettings()
     {
         var systemSettings = new SystemSettingsDto();
-        
+
         var botLimit = _configuration.GetSection("Resources")["BotLimit"];
-        
+
         if (botLimit is not null)
         {
             systemSettings.BotLimit = int.Parse(botLimit);
         }
-        
+
         return systemSettings;
     }
 
@@ -109,7 +109,7 @@ public class SettingsController : ApiController
         // and after this instruction.
         _mapper.Map(settings, _ruriLibSettingsService.RuriLibSettings);
         await _ruriLibSettingsService.Save();
-        
+
         _logger.LogInformation("Updated RuriLib settings");
 
         return _ruriLibSettingsService.RuriLibSettings;
@@ -158,14 +158,14 @@ public class SettingsController : ApiController
 
         var oldAdminUsername = _obSettingsService.Settings.SecuritySettings.AdminUsername;
         var newAdminUsername = settings.SecuritySettings.AdminUsername;
-        
+
         // NOTE: To check this we can just print the hashcodes before
         // and after this instruction.
         _mapper.Map(settings, _obSettingsService.Settings);
         await _obSettingsService.SaveAsync();
-        
+
         _logger.LogInformation("Updated OpenBullet settings");
-        
+
         // If the admin username has changed, sign a new JWT and send it back
         if (oldAdminUsername != newAdminUsername)
         {
@@ -176,7 +176,7 @@ public class SettingsController : ApiController
 
             var lifetimeHours = Math.Clamp(_obSettingsService.Settings.SecuritySettings.AdminSessionLifetimeHours, 0, 9999);
             var token = _authService.GenerateToken(claims, TimeSpan.FromHours(lifetimeHours));
-            
+
             Response.Headers.Append("X-New-Jwt", token);
         }
 
@@ -194,11 +194,11 @@ public class SettingsController : ApiController
         [FromServices] IValidator<UpdateAdminPasswordDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         _obSettingsService.Settings.SecuritySettings
             .SetupAdminPassword(dto.Password);
         await _obSettingsService.SaveAsync();
-        
+
         _logger.LogInformation("Updated the password of the admin user");
 
         return Ok();
@@ -253,7 +253,7 @@ public class SettingsController : ApiController
 
         return File(bytes, "text/css", "theme.css");
     }
-    
+
     /// <summary>
     /// Get all custom snippets.
     /// </summary>
@@ -264,7 +264,7 @@ public class SettingsController : ApiController
         => _obSettingsService.Settings.GeneralSettings.CustomSnippets
             .Where(s => !string.IsNullOrWhiteSpace(s.Name))
             .ToDictionary(s => s.Name, s => s.Body);
-    
+
     /// <summary>
     /// Check captcha balance for the given service.
     /// </summary>
@@ -275,7 +275,7 @@ public class SettingsController : ApiController
         CaptchaSettings captchaSettings)
     {
         var service = CaptchaServiceFactory.GetService(captchaSettings);
-        
+
         try
         {
             return new CaptchaBalanceDto

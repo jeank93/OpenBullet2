@@ -1,4 +1,4 @@
-﻿using OpenQA.Selenium;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 using RuriLib.Attributes;
 using RuriLib.Exceptions;
@@ -63,7 +63,7 @@ public static class Methods
         data.Logger.LogHeader();
 
         var element = GetElement(data, findBy, identifier, index);
-            
+
         foreach (var c in text)
         {
             element.SendKeys(c.ToString());
@@ -89,7 +89,7 @@ public static class Methods
         foreach (var c in text)
         {
             element.SendKeys(c.ToString());
-            
+
             // Wait between 100 and 300 ms (average human type speed is 60 WPM ~ 360 CPM)
             await Task.Delay(data.Random.Next(100, 300));
         }
@@ -391,7 +391,7 @@ public static class Methods
                 data.Logger.Log($"Waited for element with {findBy} {identifier}", LogColors.JuneBud);
                 return;
             }
-                
+
             waited += 200;
             await Task.Delay(200);
         }
@@ -450,7 +450,7 @@ public static class Methods
         {
             return;
         }
-        
+
         data.ADDRESS = browser.Url;
         data.SOURCE = browser.PageSource;
     }

@@ -1,4 +1,4 @@
-﻿using RuriLib.Extensions;
+using RuriLib.Extensions;
 using System;
 using System.Linq;
 
@@ -28,12 +28,12 @@ public static class HexConverter
         {
             str = str.Replace("0x", "");
         }
-            
+
         if (addPadding)
         {
             str = str.PadLeftToNearestMultiple(2);
         }
-                
+
         return str.SplitInChunks(2, false)
             .Select(hex => Convert.ToByte(hex, 16))
             .ToArray();

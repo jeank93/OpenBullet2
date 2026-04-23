@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Web.Auth;
 using OpenBullet2.Web.Dtos.Debugging;
 using OpenBullet2.Web.Exceptions;
@@ -11,7 +11,7 @@ namespace OpenBullet2.Web.Controllers;
 [TypeFilter<AdminFilter>]
 [ApiVersion("1.0")]
 public class DebugController : ApiController
-{   
+{
     /// <summary>
     /// Trigger the garbage collector.
     /// </summary>
@@ -25,7 +25,7 @@ public class DebugController : ApiController
 #pragma warning restore S1215
         return Ok();
     }
-    
+
     /// <summary>
     /// Get the current server log as a text file.
     /// </summary>
@@ -42,7 +42,7 @@ public class DebugController : ApiController
             throw new ResourceNotFoundException(ErrorCode.FileNotFound,
                 "No logs found on the server or the Serilog configuration is not the default one");
         }
-        
+
         var stream = new FileStream(latestLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         return File(stream, "text/plain", Path.GetFileName(latestLog));
     }

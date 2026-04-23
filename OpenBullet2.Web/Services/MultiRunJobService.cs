@@ -257,7 +257,8 @@ public sealed class MultiRunJobService : IJobService, IDisposable
 
     private async Task OnTaskErrorAsync(object? sender, ErrorDetails<MultiRunInput> e)
     {
-        var message = new MrjTaskErrorMessage {
+        var message = new MrjTaskErrorMessage
+        {
             DataLine = e.Item.BotData.Line.Data,
             Proxy = e.Item.BotData.Proxy is null
                 ? null
@@ -277,7 +278,8 @@ public sealed class MultiRunJobService : IJobService, IDisposable
 
     private async Task OnResultAsync(object? sender, ResultDetails<MultiRunInput, CheckResult> e)
     {
-        var message = new MrjNewResultMessage {
+        var message = new MrjNewResultMessage
+        {
             DataLine = e.Item.BotData.Line.Data,
             Proxy = e.Item.BotData.Proxy is null
                 ? null
@@ -299,8 +301,10 @@ public sealed class MultiRunJobService : IJobService, IDisposable
     {
         var job = (sender as MultiRunJob)!;
 
-        var message = new MrjStatsMessage {
-            DataStats = new MrjDataStatsDto {
+        var message = new MrjStatsMessage
+        {
+            DataStats = new MrjDataStatsDto
+            {
                 Hits = job.DataHits,
                 Custom = job.DataCustom,
                 Fails = job.DataFails,
@@ -313,7 +317,8 @@ public sealed class MultiRunJobService : IJobService, IDisposable
                 Tested = job.DataTested
             },
             ProxyStats =
-                new MrjProxyStatsDto {
+                new MrjProxyStatsDto
+                {
                     Total = job.ProxiesTotal, Alive = job.ProxiesAlive, Bad = job.ProxiesBad, Banned = job.ProxiesBanned
                 },
             CPM = job.CPM,
@@ -328,13 +333,15 @@ public sealed class MultiRunJobService : IJobService, IDisposable
 
     private async Task OnHitAsync(object? sender, Hit e)
     {
-        var message = new MrjNewHitMessage {
-            Hit = new MrjHitDto {
+        var message = new MrjNewHitMessage
+        {
+            Hit = new MrjHitDto
+            {
                 Id = e.Id,
                 Date = e.Date,
                 Type = e.Type,
                 Data = e.DataString,
-                Proxy = e.Proxy is not null 
+                Proxy = e.Proxy is not null
                     ? new MrjProxy
                     {
                         Type = e.Proxy.Type,

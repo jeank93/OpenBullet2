@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -61,13 +61,14 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             .Where(j => CanSee(apiUser, j))
             .OrderBy(j => j.Id);
 
-        var mapped = jobs.Select(job => new JobOverviewDto {
-                Id = job.Id,
-                OwnerId = job.OwnerId,
-                Type = GetJobType(job),
-                Status = job.Status,
-                Name = job.Name
-            })
+        var mapped = jobs.Select(job => new JobOverviewDto
+        {
+            Id = job.Id,
+            OwnerId = job.OwnerId,
+            Type = GetJobType(job),
+            Status = job.Status,
+            Name = job.Name
+        })
             .ToList();
 
         return Ok(mapped);
@@ -93,7 +94,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         foreach (var job in jobs)
         {
-            var dataPoolInfo = job.DataPool switch {
+            var dataPoolInfo = job.DataPool switch
+            {
                 WordlistDataPool w => $"{w.Wordlist?.Name} (Wordlist)",
                 CombinationsDataPool => "Combinations",
                 InfiniteDataPool => "Infinite",
@@ -102,7 +104,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 _ => throw new NotImplementedException()
             };
 
-            var dto = new MultiRunJobOverviewDto {
+            var dto = new MultiRunJobOverviewDto
+            {
                 Id = job.Id,
                 OwnerId = job.OwnerId,
                 Type = JobType.MultiRun,
@@ -244,7 +247,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
 
-        var entity = new JobEntity {
+        var entity = new JobEntity
+        {
             Owner = await _guestRepo.GetAsync(apiUser.Id),
             CreationDate = DateTime.UtcNow,
             JobType = JobType.MultiRun,
@@ -252,7 +256,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         };
 
         await _jobRepo.AddAsync(entity);
-        
+
         _logger.LogInformation("Created a new multi run job with id {Id}", entity.Id);
 
         // This might fail and we would have inconsistencies!
@@ -286,7 +290,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
 
-        var entity = new JobEntity {
+        var entity = new JobEntity
+        {
             Owner = await _guestRepo.GetAsync(apiUser.Id),
             CreationDate = DateTime.UtcNow,
             JobType = JobType.ProxyCheck,
@@ -294,7 +299,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         };
 
         await _jobRepo.AddAsync(entity);
-        
+
         _logger.LogInformation("Created a new proxy check job with id {Id}", entity.Id);
 
         // This might fail and we would have inconsistencies!
@@ -322,7 +327,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         UpdateMultiRunJobDto dto, [FromServices] IValidator<UpdateMultiRunJobDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         // Make sure job is idle
         var job = GetJob<MultiRunJob>(dto.Id);
 
@@ -351,7 +356,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         _jobManager.RemoveJob(oldJob);
         _jobManager.AddJob(newJob);
-        
+
         _logger.LogInformation("Updated the multi run job with id {Id}", dto.Id);
 
         return await MapMultiRunJobDto((MultiRunJob)newJob);
@@ -366,7 +371,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         UpdateProxyCheckJobDto dto, [FromServices] IValidator<UpdateProxyCheckJobDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         // Make sure job is idle
         var job = GetJob<ProxyCheckJob>(dto.Id);
 
@@ -395,7 +400,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         _jobManager.RemoveJob(oldJob);
         _jobManager.AddJob(newJob);
-        
+
         _logger.LogInformation("Updated the proxy check job with id {Id}", dto.Id);
 
         return await MapProxyCheckJobDto((ProxyCheckJob)newJob);
@@ -419,7 +424,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         }
 
         return Ok(job.Config.Settings.InputSettings.CustomInputs.Select(i =>
-            new CustomInputQuestionDto {
+            new CustomInputQuestionDto
+            {
                 Description = i.Description, DefaultAnswer = i.DefaultAnswer, VariableName = i.VariableName,
                 CurrentAnswer = job.CustomInputsAnswers.TryGetValue(i.VariableName, out var answer) ? answer : null
             }));
@@ -439,7 +445,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         {
             job.CustomInputsAnswers[input.VariableName] = input.Answer;
         }
-        
+
         _logger.LogInformation("Set custom inputs for job {Id}", dto.JobId);
 
         return Ok();
@@ -461,7 +467,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         await _jobRepo.DeleteAsync(entity);
         _jobManager.RemoveJob(job);
-        
+
         _logger.LogInformation("Deleted job with id {Id}", id);
 
         return Ok();
@@ -511,7 +517,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 _jobManager.RemoveJob(job);
             }
         }
-        
+
         _logger.LogInformation("Deleted {DeletedCount} jobs", deletedCount);
 
         return new AffectedEntriesDto { Count = deletedCount };
@@ -561,7 +567,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 e => _logger.LogError(
                     "Error while starting job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Started job {JobId}", dto.JobId);
 
         return Ok();
@@ -587,7 +593,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 e => _logger.LogError(
                     "Error while stopping job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Stopped job {JobId}", dto.JobId);
 
         return Ok();
@@ -613,7 +619,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 e => _logger.LogError(
                     "Error while pausing job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Paused job {JobId}", dto.JobId);
 
         return Ok();
@@ -639,7 +645,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 e => _logger.LogError(
                     "Error while resuming job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Resumed job {JobId}", dto.JobId);
 
         return Ok();
@@ -667,7 +673,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         }
 
         _logger.LogInformation("Aborted job {JobId}", dto.JobId);
-        
+
         return Ok();
     }
 
@@ -695,7 +701,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         [FromServices] IValidator<ChangeBotsDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var job = GetJob(dto.JobId);
         EnsureOwnership(job);
 
@@ -712,13 +718,13 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             default:
                 throw new NotSupportedException();
         }
-        
+
         _logger.LogInformation(
             "Changed the number of bots for job {JobId} to {Bots}", dto.JobId, dto.Bots);
 
         return Ok();
     }
-    
+
     /// <summary>
     /// Get the details of all bots in a multi run job.
     /// </summary>
@@ -727,7 +733,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
     public ActionResult<IEnumerable<BotDetailsDto>> GetBotDetails(int jobId)
     {
         var job = GetJob<MultiRunJob>(jobId);
-        
+
         return job.CurrentBotDatas
             .Take(job.Bots)
             .Where(d => d is not null)
@@ -739,7 +745,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 Info = d.ExecutionInfo
             }).ToList();
     }
-    
+
     /// <summary>
     /// Get the record of a config and wordlist combination. If no record
     /// exists, a fake one with checkpoint 0 will be returned.
@@ -760,7 +766,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 Checkpoint = 0
             };
         }
-        
+
         return _mapper.Map<RecordDto>(record);
     }
 
@@ -830,17 +836,21 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
     private async Task<ProxyCheckJobDto> MapProxyCheckJobDto(ProxyCheckJob job)
     {
-        var checkOutput = job.ProxyOutput switch {
+        var checkOutput = job.ProxyOutput switch
+        {
             DatabaseProxyCheckOutput => "database",
             _ => throw new NotImplementedException()
         };
 
-        TimeStartConditionDto startCondition = job.StartCondition switch {
-            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto {
+        TimeStartConditionDto startCondition = job.StartCondition switch
+        {
+            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<RelativeTimeStartConditionDto>()!,
                 StartAfter = r.StartAfter
             },
-            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto {
+            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<AbsoluteTimeStartConditionDto>()!,
                 StartAt = a.StartAt
             },
@@ -868,7 +878,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             }
         }
 
-        return new ProxyCheckJobDto {
+        return new ProxyCheckJobDto
+        {
             Id = job.Id,
             Name = job.Name,
             StartCondition = startCondition,
@@ -880,7 +891,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             GroupId = pcjJobOptions.GroupId,
             GroupName = groupName,
             CheckOnlyUntested = job.CheckOnlyUntested,
-            Target = new ProxyCheckTargetDto {
+            Target = new ProxyCheckTargetDto
+            {
                 Url = job.Url ?? string.Empty,
                 SuccessKey = job.SuccessKey ?? string.Empty
             },
@@ -899,7 +911,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
     private async Task<MultiRunJobDto> MapMultiRunJobDto(MultiRunJob job)
     {
-        var dataPoolInfo = job.DataPool switch {
+        var dataPoolInfo = job.DataPool switch
+        {
             WordlistDataPool w => $"{w.Wordlist?.Name} (Wordlist)",
             CombinationsDataPool c => $"Combinations of {c.CharSet} with length {c.Length}",
             RangeDataPool r => $"Range from {r.Start} with amount {r.Amount} and step {r.Step} (padding {r.Pad})",
@@ -908,14 +921,16 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             _ => throw new NotImplementedException()
         };
 
-        var proxySources = await Task.WhenAll(job.ProxySources.Select(async s => s switch {
+        var proxySources = await Task.WhenAll(job.ProxySources.Select(async s => s switch
+        {
             GroupProxySource g => $"{await GetProxyGroupName(g.GroupId)} (Group)",
             FileProxySource f => $"{f.FileName} (File)",
             RemoteProxySource r => $"{r.Url} (Remote)",
             _ => throw new NotImplementedException()
         }));
 
-        var hitOutputs = job.HitOutputs.Select(o => o switch {
+        var hitOutputs = job.HitOutputs.Select(o => o switch
+        {
             DatabaseHitOutput => "Database",
             FileSystemHitOutput f => $"{f.BaseDir} (File System)",
             DiscordWebhookHitOutput => "Discord Webhook",
@@ -924,19 +939,23 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             _ => throw new NotImplementedException()
         }).ToList();
 
-        TimeStartConditionDto startCondition = job.StartCondition switch {
-            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto {
+        TimeStartConditionDto startCondition = job.StartCondition switch
+        {
+            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<RelativeTimeStartConditionDto>()!,
                 StartAfter = r.StartAfter
             },
-            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto {
+            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<AbsoluteTimeStartConditionDto>()!,
                 StartAt = a.StartAt
             },
             _ => throw new NotImplementedException()
         };
 
-        return new MultiRunJobDto {
+        return new MultiRunJobDto
+        {
             Id = job.Id,
             Name = job.Name,
             StartCondition = startCondition,
@@ -946,7 +965,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             Status = job.Status,
             Config =
                 job.Config is not null
-                    ? new JobConfigDto {
+                    ? new JobConfigDto
+                    {
                         Id = job.Config.Id,
                         Name = job.Config.Metadata.Name,
                         Author = job.Config.Metadata.Author,
@@ -961,7 +981,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             ProxySources = [.. proxySources],
             HitOutputs = hitOutputs,
             DataStats =
-                new MrjDataStatsDto {
+                new MrjDataStatsDto
+                {
                     Hits = job.DataHits,
                     Custom = job.DataCustom,
                     Fails = job.DataFails,
@@ -974,7 +995,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                     Tested = job.DataTested
                 },
             ProxyStats =
-                new MrjProxyStatsDto {
+                new MrjProxyStatsDto
+                {
                     Total = job.ProxiesTotal, Alive = job.ProxiesAlive, Bad = job.ProxiesBad, Banned = job.ProxiesBanned
                 },
             CPM = job.CPM,
@@ -982,12 +1004,13 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             Elapsed = job.Elapsed,
             Remaining = job.Remaining,
             Progress = job.Progress < 0 ? 0 : job.Progress,
-            Hits = job.Hits.Select(h => new MrjHitDto {
+            Hits = job.Hits.Select(h => new MrjHitDto
+            {
                 Id = h.Id,
                 Date = h.Date,
                 Type = h.Type,
                 Data = h.DataString,
-                Proxy = h.Proxy is not null 
+                Proxy = h.Proxy is not null
                     ? new MrjProxy
                     {
                         Type = h.Proxy.Type,
@@ -1027,7 +1050,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
     }
 
     private static JobType GetJobType(Job job) =>
-        job switch {
+        job switch
+        {
             MultiRunJob => JobType.MultiRun,
             ProxyCheckJob => JobType.ProxyCheck,
             _ => throw new NotImplementedException()

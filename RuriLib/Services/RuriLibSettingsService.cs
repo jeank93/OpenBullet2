@@ -67,7 +67,12 @@ public class RuriLibSettingsService
     /// </summary>
     /// <returns>The built-in and custom status names.</returns>
     public string[] GetStatuses()
-        => ["SUCCESS", "NONE", "FAIL", "RETRY", "BAN", "ERROR",
+        => ["SUCCESS",
+            "NONE",
+            "FAIL",
+            "RETRY",
+            "BAN",
+            "ERROR",
             .. Environment.CustomStatuses.Select(s => s.Name)];
 
     private GlobalSettings CreateGlobalSettings()

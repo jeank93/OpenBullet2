@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -60,7 +60,7 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         [FromServices] IValidator<CreateProxyGroupDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var apiUser = HttpContext.GetApiUser();
 
         var entity = _mapper.Map<ProxyGroupEntity>(dto);
@@ -89,7 +89,7 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         [FromServices] IValidator<UpdateProxyGroupDto> validator)
     {
         await validator.ValidateAndThrowAsync(dto);
-        
+
         var entity = await GetEntityAsync(dto.Id);
 
         EnsureOwnership(entity);

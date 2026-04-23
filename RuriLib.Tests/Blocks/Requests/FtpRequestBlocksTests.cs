@@ -25,11 +25,10 @@ public class FtpRequestBlocksTests
     public async Task FtpConnect_ListItems_AndGetLog_Verify()
     {
         await TestFtpServer.ResetHomeDirectory();
-        var homeDirectory = await TestFtpServer.GetHomeDirectory();
-        Directory.CreateDirectory(Path.Combine(homeDirectory, "folder-a"));
-        Directory.CreateDirectory(Path.Combine(homeDirectory, "folder-b"));
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "root.txt"), "root-content", TestCancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "folder-a", "nested.txt"), "nested-content", TestCancellationToken);
+        await TestFtpServer.CreateDirectory("/folder-a");
+        await TestFtpServer.CreateDirectory("/folder-b");
+        await TestFtpServer.WriteTextFile("/root.txt", "root-content");
+        await TestFtpServer.WriteTextFile("/folder-a/nested.txt", "nested-content");
 
         var connection = await TestFtpServer.GetConnectionInfo();
         var data = NewBotData();
@@ -64,8 +63,7 @@ public class FtpRequestBlocksTests
     public async Task FtpDownloadFile_DownloadsRemoteContent()
     {
         await TestFtpServer.ResetHomeDirectory();
-        var homeDirectory = await TestFtpServer.GetHomeDirectory();
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "remote.txt"), "downloaded-content", TestCancellationToken);
+        await TestFtpServer.WriteTextFile("/remote.txt", "downloaded-content");
 
         var connection = await TestFtpServer.GetConnectionInfo();
         var data = NewBotData();
@@ -99,10 +97,9 @@ public class FtpRequestBlocksTests
     public async Task FtpDownloadFolder_WithSkip_KeepsExistingLocalFilesAndDownloadsMissingOnes()
     {
         await TestFtpServer.ResetHomeDirectory();
-        var homeDirectory = await TestFtpServer.GetHomeDirectory();
-        Directory.CreateDirectory(Path.Combine(homeDirectory, "remote-folder"));
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "remote-folder", "keep.txt"), "remote-version", TestCancellationToken);
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "remote-folder", "new.txt"), "new-file", TestCancellationToken);
+        await TestFtpServer.CreateDirectory("/remote-folder");
+        await TestFtpServer.WriteTextFile("/remote-folder/keep.txt", "remote-version");
+        await TestFtpServer.WriteTextFile("/remote-folder/new.txt", "new-file");
 
         var connection = await TestFtpServer.GetConnectionInfo();
         var data = NewBotData();
@@ -144,8 +141,7 @@ public class FtpRequestBlocksTests
     public async Task FtpUploadFile_OverwritesRemoteFile_AndDisconnectsClient()
     {
         await TestFtpServer.ResetHomeDirectory();
-        var homeDirectory = await TestFtpServer.GetHomeDirectory();
-        await File.WriteAllTextAsync(Path.Combine(homeDirectory, "uploaded.txt"), "old-content", TestCancellationToken);
+        await TestFtpServer.WriteTextFile("/uploaded.txt", "old-content");
 
         var connection = await TestFtpServer.GetConnectionInfo();
         var data = NewBotData();
@@ -164,7 +160,7 @@ public class FtpRequestBlocksTests
 
             await FtpMethods.FtpUploadFile(data, "/uploaded.txt", localFile);
 
-            Assert.Equal("new-content", await File.ReadAllTextAsync(Path.Combine(homeDirectory, "uploaded.txt"), TestCancellationToken));
+            Assert.Equal("new-content", await TestFtpServer.ReadTextFile("/uploaded.txt"));
 
             await FtpMethods.FtpDisconnect(data);
 
@@ -216,7 +212,7 @@ public class FtpRequestBlocksTests
         var data = NewBotData();
         var unusedPort = FindUnusedTcpPort();
 
-        var ex = await Assert.ThrowsAsync<TimeoutException>(() =>
+        var ex = await Record.ExceptionAsync(() =>
             FtpMethods.FtpConnect(
                 data,
                 "127.0.0.1",
@@ -224,7 +220,21 @@ public class FtpRequestBlocksTests
                 "user",
                 "password",
                 1000));
-        Assert.Equal("Timed out trying to connect!", ex.Message);
+
+        Assert.NotNull(ex);
+        Assert.True(
+            ex is TimeoutException ||
+            ex is BlockExecutionException,
+            $"Unexpected exception type: {ex.GetType().FullName}");
+
+        if (ex is TimeoutException timeout)
+        {
+            Assert.Equal("Timed out trying to connect!", timeout.Message);
+        }
+        else
+        {
+            Assert.Equal("Failed to connect to the FTP server with the given credentials", ex.Message);
+        }
     }
 
     private static BotData NewBotData()

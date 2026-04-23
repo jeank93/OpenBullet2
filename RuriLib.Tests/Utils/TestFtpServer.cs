@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -41,26 +42,67 @@ internal static class TestFtpServer
 
     public static async Task ResetHomeDirectory()
     {
-        _ = await GetConnectionInfo();
+        var connection = await GetConnectionInfo();
+        await using var client = await ConnectClient(connection);
+        var entries = await client.GetListing("/", FtpListOption.Recursive).ConfigureAwait(false);
 
-        foreach (var entry in Directory.EnumerateFileSystemEntries(homeDirectory!))
+        foreach (var file in entries.Where(e => e.Type == FtpObjectType.File).OrderByDescending(e => e.FullName.Length))
         {
-            var attributes = File.GetAttributes(entry);
-            if (attributes.HasFlag(FileAttributes.Directory))
+            await client.DeleteFile(file.FullName, TestCancellationToken).ConfigureAwait(false);
+        }
+
+        foreach (var directory in entries.Where(e => e.Type == FtpObjectType.Directory).OrderByDescending(e => e.FullName.Length))
+        {
+            await client.DeleteDirectory(directory.FullName, TestCancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    public static async Task CreateDirectory(string remoteDirectory)
+    {
+        var connection = await GetConnectionInfo();
+        await using var client = await ConnectClient(connection);
+        await client.CreateDirectory(remoteDirectory).ConfigureAwait(false);
+    }
+
+    public static async Task WriteTextFile(string remotePath, string content)
+    {
+        var connection = await GetConnectionInfo();
+        var tempFile = Path.Combine(Path.GetTempPath(), $"ob2-ftp-seed-{Guid.NewGuid():N}.txt");
+
+        try
+        {
+            await File.WriteAllTextAsync(tempFile, content, Encoding.UTF8, TestCancellationToken);
+
+            await using var client = await ConnectClient(connection);
+            await client.UploadFile(tempFile, remotePath, FtpRemoteExists.Overwrite, true, FtpVerify.None, null, TestCancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
             {
-                Directory.Delete(entry, true);
-            }
-            else
-            {
-                File.Delete(entry);
+                File.Delete(tempFile);
             }
         }
     }
 
-    public static async Task<string> GetHomeDirectory()
+    public static async Task<string> ReadTextFile(string remotePath)
     {
-        _ = await GetConnectionInfo();
-        return homeDirectory!;
+        var connection = await GetConnectionInfo();
+        var tempFile = Path.Combine(Path.GetTempPath(), $"ob2-ftp-read-{Guid.NewGuid():N}.txt");
+
+        try
+        {
+            await using var client = await ConnectClient(connection);
+            await client.DownloadFile(tempFile, remotePath, FtpLocalExists.Overwrite, FtpVerify.None, null, TestCancellationToken).ConfigureAwait(false);
+            return await File.ReadAllTextAsync(tempFile, TestCancellationToken);
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                File.Delete(tempFile);
+            }
+        }
     }
 
     private static async Task EnsureInitialized()
@@ -129,17 +171,7 @@ internal static class TestFtpServer
     {
         for (var attempt = 0; attempt < 6; attempt++)
         {
-            await using var client = new AsyncFtpClient(
-                info.Host,
-                new NetworkCredential(info.Username, info.Password),
-                info.Port,
-                new FtpConfig
-                {
-                    ConnectTimeout = 15000,
-                    ReadTimeout = 15000,
-                    DataConnectionConnectTimeout = 15000,
-                    DataConnectionReadTimeout = 15000
-                });
+            await using var client = CreateClient(info);
 
             try
             {
@@ -157,6 +189,26 @@ internal static class TestFtpServer
         }
 
         throw new TimeoutException("Timed out waiting for the local FTP container");
+    }
+
+    private static AsyncFtpClient CreateClient(FtpServerConnectionInfo info)
+        => new(
+            info.Host,
+            new NetworkCredential(info.Username, info.Password),
+            info.Port,
+            new FtpConfig
+            {
+                ConnectTimeout = 15000,
+                ReadTimeout = 15000,
+                DataConnectionConnectTimeout = 15000,
+                DataConnectionReadTimeout = 15000
+            });
+
+    private static async Task<AsyncFtpClient> ConnectClient(FtpServerConnectionInfo info)
+    {
+        var client = CreateClient(info);
+        await client.AutoConnect(TestCancellationToken).ConfigureAwait(false);
+        return client;
     }
 
     private static int FindFreePortRangeStart(int startInclusive, int endExclusive, int count)

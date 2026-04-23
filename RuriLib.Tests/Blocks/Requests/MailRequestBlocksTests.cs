@@ -1,14 +1,21 @@
 using MailKit;
+using FtpMethods = RuriLib.Blocks.Requests.Ftp.Methods;
+using ImapMethods = RuriLib.Blocks.Requests.Imap.Methods;
+using Pop3Methods = RuriLib.Blocks.Requests.Pop3.Methods;
 using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
+using SmtpMethods = RuriLib.Blocks.Requests.Smtp.Methods;
+using SshMethods = RuriLib.Blocks.Requests.Ssh.Methods;
+using TcpMethods = RuriLib.Blocks.Requests.Tcp.Methods;
 using RuriLib.Tests.Utils.Mockup;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using WsMethods = RuriLib.Blocks.Requests.WebSocket.Methods;
 using Xunit;
 
 namespace RuriLib.Tests.Blocks.Requests;
@@ -20,7 +27,7 @@ public class MailRequestBlocksTests
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() => global::RuriLib.Blocks.Requests.Imap.Methods.ImapGetLog(data));
+        var ex = Assert.Throws<BlockExecutionException>(() => ImapMethods.ImapGetLog(data));
 
         Assert.Equal("The IMAP protocol logger is not initialized", ex.Message);
     }
@@ -30,7 +37,7 @@ public class MailRequestBlocksTests
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() => global::RuriLib.Blocks.Requests.Pop3.Methods.Pop3GetLog(data));
+        var ex = Assert.Throws<BlockExecutionException>(() => Pop3Methods.Pop3GetLog(data));
 
         Assert.Equal("The POP3 protocol logger is not initialized", ex.Message);
     }
@@ -40,7 +47,7 @@ public class MailRequestBlocksTests
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() => global::RuriLib.Blocks.Requests.Smtp.Methods.SmtpGetLog(data));
+        var ex = Assert.Throws<BlockExecutionException>(() => SmtpMethods.SmtpGetLog(data));
 
         Assert.Equal("The SMTP protocol logger is not initialized", ex.Message);
     }
@@ -53,9 +60,9 @@ public class MailRequestBlocksTests
         data.SetObject("pop3Logger", CreateLogger("pop3-log"));
         data.SetObject("smtpLogger", CreateLogger("smtp-log"));
 
-        Assert.Equal("imap-log", global::RuriLib.Blocks.Requests.Imap.Methods.ImapGetLog(data));
-        Assert.Equal("pop3-log", global::RuriLib.Blocks.Requests.Pop3.Methods.Pop3GetLog(data));
-        Assert.Equal("smtp-log", global::RuriLib.Blocks.Requests.Smtp.Methods.SmtpGetLog(data));
+        Assert.Equal("imap-log", ImapMethods.ImapGetLog(data));
+        Assert.Equal("pop3-log", Pop3Methods.Pop3GetLog(data));
+        Assert.Equal("smtp-log", SmtpMethods.SmtpGetLog(data));
     }
 
     [Fact]
@@ -64,7 +71,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Imap.Methods.ImapOpenFolder(data, "Inbox"));
+            ImapMethods.ImapOpenFolder(data, "Inbox"));
 
         Assert.Equal("Get the list of folders first!", ex.Message);
     }
@@ -75,7 +82,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Pop3.Methods.Pop3DeleteMail(data, 0));
+            Pop3Methods.Pop3DeleteMail(data, 0));
 
         Assert.Equal("Connect the POP3 client first!", ex.Message);
     }
@@ -86,7 +93,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Smtp.Methods.SmtpSendMail(
+            SmtpMethods.SmtpSendMail(
                 data,
                 "Sender",
                 "sender@example.com",
@@ -105,7 +112,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Ssh.Methods.SshRunCommand(data, "ls"));
+            SshMethods.SshRunCommand(data, "ls"));
 
         Assert.Equal("The SSH client is not initialized", ex.Message);
     }
@@ -116,7 +123,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Tcp.Methods.TcpRead(data));
+            TcpMethods.TcpRead(data));
 
         Assert.Equal("You have to create a connection first!", ex.Message);
     }
@@ -127,7 +134,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.WebSocket.Methods.WsRead(data));
+            WsMethods.WsRead(data));
 
         Assert.Equal("You must open a websocket connection first", ex.Message);
     }
@@ -138,7 +145,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.WebSocket.Methods.WsSend(data, "ping"));
+            WsMethods.WsSend(data, "ping"));
 
         Assert.Equal("You must open a websocket connection first", ex.Message);
     }
@@ -149,7 +156,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpGetLog(data));
+            FtpMethods.FtpGetLog(data));
 
         Assert.Equal("No log available. Make sure to connect to a server first!", ex.Message);
     }
@@ -160,7 +167,7 @@ public class MailRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data));
+            FtpMethods.FtpListItems(data));
 
         Assert.Equal("Connect to a server first!", ex.Message);
     }

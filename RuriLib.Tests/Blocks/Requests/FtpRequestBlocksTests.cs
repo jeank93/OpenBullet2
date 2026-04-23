@@ -1,4 +1,5 @@
 using FluentFTP;
+using FtpMethods = RuriLib.Blocks.Requests.Ftp.Methods;
 using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
@@ -33,7 +34,7 @@ public class FtpRequestBlocksTests
         var connection = await TestFtpServer.GetConnectionInfo();
         var data = NewBotData();
 
-        await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+        await FtpMethods.FtpConnect(
             data,
             connection.Host,
             connection.Port,
@@ -41,11 +42,11 @@ public class FtpRequestBlocksTests
             connection.Password,
             20000);
 
-        var allItems = await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data);
-        var filesOnly = await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File);
-        var foldersOnly = await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.Folder);
-        var recursiveFiles = await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File, recursive: true);
-        var ftpLog = global::RuriLib.Blocks.Requests.Ftp.Methods.FtpGetLog(data);
+        var allItems = await FtpMethods.FtpListItems(data);
+        var filesOnly = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File);
+        var foldersOnly = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.Folder);
+        var recursiveFiles = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File, recursive: true);
+        var ftpLog = FtpMethods.FtpGetLog(data);
 
         Assert.Contains(allItems, item => item.EndsWith("/root.txt", StringComparison.Ordinal));
         Assert.Contains(allItems, item => item.EndsWith("/folder-a", StringComparison.Ordinal));
@@ -72,7 +73,7 @@ public class FtpRequestBlocksTests
 
         try
         {
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+            await FtpMethods.FtpConnect(
                 data,
                 connection.Host,
                 connection.Port,
@@ -80,13 +81,13 @@ public class FtpRequestBlocksTests
                 connection.Password,
                 20000);
 
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDownloadFile(data, "/remote.txt", localFile);
+            await FtpMethods.FtpDownloadFile(data, "/remote.txt", localFile);
 
             Assert.Equal("downloaded-content", await File.ReadAllTextAsync(localFile, TestCancellationToken));
         }
         finally
         {
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDisconnect(data);
+            await FtpMethods.FtpDisconnect(data);
             if (File.Exists(localFile))
             {
                 File.Delete(localFile);
@@ -112,7 +113,7 @@ public class FtpRequestBlocksTests
 
         try
         {
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+            await FtpMethods.FtpConnect(
                 data,
                 connection.Host,
                 connection.Port,
@@ -120,7 +121,7 @@ public class FtpRequestBlocksTests
                 connection.Password,
                 20000);
 
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDownloadFolder(
+            await FtpMethods.FtpDownloadFolder(
                 data,
                 "/remote-folder",
                 localDirectory,
@@ -131,7 +132,7 @@ public class FtpRequestBlocksTests
         }
         finally
         {
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDisconnect(data);
+            await FtpMethods.FtpDisconnect(data);
             if (Directory.Exists(localDirectory))
             {
                 Directory.Delete(localDirectory, true);
@@ -153,7 +154,7 @@ public class FtpRequestBlocksTests
 
         try
         {
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+            await FtpMethods.FtpConnect(
                 data,
                 connection.Host,
                 connection.Port,
@@ -161,11 +162,11 @@ public class FtpRequestBlocksTests
                 connection.Password,
                 20000);
 
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpUploadFile(data, "/uploaded.txt", localFile);
+            await FtpMethods.FtpUploadFile(data, "/uploaded.txt", localFile);
 
             Assert.Equal("new-content", await File.ReadAllTextAsync(Path.Combine(homeDirectory, "uploaded.txt"), TestCancellationToken));
 
-            await global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDisconnect(data);
+            await FtpMethods.FtpDisconnect(data);
 
             var client = data.TryGetObject<AsyncFtpClient>("ftpClient");
             Assert.NotNull(client);
@@ -186,7 +187,7 @@ public class FtpRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpDisconnect(data));
+            FtpMethods.FtpDisconnect(data));
 
         Assert.Equal("Connect to a server first!", ex.Message);
     }
@@ -198,7 +199,7 @@ public class FtpRequestBlocksTests
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<FluentFTP.Exceptions.FtpAuthenticationException>(() =>
-            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+            FtpMethods.FtpConnect(
                 data,
                 connection.Host,
                 connection.Port,
@@ -216,7 +217,7 @@ public class FtpRequestBlocksTests
         var unusedPort = FindUnusedTcpPort();
 
         var ex = await Assert.ThrowsAsync<TimeoutException>(() =>
-            global::RuriLib.Blocks.Requests.Ftp.Methods.FtpConnect(
+            FtpMethods.FtpConnect(
                 data,
                 "127.0.0.1",
                 unusedPort,

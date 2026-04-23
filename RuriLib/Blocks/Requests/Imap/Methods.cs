@@ -320,9 +320,10 @@ public static class Methods
 
         if (openInbox)
         {
-            await client.Inbox.OpenAsync(FolderAccess.ReadWrite, data.CancellationToken).ConfigureAwait(false);
-            SetCurrentFolder(data, client.Inbox);
-            data.Logger.Log($"Opened the inbox, there are {client.Inbox.Count} total messages", LogColors.DarkOrchid);
+            var inbox = client.Inbox ?? throw new BlockExecutionException("The inbox folder is not available");
+            await inbox.OpenAsync(FolderAccess.ReadWrite, data.CancellationToken).ConfigureAwait(false);
+            SetCurrentFolder(data, inbox);
+            data.Logger.Log($"Opened the inbox, there are {inbox.Count} total messages", LogColors.DarkOrchid);
         }
     }
 
@@ -354,11 +355,12 @@ public static class Methods
         data.Logger.LogHeader();
 
         var client = GetAuthenticatedClient(data);
-        await client.Inbox.OpenAsync(FolderAccess.ReadWrite, data.CancellationToken).ConfigureAwait(false);
+        var inbox = client.Inbox ?? throw new BlockExecutionException("The inbox folder is not available");
+        await inbox.OpenAsync(FolderAccess.ReadWrite, data.CancellationToken).ConfigureAwait(false);
 
-        SetCurrentFolder(data, client.Inbox);
+        SetCurrentFolder(data, inbox);
 
-        data.Logger.Log($"Opened the inbox, there are {client.Inbox.Count} total messages", LogColors.DarkOrchid);
+        data.Logger.Log($"Opened the inbox, there are {inbox.Count} total messages", LogColors.DarkOrchid);
     }
 
     /// <summary>

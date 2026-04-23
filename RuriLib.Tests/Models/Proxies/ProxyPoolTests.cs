@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace RuriLib.Tests.Models.Proxies;
 
 public class ProxyPoolTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task RemoveDuplicates_ListWithDuplicates_ReturnDistinct()
     {
@@ -22,7 +25,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync();
+        await pool.ReloadAllAsync(cancellationToken: TestCancellationToken);
         pool.RemoveDuplicates();
         Assert.Single(pool.Proxies);
     }
@@ -37,7 +40,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync();
+        await pool.ReloadAllAsync(cancellationToken: TestCancellationToken);
         Assert.NotNull(pool.GetProxy());
     }
 
@@ -51,7 +54,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync();
+        await pool.ReloadAllAsync(cancellationToken: TestCancellationToken);
         Assert.Null(pool.GetProxy());
     }
 
@@ -65,7 +68,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync();
+        await pool.ReloadAllAsync(cancellationToken: TestCancellationToken);
         Assert.NotNull(pool.GetProxy(true));
     }
 
@@ -79,7 +82,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync();
+        await pool.ReloadAllAsync(cancellationToken: TestCancellationToken);
         Assert.Null(pool.GetProxy(true, 3));
     }
 
@@ -96,7 +99,7 @@ public class ProxyPoolTests
             AllowedTypes = [ProxyType.Socks5]
         });
 
-        await pool.ReloadAllAsync(false);
+        await pool.ReloadAllAsync(false, TestCancellationToken);
 
         var proxies = pool.Proxies.ToArray();
         Assert.Single(proxies);
@@ -110,7 +113,7 @@ public class ProxyPoolTests
 
         using var pool = new ProxyPool([source]);
 
-        await pool.ReloadAllAsync(false);
+        await pool.ReloadAllAsync(false, TestCancellationToken);
         var proxy = pool.GetProxy();
 
         Assert.NotNull(proxy);
@@ -137,12 +140,12 @@ public class ProxyPoolTests
 echo 127.0.0.1:1111
 echo 127.0.0.1:2222
 echo (Socks5)127.0.0.1:3333
-", Encoding.UTF8);
+", Encoding.UTF8, TestCancellationToken);
         using FileProxySource source = new(tmpBatchFilePath);
 
         using var pool = new ProxyPool(new ProxySource[] { source });
 
-        await pool.ReloadAllAsync(false);
+        await pool.ReloadAllAsync(false, TestCancellationToken);
         File.Delete(tmpBatchFilePath);
         Assert.Equal(3, pool.Proxies.Count());
         var proxy = pool.GetProxy();
@@ -179,12 +182,12 @@ echo (Socks5)127.0.0.1:3333
 Write-Output 127.0.0.1:1111
 Write-Output 127.0.0.1:2222
 Write-Output ""(Socks5)127.0.0.1:3333""
-", Encoding.UTF8);
+", Encoding.UTF8, TestCancellationToken);
         using FileProxySource source = new(tmpBatchFilePath);
 
         using var pool = new ProxyPool([source]);
 
-        await pool.ReloadAllAsync(false);
+        await pool.ReloadAllAsync(false, TestCancellationToken);
         File.Delete(tmpBatchFilePath);
         Assert.Equal(3, pool.Proxies.Count());
         var proxy = pool.GetProxy();
@@ -216,12 +219,12 @@ Write-Output ""(Socks5)127.0.0.1:3333""
 echo 127.0.0.1:1111
 echo 127.0.0.1:2222
 echo ""(Socks5)127.0.0.1:3333""
-", Encoding.UTF8);
+", Encoding.UTF8, TestCancellationToken);
         using FileProxySource source = new(tmpBashFilePath);
 
         using var pool = new ProxyPool([source]);
 
-        await pool.ReloadAllAsync(false);
+        await pool.ReloadAllAsync(false, TestCancellationToken);
         File.Delete(tmpBashFilePath);
         Assert.Equal(3, pool.Proxies.Count());
         var proxy = pool.GetProxy();

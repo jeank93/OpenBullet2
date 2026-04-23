@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,6 +13,8 @@ namespace RuriLib.Http.Tests;
 
 public class ProxyClientHandlerTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task SendAsync_Get_Headers()
     {
@@ -65,7 +68,7 @@ public class ProxyClientHandlerTests
 
 
         var response = await RequestAsync(message);
-        var actual = await response.Content.ReadAsStringAsync();
+        var actual = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.Contains(expected, actual);
     }
@@ -108,7 +111,7 @@ public class ProxyClientHandlerTests
         };
 
         var response = await RequestAsync(message);
-        var source = response.Content.ReadAsStringAsync();
+        var source = response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.NotNull(response);
         Assert.NotNull(source);
@@ -124,7 +127,7 @@ public class ProxyClientHandlerTests
         };
 
         var response = await RequestAsync(message);
-        var source = response.Content.ReadAsStringAsync();
+        var source = response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.NotNull(response);
         Assert.NotNull(source);
@@ -171,7 +174,7 @@ public class ProxyClientHandlerTests
         };
 
         using var client = new HttpClient(proxyClientHandler);
-        await client.SendAsync(message);
+        await client.SendAsync(message, TestCancellationToken);
 
         var cookies = cookieContainer.GetCookies(await TestHttpBin.HttpCookieScopeUri());
 
@@ -220,12 +223,12 @@ public class ProxyClientHandlerTests
         proxyClientHandler.CookieContainer = new CookieContainer();
 
         using var client = new HttpClient(proxyClientHandler);
-        return await client.SendAsync(request);
+        return await client.SendAsync(request, TestCancellationToken);
     }
 
     private static async Task<string> GetJsonStringValueAsync(HttpResponseMessage response, string valueName)
     {
-        var source = await response.Content.ReadAsStringAsync();
+        var source = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var obj = JObject.Parse(source);
 
         var result = obj.TryGetValue(valueName, out var token);
@@ -237,7 +240,7 @@ public class ProxyClientHandlerTests
 
     private static async Task<Dictionary<string, string>?> GetJsonDictionaryValueAsync(HttpResponseMessage response, string valueName)
     {
-        var source = await response.Content.ReadAsStringAsync();
+        var source = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var obj = JObject.Parse(source);
 
         var result = obj.TryGetValue(valueName, out var token);

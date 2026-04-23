@@ -3,6 +3,7 @@ using RuriLib.Providers.Emails;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace RuriLib.Tests.Providers.Emails;
 [Collection(nameof(CurrentDirectoryCollection))]
 public class FileEmailDomainRepositoryTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task GetServers_MissingDomain_ReturnsEmptySequence() => await WithCurrentDirectoryAsync(async () =>
                                                                               {
@@ -33,7 +36,7 @@ public class FileEmailDomainRepositoryTests
                                                                                    Assert.Single(servers);
                                                                                    Assert.Equal("imap.example.com", servers[0].Host);
                                                                                    Assert.Equal(993, servers[0].Port);
-                                                                                   Assert.Contains($"example.com:{entry.Host}:{entry.Port}", await File.ReadAllTextAsync(Path.Combine("UserData", "imapdomains.dat")));
+                                                                                   Assert.Contains($"example.com:{entry.Host}:{entry.Port}", await File.ReadAllTextAsync(Path.Combine("UserData", "imapdomains.dat"), TestCancellationToken));
                                                                                });
 
     private static async Task WithCurrentDirectoryAsync(Func<Task> action)

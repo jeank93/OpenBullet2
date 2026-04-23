@@ -10,11 +10,13 @@ namespace RuriLib.Parallelization.Tests;
 
 public class ParallelizerTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     private readonly Func<int, CancellationToken, Task<bool>> _parityCheck
         = (number, _) => Task.FromResult(number % 2 == 0);
         
     private readonly Func<int, CancellationToken, Task<bool>> _longTask
-        = async (_, _) => { await Task.Delay(100); return true; };
+        = async (_, cancellationToken) => { await Task.Delay(100, cancellationToken); return true; };
 
     private const ParallelizerType _type = ParallelizerType.TaskBased;
     private int _progressCount;
@@ -52,7 +54,7 @@ public class ParallelizerTests
             
         await parallelizer.Start();
 
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
 
@@ -76,7 +78,7 @@ public class ParallelizerTests
 
         await parallelizer.Start();
 
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
 
@@ -105,7 +107,7 @@ public class ParallelizerTests
         parallelizer.Error += OnException;
 
         await parallelizer.Start();
-        await Task.Delay(250);
+        await Task.Delay(250, TestCancellationToken);
 
         await parallelizer.Stop();
 
@@ -134,11 +136,11 @@ public class ParallelizerTests
         parallelizer.Error += OnException;
 
         await parallelizer.Start();
-        await Task.Delay(250);
+        await Task.Delay(250, TestCancellationToken);
 
         await parallelizer.Abort();
 
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
 
@@ -165,13 +167,13 @@ public class ParallelizerTests
         await parallelizer.Start();
 
         // Wait for 2 rounds to fully complete
-        await Task.Delay(250);
+        await Task.Delay(250, TestCancellationToken);
 
         // Release 3 more slots
         await parallelizer.ChangeDegreeOfParallelism(4);
 
         // Wait until finished
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
         stopwatch.Stop();
@@ -198,13 +200,13 @@ public class ParallelizerTests
         await parallelizer.Start();
 
         // Wait for 1 round to complete (a.k.a 3 completed since there are 3 concurrent threads)
-        await Task.Delay(150);
+        await Task.Delay(150, TestCancellationToken);
 
         // Remove 2 slots
         await parallelizer.ChangeDegreeOfParallelism(1);
 
         // Wait until finished
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
         stopwatch.Stop();
@@ -234,17 +236,17 @@ public class ParallelizerTests
         parallelizer.Error += OnException;
 
         await parallelizer.Start();
-        await Task.Delay(150);
+        await Task.Delay(150, TestCancellationToken);
         await parallelizer.Pause();
 
         // Make sure it's actually paused and nothing is going on
         var progress = _progressCount;
-        await Task.Delay(1000);
+        await Task.Delay(1000, TestCancellationToken);
         Assert.Equal(progress, _progressCount);
 
         await parallelizer.Resume();
 
-        var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
 
@@ -266,11 +268,11 @@ public class ParallelizerTests
             skip: 0);
 
         await parallelizer.Start();
-        await Task.Delay(150);
+        await Task.Delay(150, TestCancellationToken);
         await parallelizer.Pause();
 
         var elapsed = parallelizer.Elapsed;
-        await Task.Delay(1000);
+        await Task.Delay(1000, TestCancellationToken);
         Assert.Equal(elapsed, parallelizer.Elapsed);
 
         await parallelizer.Abort();

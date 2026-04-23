@@ -10,6 +10,8 @@ namespace RuriLib.Tests.Utils;
 
 internal static class TestHttpBin
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     private const ushort ContainerPort = 80;
     private const string ContainerImage = "kennethreitz/httpbin:latest";
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
@@ -37,7 +39,7 @@ internal static class TestHttpBin
             return;
         }
 
-        await SyncLock.WaitAsync();
+        await SyncLock.WaitAsync(TestCancellationToken);
         try
         {
             if (baseUrl is not null || skipReason is not null)
@@ -87,7 +89,7 @@ internal static class TestHttpBin
         {
             try
             {
-                using var response = await httpClient.GetAsync($"{candidateBaseUrl}/anything");
+                using var response = await httpClient.GetAsync($"{candidateBaseUrl}/anything", TestCancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     return;
@@ -97,7 +99,7 @@ internal static class TestHttpBin
             {
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1), TestCancellationToken);
         }
 
         throw new TimeoutException("Timed out waiting for the local httpbin container");

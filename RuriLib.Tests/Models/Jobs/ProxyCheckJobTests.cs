@@ -3,6 +3,7 @@ using RuriLib.Models.Proxies;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +11,8 @@ namespace RuriLib.Tests.Models.Jobs;
 
 public class ProxyCheckJobTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public void Defaults_AreSafe()
     {
@@ -30,7 +33,7 @@ public class ProxyCheckJobTests
         var job = CreateJob();
         job.ProxyOutput = new NullProxyCheckOutput();
 
-        var exception = await Assert.ThrowsAsync<NullReferenceException>(() => job.Start());
+        var exception = await Assert.ThrowsAsync<NullReferenceException>(() => job.Start(TestCancellationToken));
 
         Assert.Equal("The proxy list cannot be null", exception.Message);
     }
@@ -41,7 +44,7 @@ public class ProxyCheckJobTests
         var job = CreateJob();
         job.Proxies = new List<Proxy>();
 
-        var exception = await Assert.ThrowsAsync<NullReferenceException>(() => job.Start());
+        var exception = await Assert.ThrowsAsync<NullReferenceException>(() => job.Start(TestCancellationToken));
 
         Assert.Equal("The proxy check output cannot be null", exception.Message);
     }

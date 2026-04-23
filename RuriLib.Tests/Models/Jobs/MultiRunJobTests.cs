@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,6 +14,8 @@ namespace RuriLib.Tests.Models.Jobs;
 
 public class MultiRunJobTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public void Defaults_AreSafe()
     {
@@ -61,7 +64,7 @@ public class MultiRunJobTests
         };
         job.DataPool = new TestDataPool();
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.Start());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.Start(TestCancellationToken));
 
         Assert.Equal("The Providers cannot be null", exception.Message);
     }
@@ -71,7 +74,7 @@ public class MultiRunJobTests
     {
         var job = CreateJob();
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.FetchProxiesFromSources());
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => job.FetchProxiesFromSources(TestCancellationToken));
 
         Assert.Equal("The job has not been initialized yet", exception.Message);
     }
@@ -94,7 +97,7 @@ public class MultiRunJobTests
             DataPool = new TestDataPool(["data"], settings.Environment.WordlistTypes[0].Name)
         };
 
-        await job.Start();
+        await job.Start(TestCancellationToken);
 
         Assert.Equal(3, job.CurrentBotDatas.Length);
     }

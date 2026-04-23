@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace RuriLib.Tests.Functions.Interop;
 
 public class NodeJsTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     private static string BuildScript(string innerScript, string[] inputs, string[] outputs) => @$"module.exports = (callback, {MakeInputs(inputs)}) => {{
 {innerScript}
 var noderesult = {{
@@ -29,7 +32,7 @@ callback(null, noderesult);
     public async Task InvokeNode_IntegerSum_ReturnInteger()
     {
         var script = BuildScript("var result = x + y;", ["x", "y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3, 5]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3, 5], TestCancellationToken);
         Assert.Equal(8, result.GetProperty("result").GetInt32());
     }
 
@@ -37,7 +40,7 @@ callback(null, noderesult);
     public async Task InvokeNode_FloatSum_ReturnFloat()
     {
         var script = BuildScript("var result = x + y;", ["x", "y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3.5f, 5.2f]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3.5f, 5.2f], TestCancellationToken);
         Assert.Equal(8.7f, result.GetProperty("result").GetSingle());
     }
 
@@ -45,7 +48,7 @@ callback(null, noderesult);
     public async Task InvokeNode_BoolAnd_ReturnBool()
     {
         var script = BuildScript("var result = x && y;", ["x", "y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [true, false]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [true, false], TestCancellationToken);
         Assert.False(result.GetProperty("result").GetBoolean());
     }
 
@@ -53,7 +56,7 @@ callback(null, noderesult);
     public async Task InvokeNode_StringChain_ReturnString()
     {
         var script = BuildScript("var result = x + y;", ["x", "y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["my", "string"]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["my", "string"], TestCancellationToken);
         Assert.Equal("mystring", result.GetProperty("result").GetString());
     }
 
@@ -61,7 +64,7 @@ callback(null, noderesult);
     public async Task InvokeNode_OutputList_ReturnList()
     {
         var script = BuildScript("var result = [ x, y ];", ["x", "y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["a", "b"]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["a", "b"], TestCancellationToken);
         var outputList = result.GetProperty("result").EnumerateArray().Select(e => e.GetString()).ToList();
         Assert.Equal(2, outputList.Count);
         Assert.Equal("a", outputList[0]);
@@ -72,7 +75,7 @@ callback(null, noderesult);
     public async Task InvokeNode_OutputDictionary_ReturnsDictionary()
     {
         var script = BuildScript("var result = { x: 'a', y };", ["y"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["b"]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, ["b"], TestCancellationToken);
         var outputDict = result.GetProperty("result").EnumerateObject().ToDictionary(e => e.Name, e => e.Value.GetString());
         Assert.Equal(2, outputDict.Count);
         Assert.Equal("a", outputDict["x"]);
@@ -84,7 +87,7 @@ callback(null, noderesult);
     {
         List<string> inputList = ["a", "b"];
         var script = BuildScript("var result = x[0];", ["x"], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [inputList]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [inputList], TestCancellationToken);
         Assert.Equal("a", result.GetProperty("result").GetString());
     }
 
@@ -92,7 +95,7 @@ callback(null, noderesult);
     public async Task InvokeNode_NoInputs_ReturnString()
     {
         var script = BuildScript("var result = 'hello';", [], ["result"]);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, []);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [], TestCancellationToken);
         Assert.Equal("hello", result.GetProperty("result").GetString());
     }
 
@@ -100,7 +103,7 @@ callback(null, noderesult);
     public async Task InvokeNode_NoOutputs_ReturnNothing()
     {
         var script = BuildScript("var result = x + y;", ["x", "y"], []);
-        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3, 5]);
+        var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3, 5], TestCancellationToken);
         Assert.Throws<KeyNotFoundException>(() => result.GetProperty("result"));
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -13,6 +14,8 @@ namespace RuriLib.Http.Tests;
 
 public class RLHttpClientTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task SendAsync_Get_Headers()
     {
@@ -67,7 +70,7 @@ public class RLHttpClientTests
 
         var response = await RequestAsync(message);
         Assert.NotNull(response.Content);
-        var actual = await response.Content.ReadAsStringAsync();
+        var actual = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.Contains(expected, actual);
     }
@@ -111,7 +114,7 @@ public class RLHttpClientTests
 
         var response = await RequestAsync(message);
         Assert.NotNull(response.Content);
-        var source = response.Content.ReadAsStringAsync();
+        var source = response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.NotNull(response);
         Assert.NotNull(source);
@@ -128,7 +131,7 @@ public class RLHttpClientTests
 
         var response = await RequestAsync(message);
         Assert.NotNull(response.Content);
-        var source = response.Content.ReadAsStringAsync();
+        var source = response.Content.ReadAsStringAsync(TestCancellationToken);
 
         Assert.NotNull(response);
         Assert.NotNull(source);
@@ -173,7 +176,7 @@ public class RLHttpClientTests
         var proxyClient = new NoProxyClient(settings);
         using var client = new RLHttpClient(proxyClient);
             
-        await client.SendAsync(message);
+        await client.SendAsync(message, TestCancellationToken);
 
         Assert.Single(cookies);
         Assert.Equal(value, cookies[name]);
@@ -249,13 +252,13 @@ public class RLHttpClientTests
         var proxyClient = new NoProxyClient(settings);
             
         using var client = new RLHttpClient(proxyClient);
-        return await client.SendAsync(request);
+        return await client.SendAsync(request, TestCancellationToken);
     }
 
     private static async Task<T?> GetJsonValueAsync<T>(HttpResponse response, string valueName)
     {
         Assert.NotNull(response.Content);
-        var source = await response.Content.ReadAsStringAsync();
+        var source = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var obj = JObject.Parse(source);
 
         var result = obj.TryGetValue(valueName, out var token);
@@ -268,7 +271,7 @@ public class RLHttpClientTests
     private static async Task<Dictionary<string, string>?> GetJsonDictionaryValueAsync(HttpResponse response, string valueName)
     {
         Assert.NotNull(response.Content);
-        var source = await response.Content.ReadAsStringAsync();
+        var source = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var obj = JObject.Parse(source);
 
         var result = obj.TryGetValue(valueName, out var token);

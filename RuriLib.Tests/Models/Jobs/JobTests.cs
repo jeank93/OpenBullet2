@@ -11,6 +11,8 @@ namespace RuriLib.Tests.Models.Jobs;
 
 public class JobTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     private static readonly global::RuriLib.Services.PluginRepository PluginRepository = CreatePluginRepository();
 
     [Fact]
@@ -29,7 +31,7 @@ public class JobTests
         var job = CreateJob();
         job.StartCondition = new ImmediateStartCondition();
 
-        await job.Start();
+        await job.Start(TestCancellationToken);
 
         Assert.True(job.Elapsed >= TimeSpan.Zero);
     }

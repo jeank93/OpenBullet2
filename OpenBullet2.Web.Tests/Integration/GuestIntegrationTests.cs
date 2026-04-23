@@ -4,7 +4,7 @@ using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Web.Dtos.Guest;
 using OpenBullet2.Web.Exceptions;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

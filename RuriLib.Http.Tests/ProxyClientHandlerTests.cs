@@ -12,7 +12,7 @@ namespace RuriLib.Http.Tests;
 
 public class ProxyClientHandlerTests
 {
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Headers()
     {
         const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36";
@@ -32,7 +32,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(userAgent, userAgentActual);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Query()
     {
         const string key = "key";
@@ -52,7 +52,7 @@ public class ProxyClientHandlerTests
         Assert.True(actual.ContainsValue(value));
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_UTF8()
     {
         const string expected = "∮";
@@ -70,7 +70,7 @@ public class ProxyClientHandlerTests
         Assert.Contains(expected, actual);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_HTML()
     {
         const long expectedLength = 3741;
@@ -98,7 +98,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(charSet, headers.ContentType.CharSet);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Delay()
     {
         var message = new HttpRequestMessage
@@ -114,7 +114,7 @@ public class ProxyClientHandlerTests
         Assert.NotNull(source);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Stream()
     {
         var message = new HttpRequestMessage
@@ -130,7 +130,7 @@ public class ProxyClientHandlerTests
         Assert.NotNull(source);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Gzip()
     {
         const string expected = "gzip, deflate";
@@ -150,7 +150,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(expected, actual["Accept-Encoding"]);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Cookies()
     {
         const string name = "name";
@@ -182,7 +182,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(value, cookie.Value);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_StatusCode()
     {
         const string code = "404";
@@ -200,7 +200,7 @@ public class ProxyClientHandlerTests
         Assert.Equal(expected, response.StatusCode.ToString());
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_ExplicitHostHeader()
     {
         var message = new HttpRequestMessage(HttpMethod.Get, await TestHttpBin.BuildHttpUri("headers"));

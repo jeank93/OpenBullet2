@@ -9,7 +9,7 @@ using OpenBullet2.Web.Services;
 using OpenBullet2.Web.Tests.Extensions;
 using RuriLib.Models.Settings;
 using RuriLib.Services;
-using Xunit.Abstractions;
+using Xunit;
 using GeneralSettings = RuriLib.Models.Settings.GeneralSettings;
 
 namespace OpenBullet2.Web.Tests.Integration;

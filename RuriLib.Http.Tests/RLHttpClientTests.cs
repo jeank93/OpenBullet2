@@ -13,7 +13,7 @@ namespace RuriLib.Http.Tests;
 
 public class RLHttpClientTests
 {
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Headers()
     {
         const string userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36";
@@ -34,7 +34,7 @@ public class RLHttpClientTests
         Assert.Equal(userAgent, userAgentActual);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Query()
     {
         const string key = "key";
@@ -54,7 +54,7 @@ public class RLHttpClientTests
         Assert.True(actual.ContainsValue(value));
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_UTF8()
     {
         const string expected = "∮";
@@ -72,7 +72,7 @@ public class RLHttpClientTests
         Assert.Contains(expected, actual);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_HTML()
     {
         const long expectedLength = 3741;
@@ -100,7 +100,7 @@ public class RLHttpClientTests
         Assert.Equal(charSet, headers.ContentType.CharSet);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Delay()
     {
         var message = new HttpRequest
@@ -117,7 +117,7 @@ public class RLHttpClientTests
         Assert.NotNull(source);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Stream()
     {
         var message = new HttpRequest
@@ -134,7 +134,7 @@ public class RLHttpClientTests
         Assert.NotNull(source);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Gzip()
     {
         const string expected = "gzip, deflate";
@@ -154,7 +154,7 @@ public class RLHttpClientTests
         Assert.Equal(expected, actual["Accept-Encoding"]);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_Cookies()
     {
         const string name = "name";
@@ -179,7 +179,7 @@ public class RLHttpClientTests
         Assert.Equal(value, cookies[name]);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_StatusCode()
     {
         const string code = "404";
@@ -197,7 +197,7 @@ public class RLHttpClientTests
         Assert.Equal(expected, response.StatusCode.ToString());
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Get_ExplicitHostHeader()
     {
         var message = new HttpRequest
@@ -213,7 +213,7 @@ public class RLHttpClientTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_GZip_Decompress()
     {
         var message = new HttpRequest
@@ -228,7 +228,7 @@ public class RLHttpClientTests
         Assert.True(actual);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task SendAsync_Brotli_Decompress()
     {
         var message = new HttpRequest

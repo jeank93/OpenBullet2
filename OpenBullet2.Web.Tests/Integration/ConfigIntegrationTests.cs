@@ -18,7 +18,7 @@ using RuriLib.Models.Blocks;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Configs.Settings;
 using RuriLib.Services;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

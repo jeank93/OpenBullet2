@@ -5,7 +5,7 @@ using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Dtos.User;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

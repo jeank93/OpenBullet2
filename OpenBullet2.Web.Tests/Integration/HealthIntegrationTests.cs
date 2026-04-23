@@ -1,4 +1,4 @@
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

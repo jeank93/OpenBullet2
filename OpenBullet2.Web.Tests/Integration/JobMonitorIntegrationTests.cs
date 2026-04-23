@@ -14,7 +14,7 @@ using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.Monitor;
 using RuriLib.Models.Jobs.Monitor.Actions;
 using RuriLib.Models.Jobs.Monitor.Triggers;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

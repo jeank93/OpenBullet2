@@ -1,6 +1,6 @@
 ﻿using OpenBullet2.Web.Dtos.Plugin;
 using RuriLib.Services;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

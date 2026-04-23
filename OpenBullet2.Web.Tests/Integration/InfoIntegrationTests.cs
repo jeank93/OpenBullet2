@@ -7,7 +7,7 @@ using OpenBullet2.Web.Dtos.Info;
 using OpenBullet2.Web.Interfaces;
 using RuriLib.Models.Configs;
 using RuriLib.Services;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

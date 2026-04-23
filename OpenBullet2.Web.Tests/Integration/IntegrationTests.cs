@@ -10,7 +10,7 @@ using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Models.Errors;
 using OpenBullet2.Web.Tests.Utils;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

@@ -7,7 +7,7 @@ using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Dtos.ProxyGroup;
 using OpenBullet2.Web.Exceptions;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

@@ -8,7 +8,7 @@ using OpenBullet2.Web.Dtos.Wordlist;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Tests.Extensions;
 using RuriLib.Extensions;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

@@ -35,7 +35,7 @@ public class HttpTests
         null,
         false);
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestStandard_Get_Verify(HttpLibrary library)
@@ -77,7 +77,7 @@ public class HttpTests
         Assert.Equal(expectedUri.AbsolutePath, actualUri.AbsolutePath);
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestStandard_Post_Verify(HttpLibrary library)
@@ -103,7 +103,7 @@ public class HttpTests
         Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestRaw_Post_Verify(HttpLibrary library)
@@ -129,7 +129,7 @@ public class HttpTests
         Assert.Equal("application/x-www-form-urlencoded", response.Headers["Content-Type"]);
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestBasicAuth_Normal_Verify(HttpLibrary library)
@@ -155,7 +155,7 @@ public class HttpTests
             response.Headers["Authorization"]);
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]
     public async Task HttpRequestMultipart_Post_Verify(HttpLibrary library)

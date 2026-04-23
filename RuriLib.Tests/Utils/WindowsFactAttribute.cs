@@ -3,9 +3,10 @@ using Xunit;
 
 namespace RuriLib.Tests.Utils;
 
-public sealed class WindowsFactAttribute : SkippableFactAttribute
+public sealed class WindowsFactAttribute : FactAttribute
 {
-    public WindowsFactAttribute()
+    public WindowsFactAttribute(string? sourceFilePath = null, int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         if (!OperatingSystem.IsWindows())
         {

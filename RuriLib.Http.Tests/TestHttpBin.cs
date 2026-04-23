@@ -32,7 +32,7 @@ internal static class TestHttpBin
     private static async Task<string> GetBaseUrl()
     {
         await EnsureInitialized();
-        Skip.If(skipReason is not null, skipReason);
+        Assert.SkipWhen(skipReason is not null, skipReason!);
         return baseUrl!;
     }
 

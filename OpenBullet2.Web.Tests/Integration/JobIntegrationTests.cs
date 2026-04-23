@@ -26,7 +26,7 @@ using RuriLib.Models.Hits;
 using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.StartConditions;
 using RuriLib.Services;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace OpenBullet2.Web.Tests.Integration;
 

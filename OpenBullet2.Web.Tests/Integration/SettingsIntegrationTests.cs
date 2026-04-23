@@ -61,7 +61,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -123,7 +123,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -170,7 +170,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -274,7 +274,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -308,7 +308,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Act
         var response = await client.PostAsync(
-            "/api/v1/settings/theme", content);
+            "/api/v1/settings/theme", content, TestCancellationToken);
 
         // Assert
         response.EnsureSuccessStatusCode();
@@ -336,14 +336,14 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
 
         // Act
         var response = await client.PostAsync(
-            "/api/v1/settings/theme", content);
+            "/api/v1/settings/theme", content, TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -379,7 +379,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -401,7 +401,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         Directory.CreateDirectory(Path.Combine(UserDataFolder, "Themes"));
         var filePath = Path.Combine(UserDataFolder, "Themes", "test.css");
-        await File.WriteAllTextAsync(filePath, ".test { color: red; }");
+        await File.WriteAllTextAsync(filePath, ".test { color: red; }", TestCancellationToken);
 
         // Anyone can call this endpoint, so check if it works
         // for anonymous users as well
@@ -413,11 +413,11 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
             name = "test"
         };
         var response = await client.GetAsync(
-            "/api/v1/settings/theme".ToUri(queryParams));
+            "/api/v1/settings/theme".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestCancellationToken);
         Assert.Equal(".test { color: red; }", content);
     }
 
@@ -471,3 +471,4 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content!.ErrorCode);
     }
 }
+

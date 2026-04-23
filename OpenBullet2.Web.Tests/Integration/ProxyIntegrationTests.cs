@@ -48,7 +48,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             });
         dbContext.Proxies.AddRange(adminProxies);
         dbContext.Proxies.AddRange(guestProxies);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new ProxyFiltersDto
@@ -111,7 +111,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Proxies.AddRange(adminProxies);
         dbContext.Proxies.AddRange(guestProxies);
         dbContext.Proxies.AddRange(guest2Proxies);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -165,7 +165,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             });
         dbContext.Proxies.AddRange(proxies);
         dbContext.Proxies.AddRange(proxies2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new ProxyFiltersDto
@@ -197,7 +197,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var group = new ProxyGroupEntity { Name = "group" };
         dbContext.ProxyGroups.Add(group);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new AddProxiesFromListDto
@@ -243,7 +243,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var group = new ProxyGroupEntity { Name = "group" };
         dbContext.ProxyGroups.Add(group);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new AddProxiesFromRemoteDto
@@ -290,7 +290,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             });
         dbContext.Proxies.AddRange(proxies);
         dbContext.Proxies.AddRange(proxies2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new MoveProxiesDto
@@ -344,7 +344,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
                 Group = adminGroup
             });
         dbContext.Proxies.AddRange(proxies);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -383,7 +383,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
                 Group = guestGroup
             });
         dbContext.Proxies.AddRange(proxies);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -432,7 +432,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             });
         dbContext.Proxies.AddRange(proxies);
         dbContext.Proxies.AddRange(proxies2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new ProxyFiltersDto
@@ -445,11 +445,11 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             Status = ProxyWorkingStatus.NotWorking
         };
         var response = await client.GetAsync(
-            "/api/v1/proxy/download/many".ToUri(filters));
+            "/api/v1/proxy/download/many".ToUri(filters), TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(1000 / 8, lines.Length);
         Assert.All(lines, l => Assert.Contains("loc", l));
@@ -477,7 +477,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
                 Group = group
             });
         dbContext.Proxies.AddRange(proxies);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new ProxyFiltersDto
@@ -517,7 +517,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             new ProxyEntity { Ping = 3000, Group = group },
             new ProxyEntity { Ping = 4000, Group = group }
         );
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -555,7 +555,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
             new ProxyEntity { Ping = 3000, Group = adminGroup },
             new ProxyEntity { Ping = 4000, Group = adminGroup }
         );
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -575,3 +575,4 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(ErrorCode.ProxyGroupNotFound, result.Error.Content!.ErrorCode);
     }
 }
+

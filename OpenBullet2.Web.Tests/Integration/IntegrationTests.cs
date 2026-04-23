@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Threading;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -17,6 +18,8 @@ namespace OpenBullet2.Web.Tests.Integration;
 [Collection("IntegrationTests")]
 public class IntegrationTests : IDisposable
 {
+    protected static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     private readonly IServiceScope _serviceScope;
     private readonly ITestOutputHelper _testOutputHelper;
 
@@ -87,8 +90,8 @@ public class IntegrationTests : IDisposable
             : JsonContent.Create(dto, MediaTypeHeaderValue.Parse("application/json"), JsonSerializerOptions);
 
         var request = new HttpRequestMessage(method, url) { Content = json };
-        var response = await client.SendAsync(request);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        var response = await client.SendAsync(request, TestCancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -123,8 +126,8 @@ public class IntegrationTests : IDisposable
             : JsonContent.Create(dto, MediaTypeHeaderValue.Parse("application/json"), JsonSerializerOptions);
 
         var request = new HttpRequestMessage(method, url) { Content = json };
-        var response = await client.SendAsync(request);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        var response = await client.SendAsync(request, TestCancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(TestCancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {

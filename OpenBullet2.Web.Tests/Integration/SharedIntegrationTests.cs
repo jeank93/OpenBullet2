@@ -93,7 +93,7 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -145,7 +145,7 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var dto = new EndpointDto
         {
             Route = "test",
@@ -323,7 +323,7 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         RequireLogin();
 
         // Act
-        var result = await client.GetAsync("/api/v1/shared/configs/test");
+        var result = await client.GetAsync("/api/v1/shared/configs/test", TestCancellationToken);
 
         // Assert
         Assert.True(result.IsSuccessStatusCode);
@@ -365,9 +365,10 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         client.DefaultRequestHeaders.Add("Api-Key", "invalid");
 
         // Act
-        var result = await client.GetAsync("/api/v1/shared/configs/test");
+        var result = await client.GetAsync("/api/v1/shared/configs/test", TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, result.StatusCode);
     }
 }
+

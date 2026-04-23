@@ -88,7 +88,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 2;
@@ -188,7 +188,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 3;
@@ -277,7 +277,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 3;
@@ -372,7 +372,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 2;
@@ -408,7 +408,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 2;
@@ -459,7 +459,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = pcJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -492,7 +492,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var pcJob = CreateProxyCheckJob();
         pcJob.Id = 1;
         pcJob.Name = "Test PCJ";
@@ -500,7 +500,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = pcJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -551,7 +551,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -611,7 +611,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var jobEntity = CreateMultiRunJobEntity(mrJob, jobOptions);
         jobEntity.Id = mrJob.Id;
         db.Jobs.Add(jobEntity);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -664,7 +664,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -684,7 +684,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -737,7 +737,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -790,7 +790,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var db = GetRequiredService<ApplicationDbContext>();
         db.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -843,7 +843,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var pcJob = CreateProxyCheckJob();
         pcJob.Id = 1;
         pcJob.Name = "Test PCJ";
@@ -863,7 +863,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = pcJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -916,7 +916,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1007,7 +1007,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1100,7 +1100,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1154,7 +1154,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.Add(jobEntity);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var configRepository = GetRequiredService<IConfigRepository>();
         var config = new Config
@@ -1219,7 +1219,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.Add(jobEntity);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var configRepository = GetRequiredService<IConfigRepository>();
         var config = new Config
@@ -1277,7 +1277,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -1285,7 +1285,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1361,7 +1361,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1434,7 +1434,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Jobs.Add(jobEntity);
         var jobManager = GetRequiredService<JobManagerService>();
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new UpdateProxyCheckJobDto
@@ -1487,7 +1487,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Jobs.Add(jobEntity);
         var jobManager = GetRequiredService<JobManagerService>();
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new UpdateProxyCheckJobDto
@@ -1532,7 +1532,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var pcJob = CreateProxyCheckJob();
         pcJob.Id = 1;
         pcJob.Name = "Test PCJ";
@@ -1541,7 +1541,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Jobs.Add(jobEntity);
         var jobManager = GetRequiredService<JobManagerService>();
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1599,7 +1599,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Jobs.Add(jobEntity);
         var jobManager = GetRequiredService<JobManagerService>();
         jobManager.AddJob(pcJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1654,7 +1654,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var customInputs = new List<CustomInput>()
         {
@@ -1725,7 +1725,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -1733,7 +1733,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1772,7 +1772,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1851,7 +1851,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var dto = new CustomInputsDto
@@ -1883,7 +1883,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -1891,7 +1891,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1936,7 +1936,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1976,7 +1976,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.Add(jobEntity);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -2004,7 +2004,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -2012,7 +2012,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Id = mrJob.Id;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -2055,7 +2055,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity.Owner = guest;
         dbContext.Jobs.Add(jobEntity);
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -2100,7 +2100,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.AddRange(jobEntity1, jobEntity2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var response = await DeleteJsonAsync<AffectedEntriesDto>(
@@ -2140,7 +2140,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Jobs.AddRange(jobEntity1, jobEntity2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var response = await DeleteJsonAsync<AffectedEntriesDto>(
@@ -2186,7 +2186,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         jobEntity2.Id = mrJob2.Id;
 
         dbContext.Jobs.AddRange(jobEntity1, jobEntity2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -2250,7 +2250,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -2322,7 +2322,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var mrJob = CreateMultiRunJob();
         mrJob.Name = "Test MRJ";
         mrJob.Id = 1;
@@ -2364,7 +2364,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         mrJob.OwnerId = guest.Id;
         mrJob.Bots = 10;
         jobManager.AddJob(mrJob);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -2457,3 +2457,4 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         };
     }
 }
+

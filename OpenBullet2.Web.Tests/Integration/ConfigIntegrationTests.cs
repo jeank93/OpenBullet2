@@ -213,7 +213,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var config = new Config { Id = Guid.NewGuid().ToString() };
         configService.Configs.Add(config);
 
@@ -287,7 +287,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var configRepository = GetRequiredService<IConfigRepository>();
         await AddTestPluginAsync();
@@ -372,7 +372,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var config = new Config
         {
@@ -449,7 +449,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var config = new Config
         {
@@ -607,7 +607,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var config = new Config
         {
@@ -809,7 +809,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -871,7 +871,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var configRepository = GetRequiredService<IConfigRepository>();
         var config = new Config
@@ -1009,7 +1009,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var config = new Config
         {
@@ -1120,7 +1120,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var config = new Config
         {
@@ -1202,7 +1202,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var configService = GetRequiredService<ConfigService>();
         var configRepository = GetRequiredService<IConfigRepository>();
         var config1 = new Config
@@ -1325,7 +1325,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1397,7 +1397,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1470,7 +1470,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1535,7 +1535,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1598,7 +1598,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         await AddTestPluginAsync();
 
         RequireLogin();
@@ -1657,7 +1657,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         await AddTestPluginAsync();
 
         RequireLogin();
@@ -1730,7 +1730,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1780,7 +1780,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1864,7 +1864,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -1893,3 +1893,4 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         pluginRepo.AddPlugin(fs);
     }
 }
+

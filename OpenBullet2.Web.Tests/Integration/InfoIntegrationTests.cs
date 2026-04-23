@@ -76,7 +76,7 @@ public class InfoIntegrationTests(ITestOutputHelper testOutputHelper)
         // Arrange
         using var client = Factory.CreateClient();
         var updateService = GetRequiredService<IUpdateService>();
-        var currentVersion = new Version(await File.ReadAllTextAsync("version.txt"));
+        var currentVersion = new Version(await File.ReadAllTextAsync("version.txt", TestCancellationToken));
 
         // Act
         var result = await GetJsonAsync<UpdateInfoDto>(client, "/api/v1/info/update");
@@ -136,7 +136,7 @@ public class InfoIntegrationTests(ITestOutputHelper testOutputHelper)
         await using var fs = file.OpenRead();
         pluginRepo.AddPlugin(fs);
 
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await GetJsonAsync<CollectionInfoDto>(client, "/api/v1/info/collection");
@@ -162,7 +162,7 @@ public class InfoIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var dbContext = GetRequiredService<ApplicationDbContext>();
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Create an admin job and a guest job
         var jobManager = GetRequiredService<JobManagerService>();
@@ -221,7 +221,7 @@ public class InfoIntegrationTests(ITestOutputHelper testOutputHelper)
         await using var fs = file.OpenRead();
         pluginRepo.AddPlugin(fs);
 
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -242,3 +242,4 @@ public class InfoIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, info.PluginsCount);
     }
 }
+

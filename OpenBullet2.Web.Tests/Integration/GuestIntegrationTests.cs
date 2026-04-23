@@ -36,7 +36,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        var guest = await repo.GetAsync(result.Value.Id);
+        var guest = await repo.GetAsync(result.Value.Id, TestCancellationToken);
         Assert.NotNull(guest);
         Assert.Equal("guest", guest.Username);
         Assert.Equal(dto.AccessExpiration, guest.AccessExpiration);
@@ -51,7 +51,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new CreateGuestDto
         {
@@ -148,8 +148,8 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        var updatedGuest = await repo.GetAsync(result.Value.Id);
-        await dbContext.Entry(guest).ReloadAsync();
+        var updatedGuest = await repo.GetAsync(result.Value.Id, TestCancellationToken);
+        await dbContext.Entry(guest).ReloadAsync(TestCancellationToken);
         Assert.NotNull(updatedGuest);
         Assert.Equal(dto.AccessExpiration, updatedGuest.AccessExpiration);
         Assert.True((updatedGuest.AllowedAddresses ?? string.Empty).Split(',').SequenceEqual(dto.AllowedAddresses));
@@ -163,7 +163,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new UpdateGuestInfoDto
         {
@@ -277,8 +277,8 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        var updatedGuest = await repo.GetAsync(result.Value.Id);
-        await dbContext.Entry(guest).ReloadAsync();
+        var updatedGuest = await repo.GetAsync(result.Value.Id, TestCancellationToken);
+        await dbContext.Entry(guest).ReloadAsync(TestCancellationToken);
         Assert.NotNull(updatedGuest);
         Assert.True(BCrypt.Net.BCrypt.Verify(dto.Password, updatedGuest.PasswordHash));
     }
@@ -291,7 +291,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
         var dto = new UpdateGuestPasswordDto
         {
             Id = guest.Id,
@@ -331,7 +331,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.Null(result);
-        Assert.Null(await repo.GetAsync(guest.Id));
+        Assert.Null(await repo.GetAsync(guest.Id, TestCancellationToken));
     }
 
     [Fact]
@@ -342,7 +342,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);

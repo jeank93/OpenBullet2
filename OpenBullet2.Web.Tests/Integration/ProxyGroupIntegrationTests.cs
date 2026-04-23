@@ -28,7 +28,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         dbContext.ProxyGroups.Add(new ProxyGroupEntity { Name = "group1", Owner = guest });
         dbContext.ProxyGroups.Add(new ProxyGroupEntity { Name = "group2" });
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await GetJsonAsync<IEnumerable<ProxyGroupDto>>(client, "/api/v1/proxy-group/all");
@@ -53,7 +53,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.ProxyGroups.Add(new ProxyGroupEntity { Name = "group1", Owner = guest });
         dbContext.ProxyGroups.Add(new ProxyGroupEntity { Name = "group2" });
         dbContext.ProxyGroups.Add(new ProxyGroupEntity { Name = "group3", Owner = guest2 });
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -83,7 +83,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         // Assert
         Assert.True(result.IsSuccess);
         var dbContext = GetRequiredService<ApplicationDbContext>();
-        var group = await dbContext.ProxyGroups.FindAsync(result.Value.Id);
+        var group = await dbContext.ProxyGroups.FindAsync([result.Value.Id], TestCancellationToken);
         Assert.NotNull(group);
         Assert.Equal("group1", group.Name);
     }
@@ -100,7 +100,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var proxyGroupRepo = GetRequiredService<IProxyGroupRepository>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -112,7 +112,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        var group = await proxyGroupRepo.GetAsync(result.Value.Id);
+        var group = await proxyGroupRepo.GetAsync(result.Value.Id, TestCancellationToken);
         Assert.NotNull(group);
         Assert.Equal("group1", group.Name);
         Assert.NotNull(group.Owner);
@@ -127,7 +127,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var group = new ProxyGroupEntity { Name = "group1" };
         dbContext.ProxyGroups.Add(group);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new UpdateProxyGroupDto { Id = group.Id, Name = "group2" };
 
@@ -136,7 +136,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        await dbContext.Entry(group).ReloadAsync();
+        await dbContext.Entry(group).ReloadAsync(TestCancellationToken);
         Assert.Equal("group2", group.Name);
     }
 
@@ -150,7 +150,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var group = new ProxyGroupEntity { Name = "group1", Owner = guest };
         dbContext.ProxyGroups.Add(group);
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -162,7 +162,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.True(result.IsSuccess);
-        await dbContext.Entry(group).ReloadAsync();
+        await dbContext.Entry(group).ReloadAsync(TestCancellationToken);
         Assert.Equal("group2", group.Name);
     }
 
@@ -176,7 +176,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var group = new ProxyGroupEntity { Name = "group1" };
         dbContext.ProxyGroups.Add(group);
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -206,20 +206,20 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.ProxyGroups.Add(group);
         dbContext.Proxies.Add(proxy1);
         dbContext.Proxies.Add(proxy2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await DeleteAsync(client, $"/api/v1/proxy-group?id={group.Id}");
 
         // Assert
         Assert.Null(result);
-        group = await proxyGroupRepo.GetAsync(group.Id);
+        group = await proxyGroupRepo.GetAsync(group.Id, TestCancellationToken);
         Assert.Null(group);
 
         // Proxies should be deleted as well
-        proxy1 = await proxyRepo.GetAsync(proxy1.Id);
+        proxy1 = await proxyRepo.GetAsync(proxy1.Id, TestCancellationToken);
         Assert.Null(proxy1);
-        proxy2 = await proxyRepo.GetAsync(proxy2.Id);
+        proxy2 = await proxyRepo.GetAsync(proxy2.Id, TestCancellationToken);
         Assert.Null(proxy2);
     }
 
@@ -238,7 +238,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.ProxyGroups.Add(group);
         dbContext.Proxies.Add(proxy1);
         dbContext.Proxies.Add(proxy2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -248,13 +248,13 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Assert
         Assert.Null(result);
-        group = await proxyGroupRepo.GetAsync(group.Id);
+        group = await proxyGroupRepo.GetAsync(group.Id, TestCancellationToken);
         Assert.Null(group);
 
         // Proxies should be deleted as well
-        proxy1 = await proxyRepo.GetAsync(proxy1.Id);
+        proxy1 = await proxyRepo.GetAsync(proxy1.Id, TestCancellationToken);
         Assert.Null(proxy1);
-        proxy2 = await proxyRepo.GetAsync(proxy2.Id);
+        proxy2 = await proxyRepo.GetAsync(proxy2.Id, TestCancellationToken);
         Assert.Null(proxy2);
     }
 
@@ -268,7 +268,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var group = new ProxyGroupEntity { Name = "group1" };
         dbContext.ProxyGroups.Add(group);
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -292,7 +292,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var proxy = new ProxyEntity { Host = "host", Port = 80, Group = group };
         dbContext.ProxyGroups.Add(group);
         dbContext.Proxies.Add(proxy);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var jobManager = GetRequiredService<JobManagerService>();
         var jobFactory = GetRequiredService<JobFactoryService>();
@@ -322,7 +322,7 @@ public class ProxyGroupIntegrationTests(ITestOutputHelper testOutputHelper)
         var proxy = new ProxyEntity { Host = "host", Port = 80, Group = group };
         dbContext.ProxyGroups.Add(group);
         dbContext.Proxies.Add(proxy);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var jobManager = GetRequiredService<JobManagerService>();
         var jobFactory = GetRequiredService<JobFactoryService>();

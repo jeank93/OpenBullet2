@@ -31,7 +31,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -70,7 +70,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = guest
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -113,7 +113,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = new GuestEntity { Username = "other" }
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -154,7 +154,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.AddRange(wordlist1, wordlist2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await GetJsonAsync<IEnumerable<WordlistDto>>(
@@ -210,7 +210,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.AddRange(wordlist1, wordlist2, wordlist3);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -245,7 +245,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -280,7 +280,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -317,7 +317,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = guest
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -358,7 +358,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = new GuestEntity { Username = "other" }
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -440,7 +440,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             WordlistType = "Default",
             FilePath = fileName
         };
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -485,7 +485,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             WordlistType = "Default",
             FilePath = fileName
         };
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -546,7 +546,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         // Assert
         result.EnsureSuccessStatusCode();
 
-        var response = await result.Content.ReadAsStringAsync();
+        var response = await result.Content.ReadAsStringAsync(TestCancellationToken);
         var dto = JsonSerializer.Deserialize<WordlistFileDto>(
             response, JsonSerializerOptions);
 
@@ -572,7 +572,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -609,7 +609,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -648,7 +648,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = new GuestEntity { Username = "other" }
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -691,7 +691,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.AddRange(wordlist1, wordlist2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await DeleteJsonAsync<AffectedEntriesDto>(
@@ -756,7 +756,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.AddRange(wordlist1, wordlist2, wordlist3, wordlist4);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -795,7 +795,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Type = "Default"
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new UpdateWordlistInfoDto
         {
@@ -838,7 +838,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Owner = new GuestEntity { Username = "other" }
         };
         dbContext.Wordlists.Add(wordlist);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -861,3 +861,4 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(ErrorCode.WordlistNotFound, result.Error.Content!.ErrorCode);
     }
 }
+

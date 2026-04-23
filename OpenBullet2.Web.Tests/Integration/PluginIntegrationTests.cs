@@ -24,7 +24,7 @@ public class PluginIntegrationTests(ITestOutputHelper testOutputHelper)
         };
 
         // Act
-        var result = await client.PostAsync("/api/v1/plugin", content);
+        var result = await client.PostAsync("/api/v1/plugin", content, TestCancellationToken);
 
         // Assert
         result.EnsureSuccessStatusCode();
@@ -64,7 +64,7 @@ public class PluginIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Act
         var result = await client.DeleteAsync(
-            $"/api/v1/plugin?name={_pluginName}");
+            $"/api/v1/plugin?name={_pluginName}", TestCancellationToken);
 
         // Assert
         result.EnsureSuccessStatusCode();

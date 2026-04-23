@@ -77,7 +77,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new CreateHitDto
         {
@@ -137,7 +137,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var hit = CreateHit();
         dbContext.Hits.Add(hit);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new UpdateHitDto
         {
@@ -189,7 +189,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         var hit = CreateHit();
         dbContext.Hits.Add(hit);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var dto = new UpdateHitDto
         {
@@ -221,7 +221,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var hit = CreateHit();
         dbContext.Hits.Add(hit);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new { id = hit.Id };
@@ -245,7 +245,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         var hit = CreateHit();
         dbContext.Hits.Add(hit);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -270,7 +270,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 1000)
             .Select(i => CreateHit(i.ToString()));
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new PaginatedHitFiltersDto
@@ -304,7 +304,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         var guest2 = new GuestEntity { Username = "guest2" };
         dbContext.Guests.AddRange(guest, guest2);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var adminHits = Enumerable.Range(0, 1000)
             .Select(i => CreateHit(i.ToString()));
@@ -315,7 +315,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Hits.AddRange(adminHits);
         dbContext.Hits.AddRange(guestHits);
         dbContext.Hits.AddRange(guest2Hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -359,7 +359,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
                 Type = i / 8 % 2 == 0 ? "SUCCESS" : "NONE"
             });
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new PaginatedHitFiltersDto
@@ -398,7 +398,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
                 ConfigName = i % 2 == 0 ? "Config1" : "Config2"
             });
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await GetJsonAsync<List<string>>(
@@ -419,7 +419,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var adminHits = Enumerable.Range(0, 100)
             .Select(i => new HitEntity
@@ -434,7 +434,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
             });
         dbContext.Hits.AddRange(adminHits);
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -469,7 +469,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
                 ConfigCategory = "$$CATEGORY$$"
             });
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -477,11 +477,11 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
             format = "<DATA>|<CAPTURE>|<PROXY>|<DATE>|<TYPE>|<CONFIG>|<WORDLIST>|<CATEGORY>"
         };
         var response = await client.GetAsync(
-            "/api/v1/hit/download/many".ToUri(queryParams));
+            "/api/v1/hit/download/many".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(100, lines.Length);
         Assert.All(lines, line =>
@@ -509,7 +509,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var adminHits = Enumerable.Range(0, 100)
             .Select(_ => CreateHit());
@@ -517,7 +517,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(_ => CreateHit(ownerId: guest.Id));
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -528,11 +528,11 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
             format = "<DATA>"
         };
         var response = await client.GetAsync(
-            "/api/v1/hit/download/many".ToUri(queryParams));
+            "/api/v1/hit/download/many".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestCancellationToken);
         var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(100, lines.Length);
         Assert.Equal("text/plain", response.Content.Headers.ContentType!.MediaType);
@@ -549,7 +549,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit(i % 2 == 0 ? "data1" : "data2"));
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var filters = new HitFiltersDto
@@ -580,7 +580,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var adminHits = Enumerable.Range(0, 100)
             .Select(i => CreateHit());
@@ -588,7 +588,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit(ownerId: guest.Id));
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -623,7 +623,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit());
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await DeleteJsonAsync<AffectedEntriesDto>(
@@ -645,7 +645,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         var adminHits = Enumerable.Range(0, 100)
             .Select(i => CreateHit("adminData"));
@@ -653,7 +653,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit("guestData", guest.Id));
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -679,7 +679,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit());
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var result = await DeleteJsonAsync<AffectedEntriesDto>(
@@ -704,7 +704,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var hits = Enumerable.Range(0, 100)
             .Select(i => CreateHit());
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -764,7 +764,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
             }
         ];
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         // Act
         var queryParams = new
@@ -807,7 +807,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
         dbContext.Guests.Add(guest);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         List<HitEntity> adminHits = [
             new HitEntity
@@ -835,7 +835,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         ];
         dbContext.Hits.AddRange(adminHits);
         dbContext.Hits.AddRange(hits);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(TestCancellationToken);
 
         RequireLogin();
         ImpersonateGuest(client, guest);
@@ -887,3 +887,4 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         };
     }
 }
+

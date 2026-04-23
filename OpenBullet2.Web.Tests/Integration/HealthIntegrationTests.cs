@@ -13,7 +13,7 @@ public class HealthIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
 
         // Act
-        var response = await client.GetAsync("/api/v1/health");
+        var response = await client.GetAsync("/api/v1/health", TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);

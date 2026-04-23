@@ -22,6 +22,28 @@ public class FtpRequestBlocksTests
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
     [Fact]
+    public void FtpGetLog_WithoutLogger_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            FtpMethods.FtpGetLog(data));
+
+        Assert.Equal("No log available. Make sure to connect to a server first!", ex.Message);
+    }
+
+    [Fact]
+    public async Task FtpListItems_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            FtpMethods.FtpListItems(data));
+
+        Assert.Equal("Connect to a server first!", ex.Message);
+    }
+
+    [Fact]
     public async Task FtpConnect_ListItems_AndGetLog_Verify()
     {
         await TestFtpServer.ResetHomeDirectory();

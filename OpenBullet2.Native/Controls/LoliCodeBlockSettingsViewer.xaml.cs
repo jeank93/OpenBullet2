@@ -53,7 +53,7 @@ public partial class LoliCodeBlockSettingsViewer : UserControl
 
 public class LoliCodeBlockSettingsViewerViewModel : BlockSettingsViewerViewModel
 {
-    public LoliCodeBlockInstance LoliCodeBlock => Block as LoliCodeBlockInstance;
+    public LoliCodeBlockInstance LoliCodeBlock => (LoliCodeBlockInstance)Block;
 
     public string Script
     {

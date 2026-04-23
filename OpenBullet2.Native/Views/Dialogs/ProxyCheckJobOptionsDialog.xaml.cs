@@ -148,7 +148,7 @@ public class ProxyCheckJobOptionsViewModel : ViewModelBase
             : new ProxyCheckTarget[] { new() };
 
         // TODO: Move this to the factory!
-        Target ??= Targets.FirstOrDefault();
+        Target ??= Targets.FirstOrDefault() ?? new ProxyCheckTarget();
     }
 
     private readonly IEnumerable<ProxyGroupEntity> proxyGroups;

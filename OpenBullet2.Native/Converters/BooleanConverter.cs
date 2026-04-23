@@ -18,10 +18,10 @@ public class BooleanConverter<T> : IValueConverter
     public T True { get; set; }
     public T False { get; set; }
 
-    public virtual object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public virtual object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is bool b && b ? True : False;
 
-    public virtual object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public virtual object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is T convertedValue && EqualityComparer<T>.Default.Equals(convertedValue, True);
 }
 

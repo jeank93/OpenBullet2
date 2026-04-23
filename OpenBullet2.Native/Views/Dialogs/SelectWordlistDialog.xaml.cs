@@ -195,5 +195,5 @@ public class SelectWordlistDialogViewModel : ViewModelBase
 
     private bool WordlistsFilter(object item)
         => item is WordlistEntity wordlist
-           && wordlist.Name.Contains(SearchString, StringComparison.OrdinalIgnoreCase);
+           && (wordlist.Name?.Contains(SearchString, StringComparison.OrdinalIgnoreCase) ?? false);
 }

@@ -40,8 +40,8 @@ public static class RichTextBoxExtensions
         var start = rtb.Document.ContentStart;
 
         // Get begin and end requested:
-        var startPos = GetTextPointAt(start, offset);
-        var endPos = GetTextPointAt(start, offset + length);
+        var startPos = GetTextPointAt(start, offset) ?? start;
+        var endPos = GetTextPointAt(start, offset + length) ?? startPos;
 
         // New selection of text:
         textRange.Select(startPos, endPos);
@@ -55,7 +55,7 @@ public static class RichTextBoxExtensions
         return rtb.Selection.Text;
     }
 
-    public static TextPointer GetTextPointAt(TextPointer from, int pos)
+    public static TextPointer? GetTextPointAt(TextPointer from, int pos)
     {
         var ret = from;
         var i = 0;

@@ -198,20 +198,20 @@ public partial class Proxies : Page
 
         if (listViewSortCol != null)
         {
-            AdornerLayer.GetAdornerLayer(listViewSortCol).Remove(listViewSortAdorner);
+            AdornerLayer.GetAdornerLayer(listViewSortCol)?.Remove(listViewSortAdorner);
             proxiesListView.Items.SortDescriptions.Clear();
         }
 
         var newDir = ListSortDirection.Ascending;
 
-        if (listViewSortCol == column && listViewSortAdorner.Direction == newDir)
+        if (listViewSortCol == column && listViewSortAdorner?.Direction == newDir)
         {
             newDir = ListSortDirection.Descending;
         }
 
         listViewSortCol = column;
         listViewSortAdorner = new SortAdorner(listViewSortCol, newDir);
-        AdornerLayer.GetAdornerLayer(listViewSortCol).Add(listViewSortAdorner);
+        AdornerLayer.GetAdornerLayer(listViewSortCol)?.Add(listViewSortAdorner);
         proxiesListView.Items.SortDescriptions.Add(new SortDescription(sortBy, newDir));
     }
 
@@ -219,7 +219,12 @@ public partial class Proxies : Page
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+
+            if (files is null)
+            {
+                return;
+            }
 
             foreach (var file in files.Where(f => f.EndsWith(".txt")))
             {

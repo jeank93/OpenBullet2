@@ -193,6 +193,12 @@ public partial class MultiRunJobViewer : Page
             return;
         }
 
+        if (hitVM.Hit.BotLogger is null)
+        {
+            Alert.Error("Bot log unavailable", "No bot log was captured for this hit");
+            return;
+        }
+
         new MainDialog(new BotLogDialog(hitVM.Hit.BotLogger), $"Bot log for {hitVM.Data}").Show();
     }
 

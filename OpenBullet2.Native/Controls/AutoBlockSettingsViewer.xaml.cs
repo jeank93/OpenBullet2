@@ -72,7 +72,7 @@ public partial class AutoBlockSettingsViewer : UserControl
 
         foreach (var setting in vm.Block.Settings)
         {
-            UserControl viewer = setting.Value.FixedSetting switch
+            UserControl? viewer = setting.Value.FixedSetting switch
             {
                 StringSetting => new StringSettingViewer { Setting = setting.Value },
                 IntSetting => new IntSettingViewer { Setting = setting.Value },

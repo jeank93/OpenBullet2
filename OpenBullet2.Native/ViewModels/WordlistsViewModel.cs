@@ -64,7 +64,7 @@ public class WordlistsViewModel : ViewModelBase
 
     private bool WordlistsFilter(object item)
         => item is WordlistEntity wordlist
-           && wordlist.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase);
+           && (wordlist.Name?.Contains(searchString, StringComparison.OrdinalIgnoreCase) ?? false);
 
     public WordlistEntity GetWordlistByName(string name) => WordlistsCollection.First(w => w.Name == name);
 

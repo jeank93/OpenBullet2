@@ -28,7 +28,11 @@ internal static class TestHttpBin
     private static async Task<string> GetBaseUrl()
     {
         await EnsureInitialized();
-        Assert.SkipWhen(skipReason is not null, skipReason!);
+        if (skipReason is not null)
+        {
+            Assert.Skip(skipReason);
+        }
+
         return baseUrl!;
     }
 

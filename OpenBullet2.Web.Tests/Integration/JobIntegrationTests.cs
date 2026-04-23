@@ -1990,7 +1990,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Null(error);
         Assert.Empty(jobManager.Jobs);
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Empty(jobEntities);
     }
 
@@ -2032,7 +2032,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         Assert.Single(jobManager.Jobs);
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Single(jobEntities);
     }
 
@@ -2072,7 +2072,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Null(error);
         Assert.Empty(jobManager.Jobs);
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Empty(jobEntities);
     }
 
@@ -2111,7 +2111,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(2, response.Value.Count);
         Assert.Empty(jobManager.Jobs);
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Empty(jobEntities);
     }
 
@@ -2154,7 +2154,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         Assert.Equal(2, jobManager.Jobs.Count());
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Equal(2, jobEntities.Count);
     }
 
@@ -2200,7 +2200,7 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, response.Value.Count);
         Assert.Single(jobManager.Jobs);
 
-        var jobEntities = await dbContext.Jobs.ToListAsync();
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
         Assert.Single(jobEntities);
     }
 

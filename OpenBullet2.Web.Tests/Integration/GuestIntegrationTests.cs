@@ -86,7 +86,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
         {
             Username = "guest",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("guest123")
-        });
+        }, TestCancellationToken);
 
         // Act
         var result = await PostJsonAsync<GuestDto>(client, "/api/v1/guest", dto);
@@ -131,7 +131,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
             AccessExpiration = DateTime.UtcNow.AddDays(30),
             AllowedAddresses = ""
         };
-        await repo.AddAsync(guest);
+        await repo.AddAsync(guest, TestCancellationToken);
 
         var dto = new UpdateGuestInfoDto
         {
@@ -204,8 +204,8 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
             AccessExpiration = DateTime.UtcNow.AddDays(30),
             AllowedAddresses = ""
         };
-        await repo.AddAsync(guest1);
-        await repo.AddAsync(guest2);
+        await repo.AddAsync(guest1, TestCancellationToken);
+        await repo.AddAsync(guest2, TestCancellationToken);
 
         var dto = new UpdateGuestInfoDto
         {
@@ -235,7 +235,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
             AccessExpiration = DateTime.UtcNow.AddDays(30),
             AllowedAddresses = ""
         };
-        await repo.AddAsync(guest);
+        await repo.AddAsync(guest, TestCancellationToken);
         var dto = new UpdateGuestInfoDto
         {
             Id = guest.Id,
@@ -265,7 +265,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
             AccessExpiration = DateTime.UtcNow.AddDays(30),
             AllowedAddresses = ""
         };
-        await repo.AddAsync(guest);
+        await repo.AddAsync(guest, TestCancellationToken);
         var dto = new UpdateGuestPasswordDto
         {
             Id = guest.Id,
@@ -324,7 +324,7 @@ public class GuestIntegrationTests(ITestOutputHelper testOutputHelper)
             AccessExpiration = DateTime.UtcNow.AddDays(30),
             AllowedAddresses = ""
         };
-        await repo.AddAsync(guest);
+        await repo.AddAsync(guest, TestCancellationToken);
 
         // Act
         var result = await DeleteAsync(client, $"/api/v1/guest?id={guest.Id}");

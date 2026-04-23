@@ -235,7 +235,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var fileName = Path.GetTempFileName();
         await File.WriteAllLinesAsync(
-            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()));
+            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var wordlist = new WordlistEntity
         {
             Name = "test",
@@ -306,7 +306,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         var fileName = Path.GetTempFileName();
         await File.WriteAllLinesAsync(
-            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()));
+            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var wordlist = new WordlistEntity
         {
             Name = "test",
@@ -388,7 +388,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var fileName = Path.GetTempFileName();
         await File.WriteAllLinesAsync(
-            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()));
+            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var dto = new CreateWordlistDto
         {
             Name = "test",
@@ -405,7 +405,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
 
         var wordlist = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == result.Value.Id);
+            .FirstOrDefaultAsync(w => w.Id == result.Value.Id, TestCancellationToken);
 
         Assert.NotNull(wordlist);
         Assert.Equal(wordlist.Id, result.Value.Id);
@@ -432,7 +432,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Directory.CreateDirectory(Path.Combine(UserDataFolder, "Wordlists"));
         var fileName = Path.Combine(UserDataFolder, "Wordlists", Guid.NewGuid() + ".txt");
         await File.WriteAllLinesAsync(
-            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()));
+            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var dto = new CreateWordlistDto
         {
             Name = "test",
@@ -454,7 +454,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var wordlist = await dbContext.Wordlists
             .Include(w => w.Owner)
-            .FirstOrDefaultAsync(w => w.Id == result.Value.Id);
+            .FirstOrDefaultAsync(w => w.Id == result.Value.Id, TestCancellationToken);
 
         Assert.NotNull(wordlist);
         Assert.Equal(wordlist.Id, result.Value.Id);
@@ -477,7 +477,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         dbContext.Guests.Add(guest);
         var fileName = Path.GetTempFileName();
         await File.WriteAllLinesAsync(
-            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()));
+            fileName, Enumerable.Range(0, 100).Select(i => i.ToString()), TestCancellationToken);
         var dto = new CreateWordlistDto
         {
             Name = "test",
@@ -541,7 +541,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Act
         var result = await client.PostAsync(
-            "/api/v1/wordlist/upload", content);
+            "/api/v1/wordlist/upload", content, TestCancellationToken);
 
         // Assert
         result.EnsureSuccessStatusCode();
@@ -587,7 +587,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Null(result);
 
         var deleted = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == wordlist.Id);
+            .FirstOrDefaultAsync(w => w.Id == wordlist.Id, TestCancellationToken);
 
         Assert.Null(deleted);
         Assert.True(File.Exists(fileName));
@@ -624,7 +624,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Null(result);
 
         var deleted = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == wordlist.Id);
+            .FirstOrDefaultAsync(w => w.Id == wordlist.Id, TestCancellationToken);
 
         Assert.Null(deleted);
         Assert.False(File.Exists(fileName));
@@ -702,12 +702,12 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, result.Value.Count);
 
         var deleted = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == wordlist2.Id);
+            .FirstOrDefaultAsync(w => w.Id == wordlist2.Id, TestCancellationToken);
 
         Assert.Null(deleted);
 
         var notDeleted = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == wordlist1.Id);
+            .FirstOrDefaultAsync(w => w.Id == wordlist1.Id, TestCancellationToken);
 
         Assert.NotNull(notDeleted);
     }
@@ -770,12 +770,12 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(1, result.Value.Count);
 
         var deleted = await dbContext.Wordlists
-            .FirstOrDefaultAsync(w => w.Id == wordlist2.Id);
+            .FirstOrDefaultAsync(w => w.Id == wordlist2.Id, TestCancellationToken);
 
         Assert.Null(deleted);
 
         var notDeleted = await dbContext.Wordlists
-            .ToListAsync();
+            .ToListAsync(TestCancellationToken);
 
         Assert.Equal(3, notDeleted.Count);
     }
@@ -813,7 +813,7 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(wordlist.Id, result.Value.Id);
 
-        await dbContext.Entry(wordlist).ReloadAsync();
+        await dbContext.Entry(wordlist).ReloadAsync(TestCancellationToken);
 
         Assert.Equal(dto.Name, wordlist.Name);
         Assert.Equal(dto.Purpose, wordlist.Purpose);

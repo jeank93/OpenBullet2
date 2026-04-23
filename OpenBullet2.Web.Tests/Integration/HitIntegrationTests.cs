@@ -54,7 +54,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(dto.WordlistId, result.Value.WordlistId);
         Assert.Equal(dto.WordlistName, result.Value.WordlistName);
 
-        var hit = await dbContext.Hits.FirstOrDefaultAsync();
+        var hit = await dbContext.Hits.FirstOrDefaultAsync(TestCancellationToken);
         Assert.NotNull(hit);
         Assert.Equal(dto.Data, hit.Data);
         Assert.Equal(dto.CapturedData, hit.CapturedData);
@@ -114,7 +114,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(dto.WordlistId, result.Value.WordlistId);
         Assert.Equal(dto.WordlistName, result.Value.WordlistName);
 
-        var hit = await dbContext.Hits.FirstOrDefaultAsync();
+        var hit = await dbContext.Hits.FirstOrDefaultAsync(TestCancellationToken);
         Assert.NotNull(hit);
         Assert.Equal(dto.Data, hit.Data);
         Assert.Equal(dto.CapturedData, hit.CapturedData);
@@ -165,7 +165,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(hit.WordlistId, result.Value.WordlistId);
         Assert.Equal(hit.WordlistName, result.Value.WordlistName);
 
-        await dbContext.Entry(hit).ReloadAsync();
+        await dbContext.Entry(hit).ReloadAsync(TestCancellationToken);
 
         Assert.Equal(dto.Data, hit.Data);
         Assert.Equal(dto.CapturedData, hit.CapturedData);
@@ -231,7 +231,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         // Assert
         Assert.Null(error);
 
-        var hitAfter = await dbContext.Hits.FirstOrDefaultAsync();
+        var hitAfter = await dbContext.Hits.FirstOrDefaultAsync(TestCancellationToken);
         Assert.Null(hitAfter);
     }
 
@@ -568,7 +568,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(100 / 2, result.Value.Count);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(100 / 2, hitsAfter);
     }
 
@@ -610,7 +610,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(100, result.Value.Count);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(100, hitsAfter);
     }
 
@@ -633,7 +633,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(99, result.Value.Count);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(1, hitsAfter);
     }
 
@@ -666,7 +666,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(99, result.Value.Count);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(101, hitsAfter);
     }
 
@@ -689,7 +689,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(100, result.Value.Count);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(0, hitsAfter);
     }
 
@@ -719,7 +719,7 @@ public class HitIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(result.Error.Content);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
 
-        var hitsAfter = await dbContext.Hits.CountAsync();
+        var hitsAfter = await dbContext.Hits.CountAsync(TestCancellationToken);
         Assert.Equal(100, hitsAfter);
     }
 

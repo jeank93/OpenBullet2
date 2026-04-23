@@ -217,7 +217,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.Equal(1001, result.Value.Count);
 
-        var proxies = await proxyRepo.GetAll().ToListAsync();
+        var proxies = await proxyRepo.GetAll().ToListAsync(TestCancellationToken);
 
         Assert.Equal(1001, proxies.Count);
 
@@ -258,7 +258,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.True(result.Value.Count > 0);
 
-        var proxies = await proxyRepo.GetAll().ToListAsync();
+        var proxies = await proxyRepo.GetAll().ToListAsync(TestCancellationToken);
 
         Assert.Equal(result.Value.Count, proxies.Count);
     }
@@ -312,11 +312,11 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var group1ProxyCount = await dbContext.Proxies
             .Where(p => p.Group != null && p.Group.Id == group.Id)
-            .CountAsync();
+            .CountAsync(TestCancellationToken);
 
         var group2ProxyCount = await dbContext.Proxies
             .Where(p => p.Group != null && p.Group.Id == group2.Id)
-            .CountAsync();
+            .CountAsync(TestCancellationToken);
 
         Assert.Equal(1000 - 1000 / 8, group1ProxyCount);
         Assert.Equal(500 + 1000 / 8, group2ProxyCount);
@@ -498,7 +498,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var remaining = await dbContext.Proxies
             .Where(p => p.Group != null && p.Group.Id == group.Id)
-            .CountAsync();
+            .CountAsync(TestCancellationToken);
 
         Assert.Equal(1000 - 1000 / 8, remaining);
     }
@@ -534,7 +534,7 @@ public class ProxyIntegrationTests(ITestOutputHelper testOutputHelper)
 
         var remaining = await dbContext.Proxies
             .Where(p => p.Group != null && p.Group.Id == group.Id)
-            .CountAsync();
+            .CountAsync(TestCancellationToken);
 
         Assert.Equal(2, remaining);
     }

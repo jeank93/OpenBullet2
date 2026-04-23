@@ -332,7 +332,7 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal("configs.zip", result.Content.Headers.ContentDisposition!.FileName);
 
         // Open the zip stream and unpack the config, make sure the ID is correct
-        var archive = new ZipArchive(await result.Content.ReadAsStreamAsync());
+        var archive = new ZipArchive(await result.Content.ReadAsStreamAsync(TestCancellationToken));
         Assert.Single(archive.Entries);
         var entry = archive.Entries[0];
         await using var stream = entry.Open();

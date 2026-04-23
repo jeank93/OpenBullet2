@@ -722,7 +722,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         };
         var json = JsonSerializer.Serialize(dto, JsonSerializerOptions);
         var response = await client.PutAsync(
-            "/api/v1/config", new StringContent(json, Encoding.UTF8, "application/json"));
+            "/api/v1/config", new StringContent(json, Encoding.UTF8, "application/json"), TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
@@ -1063,14 +1063,14 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             id = config.Id
         };
         var response = await client.GetAsync(
-            "/api/v1/config/download".ToUri(queryParams));
+            "/api/v1/config/download".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
         Assert.Equal("application/octet-stream", response.Content.Headers.ContentType!.MediaType);
 
         var downloadedConfig = await ConfigPacker.UnpackAsync(
-            await response.Content.ReadAsStreamAsync());
+            await response.Content.ReadAsStreamAsync(TestCancellationToken));
 
         // The id will not be the same since it's not saved inside the
         // config but it's the name of the file
@@ -1103,7 +1103,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             id = config.Id
         };
         var response = await client.GetAsync(
-            "/api/v1/config/download".ToUri(queryParams));
+            "/api/v1/config/download".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         Assert.False(response.IsSuccessStatusCode);
@@ -1141,7 +1141,7 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             id = config.Id
         };
         var response = await client.GetAsync(
-            "/api/v1/config/download".ToUri(queryParams));
+            "/api/v1/config/download".ToUri(queryParams), TestCancellationToken);
 
         // Assert
         Assert.False(response.IsSuccessStatusCode);
@@ -1179,13 +1179,13 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         await configRepository.SaveAsync(config2);
 
         // Act
-        var response = await client.GetAsync("/api/v1/config/download/all");
+        var response = await client.GetAsync("/api/v1/config/download/all", TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
         Assert.Equal("application/zip", response.Content.Headers.ContentType!.MediaType);
 
-        await using var zipStream = await response.Content.ReadAsStreamAsync();
+        await using var zipStream = await response.Content.ReadAsStreamAsync(TestCancellationToken);
         var zipArchive = new ZipArchive(zipStream, ZipArchiveMode.Read);
         Assert.Single(zipArchive.Entries);
         Assert.Equal("TestConfig1.opk", zipArchive.Entries[0].Name);
@@ -1229,11 +1229,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
         ImpersonateGuest(client, guest);
 
         // Act
-        var response = await client.GetAsync("/api/v1/config/download/all");
+        var response = await client.GetAsync("/api/v1/config/download/all", TestCancellationToken);
 
         // Assert
         Assert.False(response.IsSuccessStatusCode);
-        var error = await response.Content.ReadFromJsonAsync<ApiError>();
+        var error = await response.Content.ReadFromJsonAsync<ApiError>(JsonSerializerOptions, TestCancellationToken);
         Assert.NotNull(error);
         Assert.Equal(ErrorCode.NotAdmin, error.ErrorCode);
     }
@@ -1302,11 +1302,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             { new ByteArrayContent(packedLegacyConfig), "files", "TestConfig3.opk" },
             { new ByteArrayContent(packedDllConfig), "files", "TestConfig4.opk" }
         };
-        var response = await client.PostAsync("/api/v1/config/upload/many", formData);
+        var response = await client.PostAsync("/api/v1/config/upload/many", formData, TestCancellationToken);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
-        var affectedEntries = await response.Content.ReadFromJsonAsync<AffectedEntriesDto>(JsonSerializerOptions);
+        var affectedEntries = await response.Content.ReadFromJsonAsync<AffectedEntriesDto>(JsonSerializerOptions, TestCancellationToken);
         Assert.NotNull(affectedEntries);
         Assert.Equal(4, affectedEntries.Count);
 
@@ -1332,11 +1332,11 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
 
         // Act
         var response = await client.PostAsync("/api/v1/config/upload/many",
-            new MultipartFormDataContent());
+            new MultipartFormDataContent(), TestCancellationToken);
 
         // Assert
         Assert.False(response.IsSuccessStatusCode);
-        var error = await response.Content.ReadFromJsonAsync<ApiError>();
+        var error = await response.Content.ReadFromJsonAsync<ApiError>(JsonSerializerOptions, TestCancellationToken);
         Assert.NotNull(error);
         Assert.Equal(ErrorCode.NotAdmin, error.ErrorCode);
     }

@@ -21,9 +21,9 @@
     <PackageReference Include="Jint" Version="3.1.6" />
     <PackageReference Include="JWT" Version="10.1.1" />
     <PackageReference Include="MailKit" Version="4.16.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.5.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.14.0" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="PuppeteerExtraSharp" Version="2.0.0" />
     <PackageReference Include="PuppeteerSharp" Version="9.0.2" />

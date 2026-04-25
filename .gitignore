@@ -35,7 +35,9 @@ bld/
 [Ll]og/
 
 Mocks/
-Scripts/
+**/Scripts/
+!/Scripts/
+!/Scripts/**
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

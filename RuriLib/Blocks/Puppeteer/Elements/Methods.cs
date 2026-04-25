@@ -66,7 +66,7 @@ public static class Methods
         foreach (var c in text)
         {
             await elem.TypeAsync(c.ToString());
-            await Task.Delay(data.Random.Next(100, 300)); // Wait between 100 and 300 ms (average human type speed is 60 WPM ~ 360 CPM)
+            await Task.Delay(data.Random.Next(100, 300), data.CancellationToken); // Wait between 100 and 300 ms (average human type speed is 60 WPM ~ 360 CPM)
         }
 
         data.Logger.Log($"Typed {text}", LogColors.DarkSalmon);

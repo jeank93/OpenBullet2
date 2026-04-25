@@ -192,9 +192,10 @@ public class SettingsController : ApiController
     [HttpPatch("admin/password")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult> UpdateAdminPassword(UpdateAdminPasswordDto dto,
-        [FromServices] IValidator<UpdateAdminPasswordDto> validator)
+        [FromServices] IValidator<UpdateAdminPasswordDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         _obSettingsService.Settings.SecuritySettings
             .SetupAdminPassword(dto.Password);
@@ -211,9 +212,9 @@ public class SettingsController : ApiController
     [TypeFilter<AdminFilter>]
     [HttpPost("theme")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult> AddTheme(IFormFile file)
+    public async Task<ActionResult> AddTheme(IFormFile file, CancellationToken cancellationToken)
     {
-        await _themeService.SaveCssFileAsync(file.FileName, file.OpenReadStream());
+        await _themeService.SaveCssFileAsync(file.FileName, file.OpenReadStream(), cancellationToken);
         _logger.LogInformation("Added a new CSS theme from file {FileName}", file.FileName);
         return Ok();
     }
@@ -234,7 +235,7 @@ public class SettingsController : ApiController
     /// </summary>
     [HttpGet("theme")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult> GetTheme(string? name = null)
+    public async Task<ActionResult> GetTheme(string? name = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -245,7 +246,7 @@ public class SettingsController : ApiController
 
         try
         {
-            bytes = await _themeService.GetCssFileAsync(name);
+            bytes = await _themeService.GetCssFileAsync(name, cancellationToken);
         }
         catch
         {

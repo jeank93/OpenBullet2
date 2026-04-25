@@ -67,11 +67,11 @@ public class ConfigController : ApiController
     [HttpGet("all")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<IEnumerable<ConfigInfoDto>>> GetAll(
-        bool reload = false)
+        bool reload = false, CancellationToken cancellationToken = default)
     {
         if (reload)
         {
-            await _configService.ReloadConfigsAsync();
+            await _configService.ReloadConfigsAsync(cancellationToken);
         }
 
         var configs = _configService.Configs
@@ -161,9 +161,10 @@ public class ConfigController : ApiController
     [HttpPut]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ConfigDto>> UpdateConfig(UpdateConfigDto dto,
-        [FromServices] IValidator<UpdateConfigDto> validator)
+        [FromServices] IValidator<UpdateConfigDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         // Make sure a config with this id exists
         var config = GetConfigFromService(dto.Id);
@@ -340,7 +341,7 @@ public class ConfigController : ApiController
     [HttpPost("upload/many")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> Upload(
-        IFormFileCollection files)
+        IFormFileCollection files, CancellationToken cancellationToken)
     {
         foreach (var file in files)
         {
@@ -349,7 +350,7 @@ public class ConfigController : ApiController
         }
 
         // Reload from disk to get the new configs
-        await _configService.ReloadConfigsAsync();
+        await _configService.ReloadConfigsAsync(cancellationToken);
 
         _logger.LogInformation("Uploaded {FileCount} configs", files.Count);
 
@@ -525,10 +526,10 @@ public class ConfigController : ApiController
     [TypeFilter<AdminFilter>]
     [HttpGet("remote-image")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult> GetRemoteImage(string url)
+    public async Task<ActionResult> GetRemoteImage(string url, CancellationToken cancellationToken)
     {
         // ASP.NET Core will automatically dispose the stream
-        var imageStream = await _httpClient.GetStreamAsync(url);
+        var imageStream = await _httpClient.GetStreamAsync(url, cancellationToken);
 
         return File(imageStream, "image/png");
     }

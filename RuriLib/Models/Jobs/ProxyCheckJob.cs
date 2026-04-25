@@ -185,7 +185,7 @@ public class ProxyCheckJob : Job
                 var sw = new Stopwatch();
                 sw.Start();
                 using var response = await http.GetAsync(input.Url, linkedCts.Token);
-                var content = await response.Content.ReadAsStringAsync();
+                var content = await response.Content.ReadAsStringAsync(linkedCts.Token);
                 sw.Stop();
 
                 if (content.Contains(input.SuccessKey, StringComparison.InvariantCultureIgnoreCase))

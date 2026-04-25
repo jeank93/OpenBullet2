@@ -67,9 +67,10 @@ public class HitController : ApiController
     [HttpPost]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<HitDto>> Create(CreateHitDto dto,
-        [FromServices] IValidator<CreateHitDto> validator)
+        [FromServices] IValidator<CreateHitDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var apiUser = HttpContext.GetApiUser();
 
@@ -82,12 +83,12 @@ public class HitController : ApiController
             entity.OwnerId = apiUser.Id;
         }
 
-        await _hitRepo.AddAsync(entity);
+        await _hitRepo.AddAsync(entity, cancellationToken);
 
         _logger.LogInformation("Created a new hit");
 
         var hitDto = _mapper.Map<HitDto>(entity);
-        var owner = await _guestRepo.GetAsync(apiUser.Id);
+        var owner = await _guestRepo.GetAsync(apiUser.Id, cancellationToken);
 
         hitDto.OwnerId = owner?.Id ?? 0;
         return hitDto;
@@ -99,12 +100,12 @@ public class HitController : ApiController
     [HttpGet("all")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<PagedList<HitDto>>> GetAll(
-        [FromQuery] PaginatedHitFiltersDto dto)
+        [FromQuery] PaginatedHitFiltersDto dto, CancellationToken cancellationToken)
     {
         var query = FilteredQuery(_mapper.Map<HitFiltersDto>(dto));
 
         var pagedEntities = await PagedList<HitEntity>.CreateAsync(query,
-            dto.PageNumber, dto.PageSize);
+            dto.PageNumber, dto.PageSize, cancellationToken);
 
         return _mapper.Map<PagedList<HitDto>>(pagedEntities);
     }
@@ -114,7 +115,7 @@ public class HitController : ApiController
     /// </summary>
     [HttpGet("config-names")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<IEnumerable<string>>> GetConfigNames()
+    public async Task<ActionResult<IEnumerable<string>>> GetConfigNames(CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
 
@@ -126,7 +127,7 @@ public class HitController : ApiController
         var configNames = await query
             .Select(h => h.ConfigName)
             .Distinct()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return configNames;
     }
@@ -139,13 +140,14 @@ public class HitController : ApiController
     /// <param name="format">
     /// Check the documentation for a list of valid formats.
     /// </param>
+    /// <param name="cancellationToken">The request cancellation token.</param>
     [HttpGet("download/many")]
     [MapToApiVersion("1.0")]
     public async Task<IActionResult> DownloadMany(
-        [FromQuery] HitFiltersDto dto, string format = "<DATA> | <CAPTURE>")
+        [FromQuery] HitFiltersDto dto, string format = "<DATA> | <CAPTURE>", CancellationToken cancellationToken = default)
     {
         var query = FilteredQuery(dto);
-        var hits = await query.ToListAsync();
+        var hits = await query.ToListAsync(cancellationToken);
 
         var outputHits = string.Join(Environment.NewLine,
             hits.Select(h => FormatHit(h, format)));
@@ -160,10 +162,10 @@ public class HitController : ApiController
     [HttpGet("formatted/many")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<IEnumerable<string>>> FormatMany(
-        [FromQuery] HitFiltersDto dto, string format = "<DATA> | <CAPTURE>")
+        [FromQuery] HitFiltersDto dto, string format = "<DATA> | <CAPTURE>", CancellationToken cancellationToken = default)
     {
         var query = FilteredQuery(dto);
-        var hits = await query.ToListAsync();
+        var hits = await query.ToListAsync(cancellationToken);
 
         return Ok(hits.Select(h => FormatHit(h, format)));
     }
@@ -175,15 +177,16 @@ public class HitController : ApiController
     [HttpPatch]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<HitDto>> Update(UpdateHitDto dto,
-        [FromServices] IValidator<UpdateHitDto> validator)
+        [FromServices] IValidator<UpdateHitDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
-        var entity = await GetEntityAsync(dto.Id);
+        var entity = await GetEntityAsync(dto.Id, cancellationToken);
         EnsureOwnership(entity);
 
         _mapper.Map(dto, entity);
-        await _hitRepo.UpdateAsync(entity);
+        await _hitRepo.UpdateAsync(entity, cancellationToken);
 
         _logger.LogInformation("Updated the information of hit with id {Id}", dto.Id);
 
@@ -195,12 +198,12 @@ public class HitController : ApiController
     /// </summary>
     [HttpDelete]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult> Delete(int id)
+    public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var entity = await GetEntityAsync(id);
+        var entity = await GetEntityAsync(id, cancellationToken);
         EnsureOwnership(entity);
 
-        await _hitRepo.DeleteAsync(entity);
+        await _hitRepo.DeleteAsync(entity, cancellationToken);
 
         _logger.LogInformation("Deleted the hit with id {Id}", id);
 
@@ -214,13 +217,13 @@ public class HitController : ApiController
     [HttpDelete("many")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> DeleteMany(
-        [FromQuery] HitFiltersDto dto)
+        [FromQuery] HitFiltersDto dto, CancellationToken cancellationToken)
     {
         var query = FilteredQuery(dto);
 
-        var toDelete = await query.ToListAsync();
+        var toDelete = await query.ToListAsync(cancellationToken);
 
-        await _hitRepo.DeleteAsync(toDelete);
+        await _hitRepo.DeleteAsync(toDelete, cancellationToken);
 
         _logger.LogInformation("Deleted {HitCount} hits", toDelete.Count);
 
@@ -232,15 +235,15 @@ public class HitController : ApiController
     /// </summary>
     [HttpDelete("duplicates")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<AffectedEntriesDto>> DeleteDuplicates()
+    public async Task<ActionResult<AffectedEntriesDto>> DeleteDuplicates(CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
 
         var hits = apiUser.Role is UserRole.Admin
-            ? await _hitRepo.GetAll().ToListAsync()
+            ? await _hitRepo.GetAll().ToListAsync(cancellationToken)
             : await _hitRepo.GetAll()
                 .Where(h => h.OwnerId == apiUser.Id)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
         var duplicates = hits
             .GroupBy(h => h.GetHashCode(_obSettingsService.Settings.GeneralSettings.IgnoreWordlistNameOnHitsDedupe))
@@ -248,7 +251,7 @@ public class HitController : ApiController
             .SelectMany(g => g.OrderBy(h => h.Date)
                 .Reverse().Skip(1)).ToList();
 
-        await _hitRepo.DeleteAsync(duplicates);
+        await _hitRepo.DeleteAsync(duplicates, cancellationToken);
 
         _logger.LogInformation("Deleted {HitCount} duplicate hits", duplicates.Count);
 
@@ -263,11 +266,11 @@ public class HitController : ApiController
     [TypeFilter<AdminFilter>]
     [HttpDelete("purge")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<AffectedEntriesDto>> Purge()
+    public async Task<ActionResult<AffectedEntriesDto>> Purge(CancellationToken cancellationToken)
     {
         _logger.LogWarning("Purging all hits from the database...");
 
-        var count = await _hitRepo.CountAsync();
+        var count = await _hitRepo.GetAll().LongCountAsync(cancellationToken);
         await _hitRepo.PurgeAsync();
 
         _logger.LogWarning("Purged {Count} hits from the database!", count);
@@ -280,7 +283,7 @@ public class HitController : ApiController
     /// </summary>
     [HttpGet("recent")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<RecentHitsDto>> GetRecent(int days)
+    public async Task<ActionResult<RecentHitsDto>> GetRecent(int days, CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
 
@@ -302,7 +305,7 @@ public class HitController : ApiController
             .Where(h => h.Date >= DateTime.UtcNow.Date.AddDays(-days))
             .Select(h => h.ConfigName)
             .Distinct()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // For each config, get the number of hits for each day
         var hits = new Dictionary<string, List<int>>();
@@ -315,7 +318,7 @@ public class HitController : ApiController
             {
                 var dailyHits = await query
                     .Where(h => h.ConfigName == configName && h.Date.Date == date)
-                    .CountAsync();
+                    .CountAsync(cancellationToken);
 
                 configHits.Add(dailyHits);
             }
@@ -340,12 +343,12 @@ public class HitController : ApiController
     [HttpPost("send-to-recheck")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<SendToRecheckResultDto>> SendToRecheck(
-        [FromBody] HitFiltersDto dto)
+        [FromBody] HitFiltersDto dto, CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
         var query = FilteredQuery(dto);
 
-        var hits = await query.ToListAsync();
+        var hits = await query.ToListAsync(cancellationToken);
 
         if (hits.Count == 0)
         {
@@ -378,7 +381,7 @@ public class HitController : ApiController
 
         // Write the hits to a temporary file
         var tempFile = Path.GetRandomFileName();
-        await System.IO.File.WriteAllLinesAsync(tempFile, hits.Select(h => h.Data));
+        await System.IO.File.WriteAllLinesAsync(tempFile, hits.Select(h => h.Data), cancellationToken);
         jobOptions.DataPool = new FileDataPoolOptions
         {
             FileName = tempFile,
@@ -392,13 +395,13 @@ public class HitController : ApiController
 
         var entity = new JobEntity
         {
-            Owner = apiUser.Role is UserRole.Admin ? null : await _guestRepo.GetAsync(apiUser.Id),
+            Owner = apiUser.Role is UserRole.Admin ? null : await _guestRepo.GetAsync(apiUser.Id, cancellationToken),
             CreationDate = DateTime.Now,
             JobType = JobType.MultiRun,
             JobOptions = JsonConvert.SerializeObject(jobOptionsWrapper, jsonSettings)
         };
 
-        await _jobRepo.AddAsync(entity);
+        await _jobRepo.AddAsync(entity, cancellationToken);
 
         var job = _jobFactoryService.FromOptions(entity.Id, apiUser.Id, jobOptions);
         _jobManagerService.AddJob(job);
@@ -487,9 +490,9 @@ public class HitController : ApiController
         return query;
     }
 
-    private async Task<HitEntity> GetEntityAsync(int id)
+    private async Task<HitEntity> GetEntityAsync(int id, CancellationToken cancellationToken)
     {
-        var entity = await _hitRepo.GetAsync(id);
+        var entity = await _hitRepo.GetAsync(id, cancellationToken);
 
         if (entity is null)
         {

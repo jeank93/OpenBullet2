@@ -81,9 +81,10 @@ public class JobMonitorController : ApiController
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<TriggeredActionDto>> Update(
         UpdateTriggeredActionDto dto,
-        [FromServices] IValidator<UpdateTriggeredActionDto> validator)
+        [FromServices] IValidator<UpdateTriggeredActionDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var targetAction = GetTriggeredAction(dto.Id);
 

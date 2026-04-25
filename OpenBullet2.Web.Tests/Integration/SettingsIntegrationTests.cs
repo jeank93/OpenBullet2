@@ -356,7 +356,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         var themeService = GetRequiredService<ThemeService>();
         using var stream = new MemoryStream();
-        await themeService.SaveCssFileAsync("test.css", stream);
+        await themeService.SaveCssFileAsync("test.css", stream, TestContext.Current.CancellationToken);
 
         // Act
         var result = await GetJsonAsync<List<ThemeDto>>(
@@ -374,7 +374,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         var themeService = GetRequiredService<ThemeService>();
         using var stream = new MemoryStream();
-        await themeService.SaveCssFileAsync("test.css", stream);
+        await themeService.SaveCssFileAsync("test.css", stream, TestContext.Current.CancellationToken);
 
         var dbContext = GetRequiredService<ApplicationDbContext>();
         var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };

@@ -33,9 +33,10 @@ public class UserController(OpenBulletSettingsService obSettingsService,
     [HttpPost("login")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<LoggedInUserDto>> Login(UserLoginDto dto,
-        [FromServices] IValidator<UserLoginDto> validator)
+        [FromServices] IValidator<UserLoginDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         // Admin user
         if (string.Equals(_obSettingsService.Settings.SecuritySettings.AdminUsername, dto.Username,
@@ -45,7 +46,7 @@ public class UserController(OpenBulletSettingsService obSettingsService,
         }
 
         // Guest
-        return await LoginGuestUser(dto);
+        return await LoginGuestUser(dto, cancellationToken);
     }
 
     private Task<LoggedInUserDto> LoginAdminUser(UserLoginDto dto)
@@ -74,11 +75,11 @@ public class UserController(OpenBulletSettingsService obSettingsService,
         return Task.FromResult(new LoggedInUserDto { Token = token });
     }
 
-    private async Task<LoggedInUserDto> LoginGuestUser(UserLoginDto dto)
+    private async Task<LoggedInUserDto> LoginGuestUser(UserLoginDto dto, CancellationToken cancellationToken)
     {
         var normalizedUsername = dto.Username.ToLower();
         var entity = await _guestRepo.GetAll()
-            .FirstOrDefaultAsync(g => g.Username != null && g.Username.ToLower() == normalizedUsername) ?? throw new UnauthorizedException(ErrorCode.InvalidCredentials,
+            .FirstOrDefaultAsync(g => g.Username != null && g.Username.ToLower() == normalizedUsername, cancellationToken) ?? throw new UnauthorizedException(ErrorCode.InvalidCredentials,
                 "Invalid username or password");
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, entity.PasswordHash))
         {

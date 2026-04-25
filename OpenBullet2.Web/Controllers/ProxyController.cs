@@ -41,12 +41,12 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpGet("all")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<PagedList<ProxyDto>>> GetAll(
-        [FromQuery] ProxyFiltersDto dto)
+        [FromQuery] ProxyFiltersDto dto, CancellationToken cancellationToken)
     {
         var query = FilteredQuery(dto);
 
         var pagedEntities = await PagedList<ProxyEntity>.CreateAsync(query,
-            dto.PageNumber, dto.PageSize);
+            dto.PageNumber, dto.PageSize, cancellationToken);
 
         return _mapper.Map<PagedList<ProxyDto>>(pagedEntities);
     }
@@ -58,11 +58,12 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpPost("add")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> Add(
-        AddProxiesFromListDto dto, [FromServices] IValidator<AddProxiesFromListDto> validator)
+        AddProxiesFromListDto dto, [FromServices] IValidator<AddProxiesFromListDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
-        var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId);
+        var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId, cancellationToken);
         EnsureOwnership(groupEntity);
 
         var entities = ParseProxies(dto.Proxies, dto.DefaultType,
@@ -70,7 +71,7 @@ public class ProxyController(IProxyRepository proxyRepo,
 
         entities.ForEach(e => e.Group = groupEntity);
 
-        await _proxyRepo.AddAsync(entities);
+        await _proxyRepo.AddAsync(entities, cancellationToken);
 
         var duplicatesCount = await _proxyRepo.RemoveDuplicatesAsync(dto.ProxyGroupId);
 
@@ -87,19 +88,20 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpPost("add-from-remote")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> AddFromRemote(
-        AddProxiesFromRemoteDto dto, [FromServices] IValidator<AddProxiesFromRemoteDto> validator)
+        AddProxiesFromRemoteDto dto, [FromServices] IValidator<AddProxiesFromRemoteDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
-        var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId);
+        var groupEntity = await GetProxyGroupEntityAsync(dto.ProxyGroupId, cancellationToken);
         EnsureOwnership(groupEntity);
 
         string[] lines;
 
         try
         {
-            using var response = await _httpClient.GetAsync(dto.Url);
-            var text = await response.Content.ReadAsStringAsync();
+            using var response = await _httpClient.GetAsync(dto.Url, cancellationToken);
+            var text = await response.Content.ReadAsStringAsync(cancellationToken);
 
             lines = text.Split(
                 ["\r\n", "\n"],
@@ -117,7 +119,7 @@ public class ProxyController(IProxyRepository proxyRepo,
 
         entities.ForEach(e => e.Group = groupEntity);
 
-        await _proxyRepo.AddAsync(entities);
+        await _proxyRepo.AddAsync(entities, cancellationToken);
 
         var duplicatesCount = await _proxyRepo.RemoveDuplicatesAsync(dto.ProxyGroupId);
 
@@ -134,18 +136,18 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpPost("move/many")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> MoveMany(
-        MoveProxiesDto dto)
+        MoveProxiesDto dto, CancellationToken cancellationToken)
     {
         var destinationGroupEntity = await GetProxyGroupEntityAsync(
-            dto.DestinationGroupId);
+            dto.DestinationGroupId, cancellationToken);
         EnsureOwnership(destinationGroupEntity);
 
         var query = FilteredQuery(dto);
 
-        var toMove = await query.ToListAsync();
+        var toMove = await query.ToListAsync(cancellationToken);
         toMove.ForEach(p => p.Group = destinationGroupEntity);
 
-        await _proxyRepo.UpdateAsync(toMove);
+        await _proxyRepo.UpdateAsync(toMove, cancellationToken);
         await _proxyRepo.RemoveDuplicatesAsync(dto.DestinationGroupId);
 
         _logger.LogInformation("Moved {ProxyCount} proxies", toMove.Count);
@@ -160,10 +162,10 @@ public class ProxyController(IProxyRepository proxyRepo,
     /// </summary>
     [HttpGet("download/many")]
     [MapToApiVersion("1.0")]
-    public async Task<IActionResult> DownloadMany([FromQuery] ProxyFiltersDto dto)
+    public async Task<IActionResult> DownloadMany([FromQuery] ProxyFiltersDto dto, CancellationToken cancellationToken)
     {
         var query = FilteredQuery(dto);
-        var proxies = await query.ToListAsync();
+        var proxies = await query.ToListAsync(cancellationToken);
         var outputProxies = string.Join(Environment.NewLine, proxies);
         var bytes = Encoding.UTF8.GetBytes(outputProxies);
         return File(bytes, "text/plain", "proxies.txt");
@@ -176,13 +178,13 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpDelete("many")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> DeleteMany(
-        [FromQuery] ProxyFiltersDto dto)
+        [FromQuery] ProxyFiltersDto dto, CancellationToken cancellationToken)
     {
         var query = FilteredQuery(dto);
 
-        var toDelete = await query.ToListAsync();
+        var toDelete = await query.ToListAsync(cancellationToken);
 
-        await _proxyRepo.DeleteAsync(toDelete);
+        await _proxyRepo.DeleteAsync(toDelete, cancellationToken);
 
         _logger.LogInformation("Deleted {ProxyCount} proxies", toDelete.Count);
 
@@ -196,9 +198,9 @@ public class ProxyController(IProxyRepository proxyRepo,
     [HttpDelete("slow")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<AffectedEntriesDto>> DeleteSlow(
-        int proxyGroupId, int maxPing = 10000)
+        int proxyGroupId, int maxPing = 10000, CancellationToken cancellationToken = default)
     {
-        var groupEntity = await GetProxyGroupEntityAsync(proxyGroupId);
+        var groupEntity = await GetProxyGroupEntityAsync(proxyGroupId, cancellationToken);
         EnsureOwnership(groupEntity);
 
         var toDelete = await _proxyRepo.GetAll()
@@ -206,9 +208,9 @@ public class ProxyController(IProxyRepository proxyRepo,
             .Where(p => p.Status == ProxyWorkingStatus.Working)
             .Where(p => p.Ping > maxPing)
             .Where(p => p.Group != null && p.Group.Id == proxyGroupId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
-        await _proxyRepo.DeleteAsync(toDelete);
+        await _proxyRepo.DeleteAsync(toDelete, cancellationToken);
 
         _logger.LogInformation("Deleted {HitCount} proxies from proxy group {Name}",
             toDelete.Count, groupEntity.Name);
@@ -312,9 +314,9 @@ public class ProxyController(IProxyRepository proxyRepo,
         return query;
     }
 
-    private async Task<ProxyGroupEntity> GetProxyGroupEntityAsync(int id)
+    private async Task<ProxyGroupEntity> GetProxyGroupEntityAsync(int id, CancellationToken cancellationToken)
     {
-        var entity = await _proxyGroupRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
+        var entity = await _proxyGroupRepo.GetAsync(id, cancellationToken) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
                 id, nameof(IProxyGroupRepository));
         return entity;
     }

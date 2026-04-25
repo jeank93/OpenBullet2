@@ -11,6 +11,7 @@ using System.IO.Compression;
 using RuriLib.Helpers;
 using System.IO;
 using RuriLib.Functions.Conversion;
+using System.Threading;
 
 namespace OpenBullet2.Core.Services;
 
@@ -56,16 +57,22 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
     /// Reloads all configs from the <see cref="IConfigRepository"/> and remote endpoints.
     /// </summary>
     public async Task ReloadConfigsAsync()
+        => await ReloadConfigsAsync(CancellationToken.None);
+
+    /// <summary>
+    /// Reloads all configs from the <see cref="IConfigRepository"/> and remote endpoints.
+    /// </summary>
+    public async Task ReloadConfigsAsync(CancellationToken cancellationToken)
     {
         // Load from the main repository
         Configs = (await configRepo.GetAllAsync()).ToList();
         SelectedConfig = null!;
 
         // Load from remotes (fire and forget)
-        LoadFromRemotes();
+        LoadFromRemotes(cancellationToken);
     }
 
-    private async void LoadFromRemotes()
+    private async void LoadFromRemotes(CancellationToken cancellationToken)
     {
         List<Config> remoteConfigs = [];
 
@@ -76,7 +83,7 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
                 // Get the file
                 using HttpClient client = new();
                 client.DefaultRequestHeaders.Add("Api-Key", endpoint.ApiKey);
-                using var response = await client.GetAsync(endpoint.Url);
+                using var response = await client.GetAsync(endpoint.Url, cancellationToken);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
@@ -88,7 +95,7 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
                     throw new FileNotFoundException();
                 }
 
-                var fileStream = await response.Content.ReadAsStreamAsync();
+                var fileStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 // Unpack the archive in memory
                 using ZipArchive archive = new(fileStream, ZipArchiveMode.Read);

@@ -83,7 +83,7 @@ public class InfoController(IAnnouncementService announcementService,
     /// </summary>
     [HttpGet("changelog")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<ChangelogDto>> GetChangelog(string? v)
+    public async Task<ActionResult<ChangelogDto>> GetChangelog(string? v, CancellationToken cancellationToken)
     {
         // NOTE: We cannot call the query param "version" otherwise ASP.NET core
         // will set its value to the API version instead of what was passed :|
@@ -96,7 +96,7 @@ public class InfoController(IAnnouncementService announcementService,
         {
             // The changelog is only present for stable builds in the master branch
             var url = $"https://raw.githubusercontent.com/openbullet/OpenBullet2/master/Changelog/{v}.md";
-            using var response = await _httpClient.GetAsync(url);
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -105,7 +105,7 @@ public class InfoController(IAnnouncementService announcementService,
                     $"Changelog for version {v}", url);
             }
 
-            markdown = await response.Content.ReadAsStringAsync();
+            markdown = await response.Content.ReadAsStringAsync(cancellationToken);
         }
         catch (ResourceNotFoundException)
         {
@@ -139,7 +139,7 @@ public class InfoController(IAnnouncementService announcementService,
     /// </summary>
     [HttpGet("collection")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<CollectionInfoDto>> GetCollectionInfo()
+    public async Task<ActionResult<CollectionInfoDto>> GetCollectionInfo(CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
 
@@ -151,37 +151,37 @@ public class InfoController(IAnnouncementService announcementService,
 
         var proxyCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IProxyRepository>()
-                .GetAll().CountAsync()
+                .GetAll().CountAsync(cancellationToken)
             : await _serviceProvider.GetRequiredService<IProxyRepository>()
                 .GetAll().CountAsync(p => p.Group != null
                     && p.Group.Owner != null
-                    && p.Group.Owner.Id == apiUser.Id);
+                    && p.Group.Owner.Id == apiUser.Id, cancellationToken);
 
         var wordlistCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().CountAsync()
+                .GetAll().CountAsync(cancellationToken)
             : await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().CountAsync(w => w.Owner != null && w.Owner.Id == apiUser.Id);
+                .GetAll().CountAsync(w => w.Owner != null && w.Owner.Id == apiUser.Id, cancellationToken);
 
         var wordlistLines = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().SumAsync(w => (long)w.Total)
+                .GetAll().SumAsync(w => (long)w.Total, cancellationToken)
             : await _serviceProvider.GetRequiredService<IWordlistRepository>()
                 .GetAll()
                 .Where(w => w.Owner != null && w.Owner.Id == apiUser.Id)
-                .SumAsync(w => (long)w.Total);
+                .SumAsync(w => (long)w.Total, cancellationToken);
 
         var hitCount = apiUser.Role is UserRole.Admin
             ? await _serviceProvider.GetRequiredService<IHitRepository>()
-                .GetAll().CountAsync()
+                .GetAll().CountAsync(cancellationToken)
             : await _serviceProvider.GetRequiredService<IHitRepository>()
-                .GetAll().CountAsync(h => h.OwnerId == apiUser.Id);
+                .GetAll().CountAsync(h => h.OwnerId == apiUser.Id, cancellationToken);
 
         var configCount = _serviceProvider
             .GetRequiredService<ConfigService>().Configs.Count;
 
         var guestCount = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IGuestRepository>().GetAll().CountAsync()
+            ? await _serviceProvider.GetRequiredService<IGuestRepository>().GetAll().CountAsync(cancellationToken)
             : 1; // The guest shouldn't see the total number of guests
 
         var pluginCount = apiUser.Role is UserRole.Admin

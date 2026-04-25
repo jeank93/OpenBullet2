@@ -39,14 +39,14 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
     /// </summary>
     [HttpGet("all")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<IEnumerable<ProxyGroupDto>>> GetAllGroups()
+    public async Task<ActionResult<IEnumerable<ProxyGroupDto>>> GetAllGroups(CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
 
         var entities = apiUser.Role is UserRole.Admin
-            ? await _proxyGroupRepo.GetAll().Include(g => g.Owner).ToListAsync()
+            ? await _proxyGroupRepo.GetAll().Include(g => g.Owner).ToListAsync(cancellationToken)
             : await _proxyGroupRepo.GetAll().Include(g => g.Owner)
-                .Where(g => g.Owner != null && g.Owner.Id == apiUser.Id).ToListAsync();
+                .Where(g => g.Owner != null && g.Owner.Id == apiUser.Id).ToListAsync(cancellationToken);
 
         return Ok(_mapper.Map<IEnumerable<ProxyGroupDto>>(entities));
     }
@@ -57,9 +57,10 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
     [HttpPost]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ProxyGroupDto>> Create(CreateProxyGroupDto dto,
-        [FromServices] IValidator<CreateProxyGroupDto> validator)
+        [FromServices] IValidator<CreateProxyGroupDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var apiUser = HttpContext.GetApiUser();
 
@@ -69,11 +70,11 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         // owner of the proxy group, for access control purposes.
         if (apiUser.Role is UserRole.Guest)
         {
-            var owner = await _guestRepo.GetAsync(apiUser.Id);
+            var owner = await _guestRepo.GetAsync(apiUser.Id, cancellationToken);
             entity.Owner = owner;
         }
 
-        await _proxyGroupRepo.AddAsync(entity);
+        await _proxyGroupRepo.AddAsync(entity, cancellationToken);
 
         _logger.LogInformation("Created a new proxy group with name {Name}", dto.Name);
 
@@ -86,16 +87,17 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
     [HttpPut]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ProxyGroupDto>> Update(UpdateProxyGroupDto dto,
-        [FromServices] IValidator<UpdateProxyGroupDto> validator)
+        [FromServices] IValidator<UpdateProxyGroupDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
-        var entity = await GetEntityAsync(dto.Id);
+        var entity = await GetEntityAsync(dto.Id, cancellationToken);
 
         EnsureOwnership(entity);
 
         _mapper.Map(dto, entity);
-        await _proxyGroupRepo.UpdateAsync(entity);
+        await _proxyGroupRepo.UpdateAsync(entity, cancellationToken);
 
         _logger.LogInformation("Updated the information of the proxy group with id {Id}", entity.Id);
 
@@ -107,11 +109,12 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
     /// of this proxy group. Returns the number of proxies that were deleted.
     /// </summary>
     /// <param name="id">The id of the proxy group to delete</param>
+    /// <param name="cancellationToken">The request cancellation token.</param>
     [HttpDelete]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<AffectedEntriesDto>> Delete(int id)
+    public async Task<ActionResult<AffectedEntriesDto>> Delete(int id, CancellationToken cancellationToken)
     {
-        var entity = await GetEntityAsync(id);
+        var entity = await GetEntityAsync(id, cancellationToken);
 
         EnsureOwnership(entity);
 
@@ -119,7 +122,7 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         var proxies = await _proxyRepo.GetAll()
             .Include(p => p.Group)
             .Where(p => p.Group != null && p.Group.Id == id)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var firstProxyId = proxies.FirstOrDefault()?.Id;
 
@@ -152,7 +155,7 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         }
 
         // This will cascade delete all the proxies in the group
-        await _proxyGroupRepo.DeleteAsync(entity);
+        await _proxyGroupRepo.DeleteAsync(entity, cancellationToken);
 
         _logger.LogInformation("Deleted the proxy group with id {Id} and {ProxyCount} proxies",
             entity.Id, proxies.Count);
@@ -160,9 +163,9 @@ public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
         return new AffectedEntriesDto { Count = proxies.Count };
     }
 
-    private async Task<ProxyGroupEntity> GetEntityAsync(int id)
+    private async Task<ProxyGroupEntity> GetEntityAsync(int id, CancellationToken cancellationToken)
     {
-        var entity = await _proxyGroupRepo.GetAsync(id) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
+        var entity = await _proxyGroupRepo.GetAsync(id, cancellationToken) ?? throw new EntryNotFoundException(ErrorCode.ProxyGroupNotFound,
                 id, nameof(IProxyGroupRepository));
         return entity;
     }

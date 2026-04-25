@@ -61,6 +61,13 @@ public class ConfigSharingService
     /// that need to be shared via the given endpoint.
     /// </summary>
     public async Task<byte[]> GetArchiveAsync(string endpointName)
+        => await GetArchiveAsync(endpointName, CancellationToken.None);
+
+    /// <summary>
+    /// Gets the bytes of the zip archive containing the configs
+    /// that need to be shared via the given endpoint.
+    /// </summary>
+    public async Task<byte[]> GetArchiveAsync(string endpointName, CancellationToken cancellationToken)
     {
         var endpoint = GetEndpoint(endpointName);
 
@@ -85,7 +92,7 @@ public class ConfigSharingService
                     // Create the entry and write the data
                     var zipArchiveEntry = archive.CreateEntry($"{configId}.opk", CompressionLevel.Fastest);
                     await using var zipStream = zipArchiveEntry.Open();
-                    await zipStream.WriteAsync(bytes);
+                    await zipStream.WriteAsync(bytes, cancellationToken);
                 }
                 catch (Exception ex)
                 {

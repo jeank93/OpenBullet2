@@ -28,7 +28,7 @@ internal class GuestFilter : IAsyncAuthorizationFilter
 
         if (apiUser.Role is UserRole.Guest)
         {
-            var guest = await _guestRepo.GetAsync(apiUser.Id);
+            var guest = await _guestRepo.GetAsync(apiUser.Id, context.HttpContext.RequestAborted);
 
             if (guest is null)
             {

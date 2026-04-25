@@ -67,7 +67,7 @@ public static class Methods
         foreach (var c in text)
         {
             element.SendKeys(c.ToString());
-            await Task.Delay(timeBetweenKeystrokes);
+            await Task.Delay(timeBetweenKeystrokes, data.CancellationToken);
         }
 
         UpdateSeleniumData(data);
@@ -91,7 +91,7 @@ public static class Methods
             element.SendKeys(c.ToString());
 
             // Wait between 100 and 300 ms (average human type speed is 60 WPM ~ 360 CPM)
-            await Task.Delay(data.Random.Next(100, 300));
+            await Task.Delay(data.Random.Next(100, 300), data.CancellationToken);
         }
 
         UpdateSeleniumData(data);
@@ -393,7 +393,7 @@ public static class Methods
             }
 
             waited += 200;
-            await Task.Delay(200);
+            await Task.Delay(200, data.CancellationToken);
         }
 
         throw new TimeoutException($"Timed out while waiting for element with {findBy} {identifier}");

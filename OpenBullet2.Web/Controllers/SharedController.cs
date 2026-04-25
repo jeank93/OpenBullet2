@@ -47,9 +47,10 @@ public class SharedController : ApiController
     [HttpPost("endpoint")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<EndpointDto>> CreateEndpoint(EndpointDto dto,
-        [FromServices] IValidator<EndpointDto> validator)
+        [FromServices] IValidator<EndpointDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var existing = _configSharingService.Endpoints.Find(
             e => e.Route == dto.Route);
@@ -77,9 +78,10 @@ public class SharedController : ApiController
     [HttpPut("endpoint")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<EndpointDto>> UpdateEndpoint(EndpointDto dto,
-        [FromServices] IValidator<EndpointDto> validator)
+        [FromServices] IValidator<EndpointDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
 
         var endpoint = _configSharingService.Endpoints.Find(
             e => e.Route == dto.Route);
@@ -130,7 +132,8 @@ public class SharedController : ApiController
     [MapToApiVersion("1.0")]
     public async Task<IActionResult> DownloadConfigs(
         string endpointName,
-        [FromHeader(Name = "Api-Key")] string apiKey)
+        [FromHeader(Name = "Api-Key")] string apiKey,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -143,7 +146,7 @@ public class SharedController : ApiController
                     "Invalid api key");
             }
 
-            return File(await _configSharingService.GetArchiveAsync(endpointName),
+            return File(await _configSharingService.GetArchiveAsync(endpointName, cancellationToken),
                 "application/zip", "configs.zip");
         }
         catch (UnauthorizedException)

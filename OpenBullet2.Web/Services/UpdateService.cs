@@ -58,7 +58,7 @@ public class UpdateService : BackgroundService, IUpdateService
 
         do
         {
-            await FetchRemoteVersionAsync();
+            await FetchRemoteVersionAsync(stoppingToken);
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
@@ -69,7 +69,7 @@ public class UpdateService : BackgroundService, IUpdateService
         _ => VersionType.Release
     };
 
-    private async Task FetchRemoteVersionAsync()
+    private async Task FetchRemoteVersionAsync(CancellationToken cancellationToken)
     {
         var isDebug = false;
 
@@ -82,7 +82,7 @@ public class UpdateService : BackgroundService, IUpdateService
 #pragma warning restore S2583
         {
             _logger.LogWarning("Skipped updates check in debug mode");
-            await Task.Delay(1);
+            await Task.Delay(1, cancellationToken);
             return;
         }
 
@@ -95,10 +95,10 @@ public class UpdateService : BackgroundService, IUpdateService
 #pragma warning restore S1075
             client.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0");
-            var response = await client.GetAsync("releases/latest");
+            var response = await client.GetAsync("releases/latest", cancellationToken);
 
             // Take the first and get its name
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var release = JToken.Parse(json);
             var releaseName = release["tag_name"]?.ToString() ?? "0.0.1";
 

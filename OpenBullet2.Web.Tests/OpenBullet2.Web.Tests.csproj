@@ -11,7 +11,7 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.26" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-        <PackageReference Include="SonarAnalyzer.CSharp" Version="9.27.0.93347">
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.24.0.138807">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -20,7 +20,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="coverlet.collector" Version="6.0.4">
+        <PackageReference Include="coverlet.collector" Version="10.0.0">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

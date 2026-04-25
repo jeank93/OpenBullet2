@@ -171,7 +171,8 @@ public class SettingsController : ApiController
         {
             var claims = new[] {
                 new Claim(ClaimTypes.NameIdentifier, "0", ClaimValueTypes.Integer),
-                new Claim(ClaimTypes.Name, newAdminUsername), new Claim(ClaimTypes.Role, "Admin")
+                new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name, newAdminUsername),
+                new Claim(ClaimTypes.Role, "Admin")
             };
 
             var lifetimeHours = Math.Clamp(_obSettingsService.Settings.SecuritySettings.AdminSessionLifetimeHours, 0, 9999);

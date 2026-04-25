@@ -28,9 +28,19 @@ public partial class HTMLViewer : UserControl
     {
         if (d is HTMLViewer source && e.NewValue is string newValue && !string.IsNullOrEmpty(newValue))
         {
-            var html = new HtmlSanitizer().Sanitize(newValue);
+            var html = CreateSanitizer().Sanitize(newValue);
             source.Render(html);
         }
+    }
+
+    private static HtmlSanitizer CreateSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        // Explicitly keep template disallowed to avoid the known bypass advisory.
+        sanitizer.AllowedTags.Remove("template");
+
+        return sanitizer;
     }
 
     public HTMLViewer()

@@ -70,7 +70,7 @@ public class IntegrationTests : IDisposable
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, guest.Id.ToString(), ClaimValueTypes.Integer),
-            new Claim(ClaimTypes.Name, guest.Username ?? string.Empty),
+            new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Name, guest.Username ?? string.Empty),
             new Claim(ClaimTypes.Role, "Guest"),
             new Claim("IPAtLogin", "::1")
         };

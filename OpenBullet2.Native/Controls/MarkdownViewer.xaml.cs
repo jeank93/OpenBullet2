@@ -32,9 +32,19 @@ public partial class MarkdownViewer : UserControl
         if (d is MarkdownViewer source && e.NewValue is string newValue && !string.IsNullOrEmpty(newValue))
         {
             var dangerous = Markdown.ToHtml(newValue);
-            var html = new HtmlSanitizer().Sanitize(dangerous);
+            var html = CreateSanitizer().Sanitize(dangerous);
             source.Render(html);
         }
+    }
+
+    private static HtmlSanitizer CreateSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        // Explicitly keep template disallowed to avoid the known bypass advisory.
+        sanitizer.AllowedTags.Remove("template");
+
+        return sanitizer;
     }
 
     public MarkdownViewer()

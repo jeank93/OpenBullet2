@@ -24,7 +24,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentValidation;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using OpenBullet2.Core.Models.Proxies;
 using Serilog;
 
@@ -90,22 +90,11 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "ApiKeyScheme"
     });
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Api Key"
-                },
-                Scheme = "ApiKeyScheme",
-                Name = "X-Api-Key",
-                In = ParameterLocation.Header,
-
-            },
-            new List<string>()
+            new OpenApiSecuritySchemeReference("Api Key", null!, null!),
+            []
         }
     });
 });
@@ -115,7 +104,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty,
         b => b.MigrationsAssembly("OpenBullet2.Core")));
 
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
+builder.Services.AddAutoMapper(_ => { }, typeof(AutoMapperProfile).Assembly);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));

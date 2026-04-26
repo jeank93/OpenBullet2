@@ -10,18 +10,32 @@ namespace OpenBullet2.Native.Updater.Helpers;
 
 public static class FileSystemHelper
 {
-    public static async Task<Version?> GetLocalVersionAsync()
+    public static string ResolveInstallDirectory(string? installDirectory)
+    {
+        var path = string.IsNullOrWhiteSpace(installDirectory)
+            ? AppContext.BaseDirectory
+            : installDirectory;
+
+        var fullPath = Path.GetFullPath(path);
+        Directory.CreateDirectory(fullPath);
+
+        return fullPath;
+    }
+
+    public static async Task<Version?> GetLocalVersionAsync(string installDirectory)
     {
         return await AnsiConsole.Status()
             .StartAsync("[yellow]Reading the current version...[/]", async ctx =>
             {
+                var versionFile = Path.Combine(installDirectory, "version.txt");
+
                 // Check if version.txt exists
-                if (!File.Exists("version.txt"))
+                if (!File.Exists(versionFile))
                 {
                     return null;
                 }
 
-                var content = await File.ReadAllLinesAsync("version.txt");
+                var content = await File.ReadAllLinesAsync(versionFile);
                 var currentVersion = Version.Parse(content.First());
 
                 AnsiConsole.MarkupLineInterpolated($"[green]Current version: {currentVersion}[/]");
@@ -30,19 +44,22 @@ public static class FileSystemHelper
             });
     }
 
-    public static async Task CleanupInstallationFolderAsync()
+    public static async Task CleanupInstallationFolderAsync(string installDirectory)
     {
         AnsiConsole.MarkupLine("[yellow]Cleaning up the OB2 folder...[/]");
 
         // The build-files.txt file contains a list of all the files in the current build.
         // We will delete all those files and folders and clean up the directory.
-        if (File.Exists("build-files.txt"))
+        var buildFiles = Path.Combine(installDirectory, "build-files.txt");
+        if (File.Exists(buildFiles))
         {
-            var entries = await File.ReadAllLinesAsync("build-files.txt");
+            var entries = await File.ReadAllLinesAsync(buildFiles);
 
             AnsiConsole.Status()
                 .Start("[yellow]Deleting...[/]", ctx =>
                 {
+                    var currentExecutable = Process.GetCurrentProcess().MainModule?.FileName;
+
                     foreach (var entry in entries.Where(e => !string.IsNullOrWhiteSpace(e)))
                     {
                         ctx.Status($"Deleting {entry}...");
@@ -53,13 +70,13 @@ public static class FileSystemHelper
                             continue;
                         }
 
+                        var path = Path.Combine(installDirectory, entry);
+
                         // If it's the current executable, disregard it
-                        if (entry == Process.GetCurrentProcess().MainModule?.FileName)
+                        if (string.Equals(path, currentExecutable, StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }
-
-                        var path = Path.Combine(Directory.GetCurrentDirectory(), entry);
 
                         if (File.Exists(path))
                         {
@@ -80,7 +97,7 @@ public static class FileSystemHelper
         }
     }
 
-    public static async Task ExtractArchiveAsync(Stream stream)
+    public static async Task ExtractArchiveAsync(Stream stream, string installDirectory)
     {
         AnsiConsole.MarkupLine("[yellow]Extracting the archive...[/]");
 
@@ -91,7 +108,8 @@ public static class FileSystemHelper
                 foreach (var entry in archive.Entries)
                 {
                     // Do not extract appsettings.json if it exists
-                    if (entry.FullName.Contains("appsettings.json") && File.Exists("appsettings.json"))
+                    if (entry.FullName.Contains("appsettings.json") &&
+                        File.Exists(Path.Combine(installDirectory, "appsettings.json")))
                     {
                         continue;
                     }
@@ -110,7 +128,7 @@ public static class FileSystemHelper
 
                     ctx.Status($"Extracting {entry.FullName}...");
 
-                    var path = Path.Combine(Directory.GetCurrentDirectory(), entry.FullName);
+                    var path = Path.Combine(installDirectory, entry.FullName);
                     var dir = Path.GetDirectoryName(path);
                     if (!Directory.Exists(dir))
                     {

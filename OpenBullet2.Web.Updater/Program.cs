@@ -23,6 +23,9 @@ public static class Program
 
     private static async Task UpdateAsync(CliOptions options)
     {
+        var installDirectory = FileSystemHelper.ResolveInstallDirectory(options.InstallDir);
+        AnsiConsole.MarkupLineInterpolated($"[green]Installation directory: {installDirectory}[/]");
+
         // Validate the repository
         InputValidation.ValidateRepository(options.Repository);
 
@@ -42,7 +45,7 @@ public static class Program
         AnsiConsole.MarkupLineInterpolated($"[green]Remote version: {remoteVersionInfo.Version}[/]");
 
         // Get the current version
-        var currentVersion = await FileSystemHelper.GetLocalVersionAsync();
+        var currentVersion = await FileSystemHelper.GetLocalVersionAsync(installDirectory);
 
         if (currentVersion is null)
         {
@@ -91,10 +94,10 @@ public static class Program
         AnsiConsole.MarkupLine("[green]Download complete![/]");
 
         // Clean up the installation folder
-        await FileSystemHelper.CleanupInstallationFolderAsync();
+        await FileSystemHelper.CleanupInstallationFolderAsync(installDirectory);
 
         // Extract the archive
-        await FileSystemHelper.ExtractArchiveAsync(buildStream);
+        await FileSystemHelper.ExtractArchiveAsync(buildStream, installDirectory);
 
         AnsiConsole.MarkupLine("[green]The update was completed successfully. " +
                                "You may now restart your OpenBullet 2 instance![/]");

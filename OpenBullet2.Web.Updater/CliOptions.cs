@@ -15,4 +15,7 @@ public class CliOptions
 
     [Option('c', "channel", Required = false, HelpText = "The channel to use for updates (staging, release)")]
     public BuildChannel? Channel { get; set; } = null;
+
+    [Option('i', "install-dir", Required = false, HelpText = "The OpenBullet 2 installation directory")]
+    public string? InstallDir { get; set; }
 }

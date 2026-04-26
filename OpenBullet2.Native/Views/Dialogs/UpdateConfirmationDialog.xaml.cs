@@ -1,6 +1,7 @@
 using OpenBullet2.Native.ViewModels;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,7 +33,13 @@ public partial class UpdateConfirmationDialog : Page
             _ => throw new NotImplementedException()
         };
 
-        Process.Start(updaterFileName);
+        var installDirectory = AppContext.BaseDirectory;
+        var startInfo = new ProcessStartInfo(Path.Combine(installDirectory, updaterFileName))
+        {
+            WorkingDirectory = installDirectory
+        };
+
+        Process.Start(startInfo);
         Environment.Exit(0);
     }
 

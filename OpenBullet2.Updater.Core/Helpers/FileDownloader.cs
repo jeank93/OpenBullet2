@@ -4,7 +4,7 @@ namespace OpenBullet2.Updater.Core.Helpers;
 
 public class FileDownloader
 {
-    public static async Task<MemoryStream> DownloadAsync(HttpClient client, string url,
+    public static async Task<Stream> DownloadAsync(HttpClient client, string url,
         IProgress<double> progress)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -17,31 +17,45 @@ public class FileDownloader
         response.EnsureSuccessStatusCode();
 
         var content = response.Content;
-        var total = response.Content.Headers.ContentLength!;
+        var total = response.Content.Headers.ContentLength;
         var downloaded = 0.0;
 
-        var memoryStream = new MemoryStream();
+        var tempPath = Path.Combine(Path.GetTempPath(), $"ob2-download-{Guid.NewGuid():N}.tmp");
+        var fileStream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None,
+            bufferSize: 81920, FileOptions.Asynchronous | FileOptions.DeleteOnClose);
         await using var stream = await content.ReadAsStreamAsync();
 
-        var buffer = new byte[81920];
-        var isMoreToRead = true;
-
-        do
+        try
         {
-            var read = await stream.ReadAsync(buffer);
-            if (read == 0)
-            {
-                isMoreToRead = false;
-            }
-            else
-            {
-                await memoryStream.WriteAsync(buffer.AsMemory(0, read));
-                downloaded += read;
-                progress.Report(downloaded / total.Value * 100);
-            }
-        } while (isMoreToRead);
+            var buffer = new byte[81920];
+            var isMoreToRead = true;
 
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        return memoryStream;
+            do
+            {
+                var read = await stream.ReadAsync(buffer);
+                if (read == 0)
+                {
+                    isMoreToRead = false;
+                }
+                else
+                {
+                    await fileStream.WriteAsync(buffer.AsMemory(0, read));
+                    downloaded += read;
+
+                    if (total is > 0)
+                    {
+                        progress.Report(downloaded / total.Value * 100);
+                    }
+                }
+            } while (isMoreToRead);
+
+            fileStream.Seek(0, SeekOrigin.Begin);
+            return fileStream;
+        }
+        catch
+        {
+            await fileStream.DisposeAsync();
+            throw;
+        }
     }
 }

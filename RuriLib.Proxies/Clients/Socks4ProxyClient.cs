@@ -25,15 +25,11 @@ internal static class Socks4Constants
 /// <summary>
 /// A client that provides proxies connections via SOCKS4 proxies.
 /// </summary>
-public class Socks4ProxyClient : ProxyClient
+/// <remarks>
+/// Creates an SOCKS4 proxy client given the proxy <paramref name="settings"/>.
+/// </remarks>
+public class Socks4ProxyClient(ProxySettings settings) : ProxyClient(settings)
 {
-    /// <summary>
-    /// Creates an SOCKS4 proxy client given the proxy <paramref name="settings"/>.
-    /// </summary>
-    public Socks4ProxyClient(ProxySettings settings) : base(settings)
-    {
-
-    }
 
     /// <inheritdoc/>
     protected override async Task CreateConnectionAsync(TcpClient client, string destinationHost, int destinationPort,
@@ -108,13 +104,7 @@ public class Socks4ProxyClient : ProxyClient
         // +----+----+----+----+----+----+----+----+
         //   1    1       2              4
         var response = new byte[8];
-
-        var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead != response.Length)
-        {
-            throw new ProxyException("The proxy server did not respond correctly");
-        }
+        await ReadExactlyAsync(nStream, response, cancellationToken).ConfigureAwait(false);
 
         var reply = response[1];
 
@@ -138,5 +128,25 @@ public class Socks4ProxyClient : ProxyClient
         };
 
         throw new ProxyException(errorMessage);
+    }
+
+    private protected static async Task ReadExactlyAsync(NetworkStream nStream, byte[] buffer,
+        CancellationToken cancellationToken = default)
+    {
+        var bytesRead = 0;
+
+        while (bytesRead < buffer.Length)
+        {
+            var read = await nStream.ReadAsync(
+                buffer.AsMemory(bytesRead, buffer.Length - bytesRead),
+                cancellationToken).ConfigureAwait(false);
+
+            if (read == 0)
+            {
+                throw new ProxyException("The proxy server did not respond correctly");
+            }
+
+            bytesRead += read;
+        }
     }
 }

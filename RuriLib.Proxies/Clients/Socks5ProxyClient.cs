@@ -43,15 +43,11 @@ internal static class Socks5Constants
 /// <summary>
 /// A client that provides proxies connections via SOCKS5 proxies.
 /// </summary>
-public class Socks5ProxyClient : ProxyClient
+/// <remarks>
+/// Creates an SOCKS5 proxy client given the proxy <paramref name="settings"/>.
+/// </remarks>
+public class Socks5ProxyClient(ProxySettings settings) : ProxyClient(settings)
 {
-    /// <summary>
-    /// Creates an SOCKS5 proxy client given the proxy <paramref name="settings"/>.
-    /// </summary>
-    public Socks5ProxyClient(ProxySettings settings) : base(settings)
-    {
-
-    }
 
     /// <inheritdoc/>
     protected override async Task CreateConnectionAsync(TcpClient client, string destinationHost, int destinationPort,
@@ -117,13 +113,7 @@ public class Socks5ProxyClient : ProxyClient
         // | 1  |   1    |
         // +----+--------+
         var response = new byte[2];
-
-        var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead != response.Length)
-        {
-            throw new ProxyException("The proxy server did not respond correctly");
-        }
+        await ReadExactlyAsync(nStream, response, cancellationToken).ConfigureAwait(false);
 
         var reply = response[1];
 
@@ -175,13 +165,7 @@ public class Socks5ProxyClient : ProxyClient
         // | 1  |   1    |
         // +----+--------+
         var response = new byte[2];
-
-        var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead != response.Length)
-        {
-            throw new ProxyException("The proxy server did not respond correctly");
-        }
+        await ReadExactlyAsync(nStream, response, cancellationToken).ConfigureAwait(false);
 
         var reply = response[1];
 
@@ -221,16 +205,21 @@ public class Socks5ProxyClient : ProxyClient
         // +----+-----+-------+------+----------+----------+
         // | 1  |  1  | X'00' |  1   | Variable |    2     |
         // +----+-----+-------+------+----------+----------+
-        var response = new byte[255];
+        var header = new byte[4];
+        await ReadExactlyAsync(nStream, header, cancellationToken).ConfigureAwait(false);
 
-        var bytesRead = await nStream.ReadAsync(response.AsMemory(0, response.Length), cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead != response.Length)
+        var addressLength = header[3] switch
         {
-            throw new ProxyException("The proxy server did not respond correctly");
-        }
+            AddressTypeIPV4 => 4,
+            AddressTypeIPV6 => 16,
+            AddressTypeDomainName => await ReadDomainLengthAsync(nStream, cancellationToken).ConfigureAwait(false),
+            _ => throw new ProxyException("The proxy server did not respond correctly")
+        };
 
-        var reply = response[1];
+        var addressAndPort = new byte[addressLength + 2];
+        await ReadExactlyAsync(nStream, addressAndPort, cancellationToken).ConfigureAwait(false);
+
+        var reply = header[1];
         if (reply != CommandReplySucceeded)
         {
             HandleCommandError(reply);
@@ -290,6 +279,33 @@ public class Socks5ProxyClient : ProxyClient
 
             default:
                 throw new ProxyException($"Not supported address type {host}");
+        }
+    }
+
+    private static async Task<byte> ReadDomainLengthAsync(NetworkStream nStream, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[1];
+        await ReadExactlyAsync(nStream, buffer, cancellationToken).ConfigureAwait(false);
+        return buffer[0];
+    }
+
+    private static async Task ReadExactlyAsync(NetworkStream nStream, byte[] buffer,
+        CancellationToken cancellationToken = default)
+    {
+        var bytesRead = 0;
+
+        while (bytesRead < buffer.Length)
+        {
+            var read = await nStream.ReadAsync(
+                buffer.AsMemory(bytesRead, buffer.Length - bytesRead),
+                cancellationToken).ConfigureAwait(false);
+
+            if (read == 0)
+            {
+                throw new ProxyException("The proxy server did not respond correctly");
+            }
+
+            bytesRead += read;
         }
     }
 }

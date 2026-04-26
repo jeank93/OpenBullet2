@@ -5,6 +5,8 @@ using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using ParsingMethods = RuriLib.Blocks.Parsing.Methods;
 
 namespace RuriLib.Tests.Blocks.Parsing;
 
@@ -15,7 +17,7 @@ public class ParsingBlocksTests
     {
         var data = NewBotData();
 
-        var parsed = global::RuriLib.Blocks.Parsing.Methods.ParseBetweenStringsRecursive(
+        var parsed = ParsingMethods.ParseBetweenStringsRecursive(
             data,
             "a[href='hello world'] b[href='two/three']",
             "[href='",
@@ -30,7 +32,7 @@ public class ParsingBlocksTests
     {
         var data = NewBotData();
 
-        var parsed = global::RuriLib.Blocks.Parsing.Methods.QueryJsonTokenRecursive(
+        var parsed = ParsingMethods.QueryJsonTokenRecursive(
             data,
             "{\"value\":\"hello world\"}",
             "value",
@@ -44,7 +46,7 @@ public class ParsingBlocksTests
     {
         var data = NewBotData();
 
-        var parsed = global::RuriLib.Blocks.Parsing.Methods.MatchRegexGroupsRecursive(
+        var parsed = ParsingMethods.MatchRegexGroupsRecursive(
             data,
             "url=hello world",
             "url=(.*)",
@@ -57,7 +59,7 @@ public class ParsingBlocksTests
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

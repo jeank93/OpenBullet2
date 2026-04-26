@@ -13,6 +13,7 @@ using SshMethods = RuriLib.Blocks.Requests.Ssh.Methods;
 using System;
 using System.Threading.Tasks;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -144,7 +145,7 @@ public class SshRequestIntegrationTests
 
     private static BotData NewBotData(Proxy? proxy = null)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

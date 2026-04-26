@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Custom;
@@ -32,7 +33,7 @@ public class DescriptorsRepositoryTests
 
     [Fact]
     public void ToVariableType_TaskString_ReturnsString()
-        => Assert.Equal(VariableType.String, DescriptorsRepository.ToVariableType(typeof(System.Threading.Tasks.Task<string>)));
+        => Assert.Equal(VariableType.String, DescriptorsRepository.ToVariableType(typeof(Task<string>)));
 
     [Fact]
     public void ToVariableType_InvalidType_Throws()

@@ -8,6 +8,9 @@ using RuriLib.Providers.UserAgents;
 using RuriLib.Tests.Utils.Mockup;
 using System;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using GeneralMethods = RuriLib.Blocks.Functions.Methods;
+using TimeMethods = RuriLib.Blocks.Functions.Time.Methods;
 
 namespace RuriLib.Tests.Blocks.Functions;
 
@@ -18,7 +21,7 @@ public class GeneralAndTimeFunctionsTests
     {
         var data = NewBotData(new StubUaProvider("ua-mobile"));
 
-        var result = global::RuriLib.Blocks.Functions.Methods.RandomUserAgent(data, UAPlatform.Mobile);
+        var result = GeneralMethods.RandomUserAgent(data, UAPlatform.Mobile);
 
         Assert.Equal("ua-mobile", result);
     }
@@ -28,7 +31,7 @@ public class GeneralAndTimeFunctionsTests
     {
         var data = NewBotData(new ThrowingUaProvider());
 
-        var result = global::RuriLib.Blocks.Functions.Methods.RandomUserAgent(data);
+        var result = GeneralMethods.RandomUserAgent(data);
 
         Assert.Equal("NO_RANDOM_UA_FOUND", result);
     }
@@ -41,7 +44,7 @@ public class GeneralAndTimeFunctionsTests
         const string format = "yyyy-MM-dd:HH-mm-ss";
         var expected = (int)DateTime.ParseExact(datetime, format, null).ToUniversalTime().Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
-        var parsed = global::RuriLib.Blocks.Functions.Time.Methods.DateToUnixTime(data, datetime, format);
+        var parsed = TimeMethods.DateToUnixTime(data, datetime, format);
 
         Assert.Equal(expected, parsed);
     }
@@ -51,14 +54,14 @@ public class GeneralAndTimeFunctionsTests
     {
         var data = NewBotData(new StubUaProvider("ua"));
 
-        var iso = global::RuriLib.Blocks.Functions.Time.Methods.UnixTimeToISO8601(data, 1587168000);
+        var iso = TimeMethods.UnixTimeToISO8601(data, 1587168000);
 
         Assert.Equal("2020-04-18T00:00:00.000Z", iso);
     }
 
     private static BotData NewBotData(IRandomUAProvider randomUaProvider)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 RNG = new DeterministicRngProvider(),
                 RandomUA = randomUaProvider,

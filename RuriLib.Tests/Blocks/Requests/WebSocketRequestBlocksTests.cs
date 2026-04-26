@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using WsMethods = RuriLib.Blocks.Requests.WebSocket.Methods;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -112,7 +113,7 @@ public class WebSocketRequestBlocksTests
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

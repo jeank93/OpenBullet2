@@ -8,7 +8,17 @@ using RuriLib.Providers.Proxies;
 using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using ByteArrayMethods = RuriLib.Blocks.Functions.ByteArray.Methods;
+using ConditionsMethods = RuriLib.Blocks.Conditions.Methods;
+using ConstantsMethods = RuriLib.Blocks.Functions.Constants.Methods;
+using CryptoMethods = RuriLib.Blocks.Functions.Crypto.Methods;
+using DictionaryMethods = RuriLib.Blocks.Functions.Dictionary.Methods;
+using FloatMethods = RuriLib.Blocks.Functions.Float.Methods;
+using HashFunction = RuriLib.Functions.Crypto.HashFunction;
+using IntegerMethods = RuriLib.Blocks.Functions.Integer.Methods;
 
 namespace RuriLib.Tests.Blocks.Functions;
 
@@ -19,7 +29,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var merged = global::RuriLib.Blocks.Functions.ByteArray.Methods.MergeByteArrays(data, [0x01, 0x02], [0x03, 0x04]);
+        var merged = ByteArrayMethods.MergeByteArrays(data, [0x01, 0x02], [0x03, 0x04]);
 
         Assert.Equal([0x01, 0x02, 0x03, 0x04], merged);
     }
@@ -30,10 +40,21 @@ public class AdditionalFunctionsTests
         var data = NewBotData();
         var source = new List<string> { "alpha", "beta" };
 
-        var cloned = global::RuriLib.Blocks.Functions.Constants.Methods.ConstantList(data, source);
+        var cloned = ConstantsMethods.ConstantList(data, source);
         source[0] = "changed";
 
         Assert.Equal(["alpha", "beta"], cloned);
+    }
+
+    [Fact]
+    public void Constants_ReturnExpectedValues()
+    {
+        var data = NewBotData();
+
+        Assert.Equal(42, ConstantsMethods.ConstantInteger(data, 42));
+        Assert.Equal(1.5f, ConstantsMethods.ConstantFloat(data, 1.5f));
+        Assert.True(ConstantsMethods.ConstantBool(data, true));
+        Assert.Equal([0x01, 0x02], ConstantsMethods.ConstantByteArray(data, [0x01, 0x02]));
     }
 
     [Fact]
@@ -41,7 +62,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var value = global::RuriLib.Blocks.Functions.Integer.Methods.RandomInteger(data, 5, 5);
+        var value = IntegerMethods.RandomInteger(data, 5, 5);
 
         Assert.Equal(5, value);
     }
@@ -51,7 +72,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var value = global::RuriLib.Blocks.Functions.Float.Methods.RandomFloat(data, 2.5f, 2.5f);
+        var value = FloatMethods.RandomFloat(data, 2.5f, 2.5f);
 
         Assert.Equal(2.5f, value);
     }
@@ -61,9 +82,46 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var value = global::RuriLib.Blocks.Functions.Float.Methods.Compute(data, "3*(2+1)");
+        var value = FloatMethods.Compute(data, "3*(2+1)");
 
         Assert.Equal(9f, value);
+    }
+
+    [Fact]
+    public void NumericHelpers_ReturnExpectedValues()
+    {
+        var data = NewBotData();
+
+        Assert.Equal(3, FloatMethods.Ceil(data, 2.1f));
+        Assert.Equal(2, FloatMethods.Floor(data, 2.9f));
+        Assert.Equal(3, FloatMethods.RoundToInteger(data, 2.5f));
+        Assert.Equal(4.5f, FloatMethods.TakeMaxFloat(data, 1.5f, 4.5f));
+        Assert.Equal(1.5f, FloatMethods.TakeMinFloat(data, 1.5f, 4.5f));
+        Assert.Equal(9, IntegerMethods.TakeMaxInt(data, 4, 9));
+        Assert.Equal(4, IntegerMethods.TakeMinInt(data, 4, 9));
+    }
+
+    [Fact]
+    public void CryptoWrappers_ReturnExpectedValues()
+    {
+        var data = NewBotData();
+
+        var xor = CryptoMethods.XOR(data, [0x0F, 0xF0], [0xFF, 0xFF]);
+        var hash = CryptoMethods.HashString(
+            data,
+            "hello",
+            HashFunction.SHA256);
+        var hmac = CryptoMethods.HmacString(
+            data,
+            "hello",
+            Encoding.UTF8.GetBytes("key"),
+            HashFunction.SHA256);
+        var bcryptHash = CryptoMethods.BCryptHashGenSalt(data, "secret", rounds: 4);
+
+        Assert.Equal([0xF0, 0x0F], xor);
+        Assert.Equal("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", hash);
+        Assert.Equal("9307b3b915efb5171ff14d8cb55fbcc798c6c0ef1456d66ded1a6aa723a58b7b", hmac);
+        Assert.True(CryptoMethods.BCryptVerify(data, "secret", bcryptHash));
     }
 
     [Fact]
@@ -71,7 +129,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var key = global::RuriLib.Blocks.Functions.Dictionary.Methods.GetKey(
+        var key = DictionaryMethods.GetKey(
             data,
             new Dictionary<string, string> { ["alpha"] = "1" },
             "missing");
@@ -85,8 +143,8 @@ public class AdditionalFunctionsTests
         var data = NewBotData();
         var dictionary = new Dictionary<string, string>();
 
-        global::RuriLib.Blocks.Functions.Dictionary.Methods.AddKeyValuePair(data, dictionary, "alpha", "1");
-        global::RuriLib.Blocks.Functions.Dictionary.Methods.RemoveByKey(data, dictionary, "alpha");
+        DictionaryMethods.AddKeyValuePair(data, dictionary, "alpha", "1");
+        DictionaryMethods.RemoveByKey(data, dictionary, "alpha");
 
         Assert.Empty(dictionary);
     }
@@ -96,7 +154,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var result = global::RuriLib.Blocks.Conditions.Methods.CheckCondition(data, "alphabet", StrComparison.Contains, "pha");
+        var result = ConditionsMethods.CheckCondition(data, "alphabet", StrComparison.Contains, "pha");
 
         Assert.True(result);
     }
@@ -106,7 +164,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var result = global::RuriLib.Blocks.Conditions.Methods.CheckCondition(data, ["alpha", "beta"], ListComparison.Contains, "beta");
+        var result = ConditionsMethods.CheckCondition(data, ["alpha", "beta"], ListComparison.Contains, "beta");
 
         Assert.True(result);
     }
@@ -116,7 +174,7 @@ public class AdditionalFunctionsTests
     {
         var data = NewBotData();
 
-        var result = global::RuriLib.Blocks.Conditions.Methods.CheckCondition(
+        var result = ConditionsMethods.CheckCondition(
             data,
             new Dictionary<string, string> { ["alpha"] = "one" },
             DictComparison.HasValue,
@@ -131,7 +189,7 @@ public class AdditionalFunctionsTests
         var data = NewBotData(new MatchingProxySettingsProvider("BAN", string.Empty));
         data.SOURCE = "prefix BAN suffix";
 
-        var result = global::RuriLib.Blocks.Conditions.Methods.CheckGlobalBanKeys(data);
+        var result = ConditionsMethods.CheckGlobalBanKeys(data);
 
         Assert.True(result);
     }
@@ -142,14 +200,14 @@ public class AdditionalFunctionsTests
         var data = NewBotData(new MatchingProxySettingsProvider(string.Empty, "RETRY"));
         data.SOURCE = "prefix RETRY suffix";
 
-        var result = global::RuriLib.Blocks.Conditions.Methods.CheckGlobalRetryKeys(data);
+        var result = ConditionsMethods.CheckGlobalRetryKeys(data);
 
         Assert.True(result);
     }
 
     private static BotData NewBotData(IProxySettingsProvider? proxySettingsProvider = null)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = proxySettingsProvider ?? new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

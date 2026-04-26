@@ -14,6 +14,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using FtpItemKind = RuriLib.Blocks.Requests.Ftp.FtpItemKind;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -65,9 +67,9 @@ public class FtpRequestBlocksTests
             20000);
 
         var allItems = await FtpMethods.FtpListItems(data);
-        var filesOnly = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File);
-        var foldersOnly = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.Folder);
-        var recursiveFiles = await FtpMethods.FtpListItems(data, global::RuriLib.Blocks.Requests.Ftp.FtpItemKind.File, recursive: true);
+        var filesOnly = await FtpMethods.FtpListItems(data, FtpItemKind.File);
+        var foldersOnly = await FtpMethods.FtpListItems(data, FtpItemKind.Folder);
+        var recursiveFiles = await FtpMethods.FtpListItems(data, FtpItemKind.File, recursive: true);
         var ftpLog = FtpMethods.FtpGetLog(data);
 
         Assert.Contains(allItems, item => item.EndsWith("/root.txt", StringComparison.Ordinal));
@@ -293,7 +295,7 @@ public class FtpRequestBlocksTests
 
     private static BotData NewBotData(Proxy? proxy = null)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

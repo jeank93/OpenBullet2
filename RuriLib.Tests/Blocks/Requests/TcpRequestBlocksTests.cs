@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TcpMethods = RuriLib.Blocks.Requests.Tcp.Methods;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -255,7 +256,7 @@ public class TcpRequestBlocksTests
 
     private static BotData NewBotData(Proxy? proxy = null)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

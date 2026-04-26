@@ -5,7 +5,16 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
+using System.Threading.Tasks;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using FindElementBy = RuriLib.Functions.Puppeteer.FindElementBy;
+using PuppeteerBrowserMethods = RuriLib.Blocks.Puppeteer.Browser.Methods;
+using PuppeteerElementMethods = RuriLib.Blocks.Puppeteer.Elements.Methods;
+using PuppeteerPageMethods = RuriLib.Blocks.Puppeteer.Page.Methods;
+using SeleniumBrowserMethods = RuriLib.Blocks.Selenium.Browser.Methods;
+using SeleniumElementMethods = RuriLib.Blocks.Selenium.Elements.Methods;
+using SeleniumPageMethods = RuriLib.Blocks.Selenium.Page.Methods;
 
 namespace RuriLib.Tests.Blocks;
 
@@ -17,7 +26,7 @@ public class BrowserBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Selenium.Browser.Methods.SeleniumReload(data));
+            SeleniumBrowserMethods.SeleniumReload(data));
 
         Assert.Equal("The browser is not open!", ex.Message);
     }
@@ -28,9 +37,9 @@ public class BrowserBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Selenium.Elements.Methods.SeleniumGetWidth(
+            SeleniumElementMethods.SeleniumGetWidth(
                 data,
-                global::RuriLib.Functions.Puppeteer.FindElementBy.Id,
+                FindElementBy.Id,
                 "main",
                 0));
 
@@ -38,25 +47,25 @@ public class BrowserBlocksTests
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task PuppeteerReload_WithoutBrowser_Throws()
+    public async Task PuppeteerReload_WithoutBrowser_Throws()
     {
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Puppeteer.Browser.Methods.PuppeteerReload(data));
+            PuppeteerBrowserMethods.PuppeteerReload(data));
 
         Assert.Equal("No pages open!", ex.Message);
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task PuppeteerGetWidth_WithoutBrowser_Throws()
+    public async Task PuppeteerGetWidth_WithoutBrowser_Throws()
     {
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Puppeteer.Elements.Methods.PuppeteerGetWidth(
+            PuppeteerElementMethods.PuppeteerGetWidth(
                 data,
-                global::RuriLib.Functions.Puppeteer.FindElementBy.Id,
+                FindElementBy.Id,
                 "main",
                 0));
 
@@ -69,25 +78,25 @@ public class BrowserBlocksTests
         var data = NewBotData();
 
         var ex = Assert.Throws<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Selenium.Page.Methods.SeleniumNavigateTo(data));
+            SeleniumPageMethods.SeleniumNavigateTo(data));
 
         Assert.Equal("The browser is not open!", ex.Message);
     }
 
     [Fact]
-    public async System.Threading.Tasks.Task PuppeteerNavigateTo_WithoutBrowser_Throws()
+    public async Task PuppeteerNavigateTo_WithoutBrowser_Throws()
     {
         var data = NewBotData();
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
-            global::RuriLib.Blocks.Puppeteer.Page.Methods.PuppeteerNavigateTo(data));
+            PuppeteerPageMethods.PuppeteerNavigateTo(data));
 
         Assert.Equal("No pages open!", ex.Message);
     }
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

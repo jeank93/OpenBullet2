@@ -9,10 +9,12 @@ using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using SmtpMethods = RuriLib.Blocks.Requests.Smtp.Methods;
 using RuriLib.Tests.Utils.Mockup;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -102,6 +104,25 @@ public class MailRequestBlocksTests
         Assert.Equal("Connect the SMTP client first!", ex.Message);
     }
 
+    [Fact]
+    public async Task SmtpSendMailAdvanced_WithoutClient_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            SmtpMethods.SmtpSendMailAdvanced(
+                data,
+                new Dictionary<string, string> { ["Sender"] = "sender@example.com" },
+                new Dictionary<string, string> { ["Recipient"] = "recipient@example.com" },
+                "Subject",
+                "Text body",
+                "<p>Html body</p>",
+                new Dictionary<string, string> { ["X-Test"] = "value" },
+                []));
+
+        Assert.Equal("Connect the SMTP client first!", ex.Message);
+    }
+
     private static ProtocolLogger CreateLogger(string content)
     {
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(content))
@@ -113,7 +134,7 @@ public class MailRequestBlocksTests
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

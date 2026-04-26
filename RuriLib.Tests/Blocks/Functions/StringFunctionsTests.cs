@@ -9,6 +9,7 @@ using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.Collections.Generic;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
 
 namespace RuriLib.Tests.Blocks.Functions;
 
@@ -27,6 +28,33 @@ public class StringFunctionsTests
         var translated = Methods.Translate(data, "ab", translations, replaceOne: true);
 
         Assert.Equal("X", translated);
+    }
+
+    [Fact]
+    public void BasicStringOperations_ReturnExpectedValues()
+    {
+        var data = NewBotData();
+
+        Assert.Equal(2, Methods.CountOccurrences(data, "banana", "na"));
+        Assert.Equal("cba", Methods.Reverse(data, "abc"));
+        Assert.Equal("ABC", Methods.ToUppercase(data, "abc"));
+        Assert.Equal("abc", Methods.ToLowercase(data, "ABC"));
+        Assert.Equal("middle", Methods.RegexReplace(data, "prefix-middle-suffix", @"^prefix-(.*)-suffix$", "$1"));
+        Assert.Equal("b", Methods.CharAt(data, "abc", 1));
+    }
+
+    [Fact]
+    public void HtmlEntities_And_Unescape_ReturnExpectedValues()
+    {
+        var data = NewBotData();
+
+        var encoded = Methods.EncodeHTMLEntities(data, "<span>Tom & Jerry</span>");
+        var decoded = Methods.DecodeHTMLEntities(data, encoded);
+        var unescaped = Methods.Unescape(data, @"line1\nline2");
+
+        Assert.Equal("&lt;span&gt;Tom &amp; Jerry&lt;/span&gt;", encoded);
+        Assert.Equal("<span>Tom & Jerry</span>", decoded);
+        Assert.Equal("line1\nline2", unescaped);
     }
 
     [Fact]
@@ -63,7 +91,7 @@ public class StringFunctionsTests
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 RNG = new DeterministicRngProvider(),
                 ProxySettings = new MockedProxySettingsProvider(),

@@ -11,6 +11,8 @@ using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.IO;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using InteropMethods = RuriLib.Blocks.Interop.Methods;
 
 namespace RuriLib.Tests.Blocks.Interop;
 
@@ -21,7 +23,7 @@ public class InteropBlocksTests
     {
         var data = NewBotData();
 
-        var output = global::RuriLib.Blocks.Interop.Methods.ShellCommand(data, "dotnet", "--version");
+        var output = InteropMethods.ShellCommand(data, "dotnet", "--version");
 
         Assert.False(string.IsNullOrWhiteSpace(output));
         Assert.Contains(".", output);
@@ -38,7 +40,7 @@ public class InteropBlocksTests
         {
             File.WriteAllText(tempFile, "var result = 2 + 3;");
 
-            var resultEngine = global::RuriLib.Blocks.Interop.Methods.InvokeJint(data, engine, tempFile);
+            var resultEngine = InteropMethods.InvokeJint(data, engine, tempFile);
 
             Assert.Equal(5, resultEngine.GetValue("result").AsNumber());
         }
@@ -53,7 +55,7 @@ public class InteropBlocksTests
     {
         var data = NewBotData();
 
-        Assert.Throws<BlockExecutionException>(() => global::RuriLib.Blocks.Interop.Methods.GetIronPyScope(data));
+        Assert.Throws<BlockExecutionException>(() => InteropMethods.GetIronPyScope(data));
     }
 
     [Fact]
@@ -63,14 +65,14 @@ public class InteropBlocksTests
         var engine = Python.CreateEngine();
         data.SetObject("ironPyEngine", engine);
 
-        var scope = global::RuriLib.Blocks.Interop.Methods.GetIronPyScope(data);
+        var scope = InteropMethods.GetIronPyScope(data);
 
         Assert.IsType<ScriptScope>(scope);
     }
 
     private static BotData NewBotData()
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 ProxySettings = new MockedProxySettingsProvider(),
                 Security = new MockedSecurityProvider()

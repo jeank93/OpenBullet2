@@ -18,6 +18,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using BotProviders = RuriLib.Models.Bots.Providers;
+using SearchField = RuriLib.Functions.Imap.SearchField;
 
 namespace RuriLib.Tests.Blocks.Requests;
 
@@ -98,9 +100,9 @@ public class MailRequestIntegrationTests
         var count = await ImapMethods.GetMailCount(data);
         var ids = await ImapMethods.ImapSearchMails(
             data,
-            global::RuriLib.Functions.Imap.SearchField.Subject,
+            SearchField.Subject,
             "imap-",
-            global::RuriLib.Functions.Imap.SearchField.From,
+            SearchField.From,
             "test1@test.local",
             1);
         var firstMail = await ImapMethods.ImapReadMail(data, ids[0], preferHtml: false);
@@ -270,9 +272,9 @@ public class MailRequestIntegrationTests
 
         var ids = await ImapMethods.ImapSearchMails(
             data,
-            global::RuriLib.Functions.Imap.SearchField.Subject,
+            SearchField.Subject,
             $"imap-proxy-{proxyType}",
-            global::RuriLib.Functions.Imap.SearchField.From,
+            SearchField.From,
             "test1@test.local",
             1);
         var firstMail = await ImapMethods.ImapReadMail(data, ids[0], preferHtml: false);
@@ -323,7 +325,7 @@ public class MailRequestIntegrationTests
 
     private static BotData NewBotData(IEmailDomainRepository? emailDomains = null, Proxy? proxy = null)
         => new(
-            new global::RuriLib.Models.Bots.Providers(null!)
+            new BotProviders(null!)
             {
                 EmailDomains = emailDomains ?? new InMemoryEmailDomainRepository(),
                 ProxySettings = new MockedProxySettingsProvider(),

@@ -5,6 +5,7 @@ using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
+using RuriLib.Models.Proxies;
 using RuriLib.Tests.Utils;
 using RuriLib.Tests.Utils.Mockup;
 using System;
@@ -226,7 +227,33 @@ public class TcpRequestBlocksTests
         }
     }
 
-    private static BotData NewBotData()
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks4a)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task TcpConnect_ThroughProxy_SendReadHttp_Verify(ProxyType proxyType)
+    {
+        var connection = await TestProxyServer.GetConnectionInfo();
+        var data = NewBotData(connection.CreateProxy(proxyType));
+        var request = $"GET /anything?tcpProxy={proxyType} HTTP/1.1\\r\\nHost: {connection.TargetIpAddress}:{connection.TargetPort}\\r\\nConnection: close\\r\\n\\r\\n";
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, connection.TargetIpAddress, connection.TargetPort, useSSL: false);
+
+            var response = await TcpMethods.TcpSendReadHttp(data, request);
+
+            Assert.Contains("HTTP/1.1 200 OK", response, StringComparison.Ordinal);
+            Assert.Contains($"\"tcpProxy\": \"{proxyType}\"", response, StringComparison.Ordinal);
+        }
+        finally
+        {
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
+    private static BotData NewBotData(Proxy? proxy = null)
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
             {
@@ -235,7 +262,9 @@ public class TcpRequestBlocksTests
             },
             new ConfigSettings(),
             new BotLogger(),
-            new DataLine("hello", new WordlistType()));
+            new DataLine("hello", new WordlistType()),
+            proxy,
+            proxy is not null);
 }
 
 [CollectionDefinition(nameof(TcpRequestBlocksCollection), DisableParallelization = true)]

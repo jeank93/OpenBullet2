@@ -6,6 +6,7 @@ using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
+using RuriLib.Models.Proxies;
 using RuriLib.Tests.Utils;
 using RuriLib.Tests.Utils.Mockup;
 using SshMethods = RuriLib.Blocks.Requests.Ssh.Methods;
@@ -106,7 +107,42 @@ public class SshRequestIntegrationTests
                 1));
     }
 
-    private static BotData NewBotData()
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task SshAuthenticateWithPassword_ThroughProxy_AndRunCommand_Verify(ProxyType proxyType)
+    {
+        var connection = await TestSshServer.GetConnectionInfo();
+        var proxy = (await TestSshServer.GetProxyConnectionInfo()).CreateProxy(proxyType);
+        var data = NewBotData(proxy);
+
+        try
+        {
+            SshMethods.SshAuthenticateWithPassword(
+                data,
+                connection.InternalHost,
+                connection.InternalPort,
+                connection.Username,
+                connection.Password,
+                20000,
+                5000,
+                3);
+
+            var result = SshMethods.SshRunCommand(data, "printf ssh-proxy-ok");
+            var client = data.TryGetObject<SshClient>("sshClient");
+
+            Assert.NotNull(client);
+            Assert.True(client!.IsConnected);
+            Assert.Equal("ssh-proxy-ok", result);
+        }
+        finally
+        {
+            DisposeClient(data);
+        }
+    }
+
+    private static BotData NewBotData(Proxy? proxy = null)
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
             {
@@ -115,7 +151,9 @@ public class SshRequestIntegrationTests
             },
             new ConfigSettings(),
             new BotLogger(),
-            new DataLine("ssh-test", new WordlistType()));
+            new DataLine("ssh-test", new WordlistType()),
+            proxy,
+            proxy is not null);
 
     private static void DisposeClient(BotData data)
     {

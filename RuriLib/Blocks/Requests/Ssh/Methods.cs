@@ -28,7 +28,7 @@ public static class Methods
         if (data.UseProxy && data.Proxy is not null)
         {
             info = new ConnectionInfo(host, port, username, TranslateProxyType(data.Proxy.Type), data.Proxy.Host,
-                data.Proxy.Port, data.Proxy.Username, data.Proxy.Password,
+                data.Proxy.Port, data.Proxy.Username ?? string.Empty, data.Proxy.Password ?? string.Empty,
                 new PasswordAuthenticationMethod(username, password));
         }
         else
@@ -63,7 +63,7 @@ public static class Methods
         if (data.UseProxy && data.Proxy is not null)
         {
             info = new ConnectionInfo(host, port, username, TranslateProxyType(data.Proxy.Type), data.Proxy.Host,
-                data.Proxy.Port, data.Proxy.Username, data.Proxy.Password,
+                data.Proxy.Port, data.Proxy.Username ?? string.Empty, data.Proxy.Password ?? string.Empty,
                 new NoneAuthenticationMethod(username));
         }
         else
@@ -101,7 +101,7 @@ public static class Methods
         if (data is { UseProxy: true, Proxy: not null })
         {
             info = new ConnectionInfo(host, port, username, TranslateProxyType(data.Proxy.Type), data.Proxy.Host,
-                data.Proxy.Port, data.Proxy.Username, data.Proxy.Password,
+                data.Proxy.Port, data.Proxy.Username ?? string.Empty, data.Proxy.Password ?? string.Empty,
                 new PrivateKeyAuthenticationMethod(username, keyFiles));
         }
         else
@@ -130,13 +130,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var client = data.TryGetObject<SshClient>("sshClient");
-
-        if (client is null)
-        {
-            throw new BlockExecutionException("The SSH client is not initialized");
-        }
-
+        var client = data.TryGetObject<SshClient>("sshClient") ?? throw new BlockExecutionException("The SSH client is not initialized");
         data.Logger.Log($"> {command}", "#526ab4");
         var cmd = client.RunCommand(command);
 

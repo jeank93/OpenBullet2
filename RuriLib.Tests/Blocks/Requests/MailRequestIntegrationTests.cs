@@ -6,6 +6,7 @@ using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
+using RuriLib.Models.Proxies;
 using RuriLib.Functions.Networking;
 using RuriLib.Providers.Emails;
 using SmtpMethods = RuriLib.Blocks.Requests.Smtp.Methods;
@@ -205,7 +206,122 @@ public class MailRequestIntegrationTests
         await Pop3Methods.Pop3Disconnect(pop3Data);
     }
 
-    private static BotData NewBotData(IEmailDomainRepository? emailDomains = null)
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks4a)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task SmtpConnect_Login_SendMail_ThroughProxy_Verify(ProxyType proxyType)
+    {
+        await TestMailServer.ResetState();
+        var connection = await TestMailServer.GetConnectionInfo();
+        var proxy = (await TestMailServer.GetProxyConnectionInfo()).CreateProxy(proxyType);
+        var data = NewBotData(proxy: proxy);
+
+        await SmtpMethods.SmtpConnect(data, connection.InternalHost, connection.InternalSmtpPort, 20000);
+        await SmtpMethods.SmtpLogin(data, connection.PrimaryEmail, connection.PrimaryPassword, 20000);
+        await SmtpMethods.SmtpSendMail(
+            data,
+            "Proxy Sender",
+            connection.PrimaryEmail,
+            "Proxy Recipient",
+            connection.SecondaryEmail,
+            $"smtp-proxy-{proxyType}",
+            "smtp-proxy-text",
+            "<p>smtp-proxy-html</p>");
+
+        await TestMailServer.WaitForMessageCount(connection.SecondaryEmail, 1);
+        var messages = await TestMailServer.GetMessages(connection.SecondaryEmail);
+        var log = SmtpMethods.SmtpGetLog(data);
+
+        Assert.Single(messages);
+        Assert.Equal($"smtp-proxy-{proxyType}", messages[0].Subject);
+        Assert.Contains("AUTH", log, StringComparison.Ordinal);
+        Assert.Contains("DATA", log, StringComparison.Ordinal);
+
+        await SmtpMethods.SmtpDisconnect(data);
+    }
+
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks4a)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task ImapConnect_Login_ReadMail_ThroughProxy_Verify(ProxyType proxyType)
+    {
+        await TestMailServer.ResetState();
+        var connection = await TestMailServer.GetConnectionInfo();
+        var proxy = (await TestMailServer.GetProxyConnectionInfo()).CreateProxy(proxyType);
+
+        await TestMailServer.SendMail(
+            "Sender One",
+            connection.PrimaryEmail,
+            "Recipient Two",
+            connection.SecondaryEmail,
+            $"imap-proxy-{proxyType}",
+            "imap-proxy-text",
+            "<p>imap-proxy-html</p>");
+
+        await TestMailServer.WaitForMessageCount(connection.SecondaryEmail, 1);
+
+        var data = NewBotData(proxy: proxy);
+        await ImapMethods.ImapConnect(data, connection.InternalHost, connection.InternalImapPort, 20000);
+        await ImapMethods.ImapLogin(data, connection.SecondaryEmail, connection.SecondaryPassword, openInbox: true, timeoutMilliseconds: 20000);
+
+        var ids = await ImapMethods.ImapSearchMails(
+            data,
+            global::RuriLib.Functions.Imap.SearchField.Subject,
+            $"imap-proxy-{proxyType}",
+            global::RuriLib.Functions.Imap.SearchField.From,
+            "test1@test.local",
+            1);
+        var firstMail = await ImapMethods.ImapReadMail(data, ids[0], preferHtml: false);
+
+        Assert.Single(ids);
+        Assert.Contains($"Subject: imap-proxy-{proxyType}", firstMail, StringComparison.Ordinal);
+        Assert.Contains("imap-proxy-text", firstMail, StringComparison.Ordinal);
+
+        await ImapMethods.ImapDisconnect(data);
+    }
+
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks4a)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task Pop3Connect_Login_ReadMail_ThroughProxy_Verify(ProxyType proxyType)
+    {
+        await TestMailServer.ResetState();
+        var connection = await TestMailServer.GetConnectionInfo();
+        var proxy = (await TestMailServer.GetProxyConnectionInfo()).CreateProxy(proxyType);
+
+        await TestMailServer.SendMail(
+            "Sender One",
+            connection.PrimaryEmail,
+            "Recipient Two",
+            connection.SecondaryEmail,
+            $"pop3-proxy-{proxyType}",
+            "pop3-proxy-text",
+            "<p>pop3-proxy-html</p>");
+
+        await TestMailServer.WaitForMessageCount(connection.SecondaryEmail, 1);
+
+        var data = NewBotData(proxy: proxy);
+        await Pop3Methods.Pop3Connect(data, connection.InternalHost, connection.InternalPop3Port, 20000);
+        await Pop3Methods.Pop3Login(data, connection.SecondaryEmail, connection.SecondaryPassword, 20000);
+
+        var mails = await Pop3Methods.Pop3GetMails(data);
+        var latestMail = await Pop3Methods.Pop3ReadMail(data, 0, preferHtml: false);
+
+        Assert.Single(mails);
+        Assert.StartsWith($"Sender One|Recipient Two|pop3-proxy-{proxyType}", mails[0], StringComparison.Ordinal);
+        Assert.Contains($"Subject: pop3-proxy-{proxyType}", latestMail, StringComparison.Ordinal);
+        Assert.Contains("pop3-proxy-text", latestMail, StringComparison.Ordinal);
+
+        await Pop3Methods.Pop3Disconnect(data);
+    }
+
+    private static BotData NewBotData(IEmailDomainRepository? emailDomains = null, Proxy? proxy = null)
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
             {
@@ -215,7 +331,9 @@ public class MailRequestIntegrationTests
             },
             new ConfigSettings(),
             new BotLogger(),
-            new DataLine("mail-test", new WordlistType()))
+            new DataLine("mail-test", new WordlistType()),
+            proxy,
+            proxy is not null)
         {
             CancellationToken = TestCancellationToken
         };

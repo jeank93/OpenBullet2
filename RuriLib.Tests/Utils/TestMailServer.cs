@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
 using MailKit.Net.Smtp;
 using MimeKit;
 using Newtonsoft.Json;
@@ -16,14 +17,20 @@ namespace RuriLib.Tests.Utils;
 internal static class TestMailServer
 {
     private const string ContainerImage = "greenmail/standalone:2.1.8";
+    private const string ProxyImage = "tarampampam/3proxy:1.12.1";
     private const ushort SmtpPort = 3025;
     private const ushort Pop3Port = 3110;
     private const ushort ImapPort = 3143;
     private const ushort ApiPort = 8080;
+    private const ushort HttpProxyPort = 3128;
+    private const ushort SocksProxyPort = 1080;
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
     private static IContainer? container;
+    private static IContainer? proxyContainer;
+    private static INetwork? network;
     private static string? skipReason;
     private static MailServerConnectionInfo? connectionInfo;
+    private static ProxyContainerConnectionInfo? proxyConnectionInfo;
 
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
@@ -36,6 +43,18 @@ internal static class TestMailServer
         }
 
         return connectionInfo!;
+    }
+
+    public static async Task<ProxyContainerConnectionInfo> GetProxyConnectionInfo()
+    {
+        await EnsureInitialized();
+        if (skipReason is not null)
+        {
+            Assert.Skip(skipReason);
+        }
+
+        await EnsureProxyInitialized();
+        return proxyConnectionInfo!;
     }
 
     public static async Task ResetState()
@@ -112,7 +131,14 @@ internal static class TestMailServer
 
             try
             {
+                network = new NetworkBuilder()
+                    .WithName($"ob2-mail-{Guid.NewGuid():N}")
+                    .Build();
+
+                await network.CreateAsync(TestCancellationToken);
+
                 container = new ContainerBuilder(ContainerImage)
+                    .WithNetwork(network)
                     .WithPortBinding(SmtpPort, true)
                     .WithPortBinding(Pop3Port, true)
                     .WithPortBinding(ImapPort, true)
@@ -124,6 +150,7 @@ internal static class TestMailServer
 
                 connectionInfo = new MailServerConnectionInfo(
                     "127.0.0.1",
+                    container.IpAddress!,
                     container.GetMappedPublicPort(SmtpPort),
                     container.GetMappedPublicPort(Pop3Port),
                     container.GetMappedPublicPort(ImapPort),
@@ -142,6 +169,41 @@ internal static class TestMailServer
                 await DisposeContainer();
                 skipReason = $"Docker is unavailable for {ContainerImage}: {ex.GetType().Name}: {ex.Message}";
             }
+        }
+        finally
+        {
+            SyncLock.Release();
+        }
+    }
+
+    private static async Task EnsureProxyInitialized()
+    {
+        if (proxyConnectionInfo is not null)
+        {
+            return;
+        }
+
+        await SyncLock.WaitAsync(TestCancellationToken);
+        try
+        {
+            if (proxyConnectionInfo is not null)
+            {
+                return;
+            }
+
+            proxyContainer = new ContainerBuilder(ProxyImage)
+                .WithNetwork(network!)
+                .WithPortBinding(HttpProxyPort, true)
+                .WithPortBinding(SocksProxyPort, true)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(HttpProxyPort))
+                .Build();
+
+            await proxyContainer.StartAsync(TestCancellationToken);
+
+            proxyConnectionInfo = new ProxyContainerConnectionInfo(
+                "127.0.0.1",
+                proxyContainer.GetMappedPublicPort(HttpProxyPort),
+                proxyContainer.GetMappedPublicPort(SocksProxyPort));
         }
         finally
         {
@@ -204,8 +266,27 @@ internal static class TestMailServer
 
     private static async Task DisposeContainer()
     {
+        if (proxyContainer is not null)
+        {
+            try
+            {
+                await proxyContainer.DisposeAsync();
+            }
+            finally
+            {
+                proxyContainer = null;
+                proxyConnectionInfo = null;
+            }
+        }
+
         if (container is null)
         {
+            if (network is not null)
+            {
+                await network.DisposeAsync();
+                network = null;
+            }
+
             return;
         }
 
@@ -218,11 +299,18 @@ internal static class TestMailServer
             AppDomain.CurrentDomain.ProcessExit -= DisposeContainerOnProcessExit;
             container = null;
         }
+
+        if (network is not null)
+        {
+            await network.DisposeAsync();
+            network = null;
+        }
     }
 }
 
 internal sealed record MailServerConnectionInfo(
     string Host,
+    string InternalHost,
     ushort SmtpPort,
     ushort Pop3Port,
     ushort ImapPort,
@@ -233,6 +321,9 @@ internal sealed record MailServerConnectionInfo(
     string SecondaryPassword)
 {
     public string ApiBaseUrl => $"http://{Host}:{ApiPort}";
+    public ushort InternalSmtpPort => 3025;
+    public ushort InternalPop3Port => 3110;
+    public ushort InternalImapPort => 3143;
 }
 
 internal sealed class GreenMailMessageInfo

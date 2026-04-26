@@ -6,6 +6,7 @@ using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
+using RuriLib.Models.Proxies;
 using RuriLib.Tests.Utils;
 using RuriLib.Tests.Utils.Mockup;
 using System;
@@ -259,7 +260,38 @@ public class FtpRequestBlocksTests
         }
     }
 
-    private static BotData NewBotData()
+    [Theory]
+    [InlineData(ProxyType.Http)]
+    [InlineData(ProxyType.Socks4)]
+    [InlineData(ProxyType.Socks5)]
+    public async Task FtpConnect_ThroughProxy_AndGetLog_Verify(ProxyType proxyType)
+    {
+        var connection = await TestFtpServer.GetConnectionInfo();
+        var proxy = (await TestFtpServer.GetProxyConnectionInfo()).CreateProxy(proxyType);
+        var data = NewBotData(proxy);
+        var targetHost = proxyType == ProxyType.Socks4a
+            ? connection.InternalAlias
+            : connection.InternalHost;
+
+        await FtpMethods.FtpConnect(
+            data,
+            targetHost,
+            connection.InternalPort,
+            connection.Username,
+            connection.Password,
+            20000);
+
+        var client = data.TryGetObject<AsyncFtpClient>("ftpClient");
+        var ftpLog = FtpMethods.FtpGetLog(data);
+
+        Assert.NotNull(client);
+        Assert.True(client!.IsConnected);
+        Assert.Contains("USER", ftpLog, StringComparison.Ordinal);
+
+        await FtpMethods.FtpDisconnect(data);
+    }
+
+    private static BotData NewBotData(Proxy? proxy = null)
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
             {
@@ -268,7 +300,12 @@ public class FtpRequestBlocksTests
             },
             new ConfigSettings(),
             new BotLogger(),
-            new DataLine("ftp-test", new WordlistType()));
+            new DataLine("ftp-test", new WordlistType()),
+            proxy,
+            proxy is not null)
+        {
+            CancellationToken = TestCancellationToken
+        };
 
     private static int FindUnusedTcpPort()
     {

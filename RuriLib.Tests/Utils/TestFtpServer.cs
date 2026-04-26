@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
 using FluentFTP;
 using System;
 using System.IO;
@@ -16,16 +17,23 @@ namespace RuriLib.Tests.Utils;
 internal static class TestFtpServer
 {
     private const ushort ControlPort = 21;
+    private const ushort HttpProxyPort = 3128;
+    private const ushort SocksProxyPort = 1080;
     private const string ContainerImage = "stilliard/pure-ftpd:trixie-latest";
+    private const string ProxyImage = "tarampampam/3proxy:1.12.1";
+    private const string NetworkAlias = "ob2-ftp";
     private const string Username = "ob2-user";
     private const string Password = "ob2-password";
     private const string ContainerHomeDirectory = "/home/ftpusers/ob2-user";
     private const int PassivePortCount = 10;
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
     private static IContainer? container;
+    private static IContainer? proxyContainer;
+    private static INetwork? network;
     private static string? skipReason;
     private static string? homeDirectory;
     private static FtpServerConnectionInfo? connectionInfo;
+    private static ProxyContainerConnectionInfo? proxyConnectionInfo;
 
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
@@ -38,6 +46,18 @@ internal static class TestFtpServer
         }
 
         return connectionInfo!;
+    }
+
+    public static async Task<ProxyContainerConnectionInfo> GetProxyConnectionInfo()
+    {
+        await EnsureInitialized();
+        if (skipReason is not null)
+        {
+            Assert.Skip(skipReason);
+        }
+
+        await EnsureProxyInitialized();
+        return proxyConnectionInfo!;
     }
 
     public static async Task ResetHomeDirectory()
@@ -127,7 +147,15 @@ internal static class TestFtpServer
 
             try
             {
+                network = new NetworkBuilder()
+                    .WithName($"ob2-ftp-{Guid.NewGuid():N}")
+                    .Build();
+
+                await network.CreateAsync(TestCancellationToken);
+
                 var builder = new ContainerBuilder(ContainerImage)
+                    .WithNetwork(network)
+                    .WithNetworkAliases(NetworkAlias)
                     .WithPortBinding(ControlPort, true)
                     .WithBindMount(homeDirectory, ContainerHomeDirectory)
                     .WithEnvironment("PUBLICHOST", "127.0.0.1")
@@ -149,6 +177,9 @@ internal static class TestFtpServer
                 connectionInfo = new FtpServerConnectionInfo(
                     "127.0.0.1",
                     container.GetMappedPublicPort(ControlPort),
+                    container.IpAddress!,
+                    NetworkAlias,
+                    ControlPort,
                     Username,
                     Password);
 
@@ -160,6 +191,41 @@ internal static class TestFtpServer
                 await DisposeContainer();
                 skipReason = $"Docker is unavailable for {ContainerImage}: {ex.GetType().Name}: {ex.Message}";
             }
+        }
+        finally
+        {
+            SyncLock.Release();
+        }
+    }
+
+    private static async Task EnsureProxyInitialized()
+    {
+        if (proxyConnectionInfo is not null)
+        {
+            return;
+        }
+
+        await SyncLock.WaitAsync(TestCancellationToken);
+        try
+        {
+            if (proxyConnectionInfo is not null)
+            {
+                return;
+            }
+
+            proxyContainer = new ContainerBuilder(ProxyImage)
+                .WithNetwork(network!)
+                .WithPortBinding(HttpProxyPort, true)
+                .WithPortBinding(SocksProxyPort, true)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(HttpProxyPort))
+                .Build();
+
+            await proxyContainer.StartAsync(TestCancellationToken);
+
+            proxyConnectionInfo = new ProxyContainerConnectionInfo(
+                "127.0.0.1",
+                proxyContainer.GetMappedPublicPort(HttpProxyPort),
+                proxyContainer.GetMappedPublicPort(SocksProxyPort));
         }
         finally
         {
@@ -243,6 +309,19 @@ internal static class TestFtpServer
 
     private static async Task DisposeContainer()
     {
+        if (proxyContainer is not null)
+        {
+            try
+            {
+                await proxyContainer.DisposeAsync();
+            }
+            finally
+            {
+                proxyContainer = null;
+                proxyConnectionInfo = null;
+            }
+        }
+
         if (container is not null)
         {
             try
@@ -256,6 +335,12 @@ internal static class TestFtpServer
             }
         }
 
+        if (network is not null)
+        {
+            await network.DisposeAsync();
+            network = null;
+        }
+
         if (homeDirectory is not null && Directory.Exists(homeDirectory))
         {
             Directory.Delete(homeDirectory, true);
@@ -264,4 +349,11 @@ internal static class TestFtpServer
     }
 }
 
-internal sealed record FtpServerConnectionInfo(string Host, ushort Port, string Username, string Password);
+internal sealed record FtpServerConnectionInfo(
+    string Host,
+    ushort Port,
+    string InternalHost,
+    string InternalAlias,
+    ushort InternalPort,
+    string Username,
+    string Password);

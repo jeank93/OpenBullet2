@@ -1,5 +1,6 @@
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
 using Renci.SshNet;
 using System;
 using System.IO;
@@ -13,11 +14,17 @@ internal static class TestSshServer
 {
     private const ushort ContainerPort = 2222;
     private const string ContainerImage = "lscr.io/linuxserver/openssh-server:latest";
+    private const string ProxyImage = "tarampampam/3proxy:1.12.1";
+    private const ushort HttpProxyPort = 3128;
+    private const ushort SocksProxyPort = 1080;
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
     private static IContainer? container;
+    private static IContainer? proxyContainer;
+    private static INetwork? network;
     private static string? skipReason;
     private static string? configDirectory;
     private static SshServerConnectionInfo? connectionInfo;
+    private static ProxyContainerConnectionInfo? proxyConnectionInfo;
 
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
@@ -30,6 +37,18 @@ internal static class TestSshServer
         }
 
         return connectionInfo!;
+    }
+
+    public static async Task<ProxyContainerConnectionInfo> GetProxyConnectionInfo()
+    {
+        await EnsureInitialized();
+        if (skipReason is not null)
+        {
+            Assert.Skip(skipReason);
+        }
+
+        await EnsureProxyInitialized();
+        return proxyConnectionInfo!;
     }
 
     private static async Task EnsureInitialized()
@@ -52,7 +71,14 @@ internal static class TestSshServer
 
             try
             {
+                network = new NetworkBuilder()
+                    .WithName($"ob2-ssh-{Guid.NewGuid():N}")
+                    .Build();
+
+                await network.CreateAsync(TestCancellationToken);
+
                 container = new ContainerBuilder(ContainerImage)
+                    .WithNetwork(network)
                     .WithPortBinding(ContainerPort, true)
                     .WithBindMount(configDirectory, "/config")
                     .WithEnvironment("PUID", "1000")
@@ -71,6 +97,8 @@ internal static class TestSshServer
                 connectionInfo = new SshServerConnectionInfo(
                     "127.0.0.1",
                     container.GetMappedPublicPort(ContainerPort),
+                    container.IpAddress!,
+                    ContainerPort,
                     "ob2-user",
                     "ob2-password");
 
@@ -82,6 +110,41 @@ internal static class TestSshServer
                 await DisposeContainer();
                 skipReason = $"Docker is unavailable for {ContainerImage}: {ex.GetType().Name}: {ex.Message}";
             }
+        }
+        finally
+        {
+            SyncLock.Release();
+        }
+    }
+
+    private static async Task EnsureProxyInitialized()
+    {
+        if (proxyConnectionInfo is not null)
+        {
+            return;
+        }
+
+        await SyncLock.WaitAsync(TestCancellationToken);
+        try
+        {
+            if (proxyConnectionInfo is not null)
+            {
+                return;
+            }
+
+            proxyContainer = new ContainerBuilder(ProxyImage)
+                .WithNetwork(network!)
+                .WithPortBinding(HttpProxyPort, true)
+                .WithPortBinding(SocksProxyPort, true)
+                .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(HttpProxyPort))
+                .Build();
+
+            await proxyContainer.StartAsync(TestCancellationToken);
+
+            proxyConnectionInfo = new ProxyContainerConnectionInfo(
+                "127.0.0.1",
+                proxyContainer.GetMappedPublicPort(HttpProxyPort),
+                proxyContainer.GetMappedPublicPort(SocksProxyPort));
         }
         finally
         {
@@ -119,6 +182,19 @@ internal static class TestSshServer
 
     private static async Task DisposeContainer()
     {
+        if (proxyContainer is not null)
+        {
+            try
+            {
+                await proxyContainer.DisposeAsync();
+            }
+            finally
+            {
+                proxyContainer = null;
+                proxyConnectionInfo = null;
+            }
+        }
+
         if (container is not null)
         {
             try
@@ -144,7 +220,19 @@ internal static class TestSshServer
 
             configDirectory = null;
         }
+
+        if (network is not null)
+        {
+            await network.DisposeAsync();
+            network = null;
+        }
     }
 }
 
-internal sealed record SshServerConnectionInfo(string Host, ushort Port, string Username, string Password);
+internal sealed record SshServerConnectionInfo(
+    string Host,
+    ushort Port,
+    string InternalHost,
+    ushort InternalPort,
+    string Username,
+    string Password);

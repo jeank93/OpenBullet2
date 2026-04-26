@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBullet2.Web", "OpenBull
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBullet2.Web.Tests", "OpenBullet2.Web.Tests\OpenBullet2.Web.Tests.csproj", "{6E6DED07-842B-4276-B26A-1FA676DAE831}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenBullet2.Core.Tests", "OpenBullet2.Core.Tests\OpenBullet2.Core.Tests.csproj", "{A73F7CCD-922C-4871-8B0F-6A1E26933247}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,10 @@ Global
 		{6E6DED07-842B-4276-B26A-1FA676DAE831}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E6DED07-842B-4276-B26A-1FA676DAE831}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E6DED07-842B-4276-B26A-1FA676DAE831}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A73F7CCD-922C-4871-8B0F-6A1E26933247}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A73F7CCD-922C-4871-8B0F-6A1E26933247}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A73F7CCD-922C-4871-8B0F-6A1E26933247}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A73F7CCD-922C-4871-8B0F-6A1E26933247}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

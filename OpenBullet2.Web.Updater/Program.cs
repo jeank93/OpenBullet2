@@ -93,11 +93,8 @@ public static class Program
         await using var buildStream = await githubClient.DownloadBuildAsync(remoteVersionInfo);
         AnsiConsole.MarkupLine("[green]Download complete![/]");
 
-        // Clean up the installation folder
-        await FileSystemHelper.CleanupInstallationFolderAsync(installDirectory);
-
-        // Extract the archive
-        await FileSystemHelper.ExtractArchiveAsync(buildStream, installDirectory);
+        // Apply the update
+        await FileSystemHelper.ApplyUpdateAsync(buildStream, installDirectory);
 
         AnsiConsole.MarkupLine("[green]The update was completed successfully. " +
                                "You may now restart your OpenBullet 2 instance![/]");

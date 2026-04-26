@@ -21,6 +21,10 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Spectre.Console" Version="0.55.2" />
     </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\OpenBullet2.Updater.Core\OpenBullet2.Updater.Core.csproj" />
+    </ItemGroup>
     
     <ItemGroup>
         <!-- This is required to make the app run on Linux without libicu -->

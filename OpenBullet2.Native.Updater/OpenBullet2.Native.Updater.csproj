@@ -23,6 +23,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\OpenBullet2.Updater.Core\OpenBullet2.Updater.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Only trim assemblies that support trimming! -->
         <TrimmableAssembly Include="System.Runtime.CompilerServices.Unsafe" />
         <TrimmableAssembly Include="System.Memory" />

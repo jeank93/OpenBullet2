@@ -10,6 +10,10 @@ namespace OpenBullet2.Web.Updater.Helpers;
 
 public static class FileSystemHelper
 {
+    private static readonly StringComparison PathComparison = OperatingSystem.IsWindows()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
+
     public static string ResolveInstallDirectory(string? installDirectory)
     {
         var path = string.IsNullOrWhiteSpace(installDirectory)
@@ -20,6 +24,27 @@ public static class FileSystemHelper
         Directory.CreateDirectory(fullPath);
 
         return fullPath;
+    }
+
+    private static string GetSafeInstallationPath(string installDirectory, string relativePath)
+    {
+        if (Path.IsPathRooted(relativePath))
+        {
+            throw new InvalidOperationException($"Unsafe absolute path: {relativePath}");
+        }
+
+        var root = Path.GetFullPath(installDirectory);
+        var rootWithSeparator = Path.EndsInDirectorySeparator(root)
+            ? root
+            : root + Path.DirectorySeparatorChar;
+        var path = Path.GetFullPath(Path.Combine(root, relativePath));
+
+        if (!path.StartsWith(rootWithSeparator, PathComparison))
+        {
+            throw new InvalidOperationException($"Unsafe path outside the installation directory: {relativePath}");
+        }
+
+        return path;
     }
 
     public static async Task<Version?> GetLocalVersionAsync(string installDirectory)
@@ -70,7 +95,7 @@ public static class FileSystemHelper
                             continue;
                         }
 
-                        var path = Path.Combine(installDirectory, entry);
+                        var path = GetSafeInstallationPath(installDirectory, entry);
 
                         // If it's the current executable, disregard it
                         if (string.Equals(path, currentExecutable, StringComparison.OrdinalIgnoreCase))
@@ -128,7 +153,7 @@ public static class FileSystemHelper
 
                     ctx.Status($"Extracting {entry.FullName}...");
 
-                    var path = Path.Combine(installDirectory, entry.FullName);
+                    var path = GetSafeInstallationPath(installDirectory, entry.FullName);
                     var dir = Path.GetDirectoryName(path);
                     if (!Directory.Exists(dir))
                     {

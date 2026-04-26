@@ -1,26 +1,24 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using OpenBullet2.Updater.Core.Models;
 using Spectre.Console;
-using OpenBullet2.Web.Updater.Models;
 
-namespace OpenBullet2.Web.Updater.Helpers;
+namespace OpenBullet2.Updater.Core.Helpers;
 
 public class GitHubClient : IDisposable
 {
+    private readonly string _assetName;
     private readonly string _repository;
     private readonly BuildChannel _channel;
     private readonly HttpClient _httpClient = new();
 
-    public GitHubClient(string repository, BuildChannel channel, string? username = null, string? token = null)
+    public GitHubClient(string repository, BuildChannel channel, string assetName,
+        string? username = null, string? token = null)
     {
         _repository = repository;
         _channel = channel;
+        _assetName = assetName;
         _httpClient.BaseAddress = new Uri($"https://api.github.com/repos/{repository}/");
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36");
 
@@ -54,7 +52,7 @@ public class GitHubClient : IDisposable
 
                 var remoteVersion = latest.Key;
                 var release = latest.Value;
-                var build = release["assets"]!.First(t => t["name"]!.ToObject<string>()! == "OpenBullet2.Web.zip");
+                var build = release["assets"]!.First(t => t["name"]!.ToObject<string>()! == _assetName);
                 var downloadUrl = build["url"]!.ToString();
                 var size = build["size"]!.ToObject<double>();
 

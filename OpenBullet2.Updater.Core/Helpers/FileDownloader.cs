@@ -1,11 +1,6 @@
-using System;
-using System.IO;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 
-namespace OpenBullet2.Web.Updater.Helpers;
-
+namespace OpenBullet2.Updater.Core.Helpers;
 
 public class FileDownloader
 {

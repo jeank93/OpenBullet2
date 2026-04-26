@@ -1,6 +1,6 @@
 using Spectre.Console;
 
-namespace OpenBullet2.Native.Updater.Helpers;
+namespace OpenBullet2.Updater.Core.Helpers;
 
 public static class Channel
 {

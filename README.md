@@ -1,7 +1,7 @@
 ![Logo](https://i.imgur.com/sToEkJC.png)
 
 [![Latest release](https://img.shields.io/github/v/release/openbullet/OpenBullet2?label=latest)](https://github.com/openbullet/OpenBullet2/releases/latest)
-[![Tests](https://github.com/openbullet/OpenBullet2/actions/workflows/run-tests.yml/badge.svg?branch=master)](https://github.com/openbullet/OpenBullet2/actions/workflows/run-tests.yml)
+[![Tests](https://github.com/openbullet/OpenBullet2/actions/workflows/run-tests.yml/badge.svg)](https://github.com/openbullet/OpenBullet2/actions/workflows/run-tests.yml)
 [![Docker](https://img.shields.io/docker/v/openbullet/openbullet2?label=docker&sort=semver)](https://hub.docker.com/r/openbullet/openbullet2)
 [![License](https://img.shields.io/github/license/openbullet/OpenBullet2)](LICENSE)
 

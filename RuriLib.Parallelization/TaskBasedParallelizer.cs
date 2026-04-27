@@ -162,7 +162,10 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 await _semaphore!.WaitAsync(SoftCts.Token).ConfigureAwait(false);
 
                 if (SoftCts.IsCancellationRequested)
+                {
+                    _semaphore.Release();
                     break;
+                }
 
                 if (_dopDecreaseRequested || IsCpmLimited())
                 {
@@ -197,19 +200,23 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 }
             }
 
-            // Wait for every remaining task from the last batch to finish unless aborted
-            while (Progress < 1 && !HardCts.IsCancellationRequested)
+            if (SoftCts.IsCancellationRequested)
             {
-                await Task.Delay(100).ConfigureAwait(false);
+                await WaitCurrentWorkCompletion().ConfigureAwait(false);
+            }
+            else
+            {
+                // Wait for every remaining task from the last batch to finish unless aborted
+                while (Progress < 1 && !HardCts.IsCancellationRequested)
+                {
+                    await Task.Delay(100).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException)
         {
             // Wait for current tasks to finish unless aborted
-            while (_semaphore!.CurrentCount < DegreeOfParallelism && !HardCts.IsCancellationRequested)
-            {
-                await Task.Delay(100).ConfigureAwait(false);
-            }
+            await WaitCurrentWorkCompletion().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -224,6 +231,14 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             _semaphore?.Dispose();
             _semaphore = null;
             Stopwatch.Stop();
+        }
+    }
+
+    private async Task WaitCurrentWorkCompletion()
+    {
+        while (_semaphore!.CurrentCount < DegreeOfParallelism && !HardCts.IsCancellationRequested)
+        {
+            await Task.Delay(100).ConfigureAwait(false);
         }
     }
     #endregion

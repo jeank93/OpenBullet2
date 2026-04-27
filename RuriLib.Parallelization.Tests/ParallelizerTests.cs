@@ -241,21 +241,28 @@ public class ParallelizerTests
     }
 
     [Fact]
-    public async Task Run_LongTasks_StopWaitsForCurrentWork()
+    public async Task Run_LongTasks_StopWaitsForCurrentWorkAndLeavesPendingItems()
     {
         const int degreeOfParallelism = 4;
+        const int completedBeforeStop = 4;
+        const int expectedProcessed = completedBeforeStop + degreeOfParallelism;
         var startedCount = 0;
         var progressCount = 0;
         var completed = false;
         Exception? exception = null;
-        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var currentWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseWorkers = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        async Task<bool> BlockingWork(int item, CancellationToken cancellationToken)
         {
-            if (Interlocked.Increment(ref startedCount) == degreeOfParallelism)
+            if (Interlocked.Increment(ref startedCount) == expectedProcessed)
             {
-                allWorkersStarted.TrySetResult();
+                currentWorkersStarted.TrySetResult();
+            }
+
+            if (item <= completedBeforeStop)
+            {
+                return true;
             }
 
             await releaseWorkers.Task.WaitAsync(cancellationToken);
@@ -264,10 +271,10 @@ public class ParallelizerTests
 
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
-            workItems: Enumerable.Range(1, degreeOfParallelism),
+            workItems: Enumerable.Range(1, 100),
             workFunction: BlockingWork,
             degreeOfParallelism: degreeOfParallelism,
-            totalAmount: degreeOfParallelism,
+            totalAmount: 100,
             skip: 0);
 
         parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
@@ -277,14 +284,15 @@ public class ParallelizerTests
         await parallelizer.Start();
 
         using var cts = CreateTestTimeout();
-        await allWorkersStarted.Task.WaitAsync(cts.Token);
+        await currentWorkersStarted.Task.WaitAsync(cts.Token);
 
         var stopTask = parallelizer.Stop();
         releaseWorkers.SetResult();
         await stopTask.WaitAsync(cts.Token);
 
-        Assert.Equal(degreeOfParallelism, startedCount);
-        Assert.Equal(degreeOfParallelism, progressCount);
+        Assert.Equal(expectedProcessed, startedCount);
+        Assert.Equal(expectedProcessed, progressCount);
+        Assert.Equal((float)expectedProcessed / 100, parallelizer.Progress);
         Assert.True(completed);
         Assert.Null(exception);
         Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);

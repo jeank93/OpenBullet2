@@ -14,9 +14,8 @@ namespace RuriLib.Extensions;
 public static class ChromeOptionsExtensions
 {
     private const string _backgroundJs = """
-
-                                         var config = {
-                                            mode: "fixed_servers",
+                                         const config = {
+                                             mode: "fixed_servers",
                                              rules: {
                                                  singleProxy: {
                                                      scheme: "{PROTOCOL}",
@@ -24,49 +23,41 @@ public static class ChromeOptionsExtensions
                                                      port: parseInt({PORT})
                                                  },
                                                  bypassList: []
-                                            }
+                                             }
                                          };
 
-                                         chrome.proxy.settings.set({ value: config, scope: "regular" }, function() { });
-
-                                         function callbackFn(details)
-                                         {
-                                            return {
-                                             	authCredentials:
-                                             	{
-                                             		username: "{USERNAME}",
-                                             		password: "{PASSWORD}"
-                                             	}
-                                            };
-                                         }
+                                         chrome.proxy.settings.set({ value: config, scope: "regular" });
 
                                          chrome.webRequest.onAuthRequired.addListener(
-                                            callbackFn,
-                                         
-                                            { urls:["<all_urls>"] },
-                                             ['blocking']
+                                             (details, callback) => callback({
+                                                 authCredentials: {
+                                                     username: "{USERNAME}",
+                                                     password: "{PASSWORD}"
+                                                 }
+                                             }),
+                                             { urls: ["<all_urls>"] },
+                                             ["asyncBlocking"]
                                          );
                                          """;
 
     private const string _manifestJson = """
-
                                          {
                                              "version": "1.0.0",
-                                             "manifest_version": 2,
+                                             "manifest_version": 3,
                                              "name": "Chrome Proxy",
                                              "permissions": [
                                                  "proxy",
-                                                 "tabs",
-                                                 "unlimitedStorage",
                                                  "storage",
-                                                 "<all_urls>",
                                                  "webRequest",
-                                                 "webRequestBlocking"
+                                                 "webRequestAuthProvider"
+                                             ],
+                                             "host_permissions": [
+                                                 "<all_urls>"
                                              ],
                                              "background": {
-                                                 "scripts": ["background.js"]
-                                            },
-                                             "minimum_chrome_version":"22.0.0"
+                                                 "service_worker": "background.js"
+                                             },
+                                             "minimum_chrome_version": "88.0.0"
                                          }
                                          """;
 

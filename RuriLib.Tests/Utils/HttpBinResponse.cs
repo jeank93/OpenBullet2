@@ -8,6 +8,7 @@ namespace RuriLib.Tests.Utils;
 public class HttpBinResponse
 {
     public string Url { get; set; } = string.Empty;
+    public string Origin { get; set; } = string.Empty;
     public string Method { get; set; } = string.Empty;
     public Dictionary<string, string> Headers { get; set; } = [];
     public Dictionary<string, string> Form { get; set; } = [];

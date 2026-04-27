@@ -209,7 +209,13 @@ public static class Methods
 
         var browser = GetBrowser(data);
         ((IJavaScriptExecutor)browser).ExecuteScript("window.close();");
-        UpdateSeleniumData(data);
+
+        var remainingWindows = browser.WindowHandles;
+        if (remainingWindows.Count > 0)
+        {
+            browser.SwitchTo().Window(remainingWindows.Last());
+            UpdateSeleniumData(data);
+        }
 
         data.Logger.Log("Closed the active tab", LogColors.JuneBud);
     }

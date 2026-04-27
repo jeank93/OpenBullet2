@@ -1,5 +1,6 @@
 using RuriLib.Parallelization.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -31,6 +32,120 @@ public class ParallelizerTests
     private void OnCompleted(object? sender, EventArgs e) => _completedFlag = true;
 
     private void OnException(object? sender, Exception ex) => _lastException = ex;
+
+    [Theory]
+    [InlineData(ParallelizerType.ThreadBased)]
+    [InlineData(ParallelizerType.ParallelBased)]
+    public async Task Run_QuickTasks_ThreadAndParallel_CompleteAndReportAllResults(ParallelizerType type)
+    {
+        const int count = 100;
+        var results = new ConcurrentBag<ResultDetails<int, bool>>();
+        var statuses = new ConcurrentBag<ParallelizerStatus>();
+        var progressCount = 0;
+        var completed = false;
+        Exception? exception = null;
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: type,
+            workItems: Enumerable.Range(1, count),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 4,
+            totalAmount: count,
+            skip: 0);
+
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.NewResult += (_, result) => results.Add(result);
+        parallelizer.StatusChanged += (_, status) => statuses.Add(status);
+        parallelizer.Completed += (_, _) => completed = true;
+        parallelizer.Error += (_, ex) => exception = ex;
+
+        await parallelizer.Start();
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cts.CancelAfter(10000);
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(count, progressCount);
+        Assert.Equal(count, results.Count);
+        Assert.All(results, result => Assert.Equal(result.Item % 2 == 0, result.Result));
+        Assert.Contains(ParallelizerStatus.Running, statuses);
+        Assert.Contains(ParallelizerStatus.Idle, statuses);
+        Assert.True(completed);
+        Assert.Null(exception);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+        Assert.Equal(1, parallelizer.Progress);
+    }
+
+    [Theory]
+    [InlineData(ParallelizerType.ThreadBased)]
+    [InlineData(ParallelizerType.ParallelBased)]
+    public async Task Run_LongTasks_ThreadAndParallel_AbortStopsActiveWork(ParallelizerType type)
+    {
+        const int degreeOfParallelism = 4;
+        var startedCount = 0;
+        var progressCount = 0;
+        var taskErrorCount = 0;
+        var completed = false;
+        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref startedCount) == degreeOfParallelism)
+            {
+                allWorkersStarted.TrySetResult();
+            }
+
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return true;
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: type,
+            workItems: Enumerable.Range(1, 100),
+            workFunction: BlockingWork,
+            degreeOfParallelism: degreeOfParallelism,
+            totalAmount: 100,
+            skip: 0);
+
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.TaskError += (_, _) => Interlocked.Increment(ref taskErrorCount);
+        parallelizer.Completed += (_, _) => completed = true;
+
+        await parallelizer.Start();
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cts.CancelAfter(10000);
+        await allWorkersStarted.Task.WaitAsync(cts.Token);
+
+        await parallelizer.Abort();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(degreeOfParallelism, startedCount);
+        Assert.Equal(degreeOfParallelism, progressCount);
+        Assert.Equal(degreeOfParallelism, taskErrorCount);
+        Assert.True(completed);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+    }
+
+    [Fact]
+    public async Task ParallelBased_UnsupportedOperations_Throw()
+    {
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: ParallelizerType.ParallelBased,
+            workItems: Enumerable.Range(1, 100),
+            workFunction: _longTask,
+            degreeOfParallelism: 4,
+            totalAmount: 100,
+            skip: 0);
+
+        await parallelizer.Start();
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => parallelizer.Pause());
+        await Assert.ThrowsAsync<NotSupportedException>(() => parallelizer.Stop());
+        await Assert.ThrowsAsync<NotSupportedException>(() => parallelizer.ChangeDegreeOfParallelism(2));
+
+        await parallelizer.Abort();
+    }
 
     [Fact]
     public async Task Run_QuickTasks_CompleteAndCall()

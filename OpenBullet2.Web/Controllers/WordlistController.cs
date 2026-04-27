@@ -221,13 +221,10 @@ public class WordlistController(IWordlistRepository wordlistRepo,
 
         var deletedCount = 0;
 
-        foreach (var entity in entities)
+        foreach (var entity in entities.Where(entity => !System.IO.File.Exists(entity.FileName)))
         {
-            if (!System.IO.File.Exists(entity.FileName))
-            {
-                deletedCount++;
-                await _wordlistRepo.DeleteAsync(entity, cancellationToken: cancellationToken);
-            }
+            deletedCount++;
+            await _wordlistRepo.DeleteAsync(entity, cancellationToken: cancellationToken);
         }
 
         _logger.LogInformation(

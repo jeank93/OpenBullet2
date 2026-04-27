@@ -91,7 +91,7 @@ public class ConfigSharingService
 
                     // Create the entry and write the data
                     var zipArchiveEntry = archive.CreateEntry($"{configId}.opk", CompressionLevel.Fastest);
-                    await using var zipStream = zipArchiveEntry.Open();
+                    await using var zipStream = await zipArchiveEntry.OpenAsync(cancellationToken);
                     await zipStream.WriteAsync(bytes, cancellationToken);
                 }
                 catch (Exception ex)

@@ -14,7 +14,6 @@ using RuriLib.Providers.UserAgents;
 using RuriLib.Services;
 using System;
 using System.IO;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -52,10 +51,8 @@ public partial class App : Application
             ?? throw new InvalidOperationException("Configuration service was not registered");
         var workerThreads = config.GetSection("Resources").GetValue("WorkerThreads", 1000);
         var ioThreads = config.GetSection("Resources").GetValue("IOThreads", 1000);
-        var connectionLimit = config.GetSection("Resources").GetValue("ConnectionLimit", 1000);
 
         ThreadPool.SetMinThreads(workerThreads, ioThreads);
-        ServicePointManager.DefaultConnectionLimit = connectionLimit;
 
         // Apply DB migrations or create a DB if it doesn't exist
         using (var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope())

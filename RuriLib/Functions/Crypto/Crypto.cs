@@ -399,16 +399,14 @@ public static class Crypto
     {
         if (salt is { Length: > 0 })
         {
-            using var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterations, type.ToHashAlgorithmName());
-            return deriveBytes.GetBytes(keyLength);
+            return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, type.ToHashAlgorithmName(), keyLength);
         }
         else
         {
             // Generate a random salt
             var randomSalt = new byte[saltSize];
             RandomNumberGenerator.Create().GetBytes(randomSalt);
-            using var deriveBytes = new Rfc2898DeriveBytes(password, randomSalt, iterations, type.ToHashAlgorithmName());
-            return deriveBytes.GetBytes(keyLength);
+            return Rfc2898DeriveBytes.Pbkdf2(password, randomSalt, iterations, type.ToHashAlgorithmName(), keyLength);
         }
     }
     #endregion

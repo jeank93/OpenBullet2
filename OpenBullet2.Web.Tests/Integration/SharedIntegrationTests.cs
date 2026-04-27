@@ -335,7 +335,7 @@ public class SharedIntegrationTests(ITestOutputHelper testOutputHelper)
         var archive = new ZipArchive(await result.Content.ReadAsStreamAsync(TestCancellationToken));
         Assert.Single(archive.Entries);
         var entry = archive.Entries[0];
-        await using var stream = entry.Open();
+        await using var stream = await entry.OpenAsync(TestCancellationToken);
         var unpackedConfig = await ConfigPacker.UnpackAsync(stream);
 
         // The id is randomized on the downloaded configs, so

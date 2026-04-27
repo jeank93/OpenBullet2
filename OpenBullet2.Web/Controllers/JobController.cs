@@ -802,7 +802,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         return entity;
     }
 
-    private bool CanSee(ApiUser apiUser, Job job)
+    private static bool CanSee(ApiUser apiUser, Job job)
         => apiUser.Role is UserRole.Admin || job.OwnerId == apiUser.Id;
 
     private void EnsureOwnership(Job job)

@@ -149,7 +149,7 @@ internal sealed class TestTcpServer : IAsyncDisposable
             DateTimeOffset.UtcNow.AddDays(-1),
             DateTimeOffset.UtcNow.AddDays(30));
 
-        return new X509Certificate2(certificate.Export(X509ContentType.Pfx));
+        return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx), null);
     }
 
     public async ValueTask DisposeAsync()

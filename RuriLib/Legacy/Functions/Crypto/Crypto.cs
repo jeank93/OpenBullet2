@@ -399,17 +399,17 @@ public static class Crypto
     {
         if (salt != string.Empty)
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(password, Convert.FromBase64String(salt), iterations, type.ToHashAlgorithmName()))
-            {
-                return Convert.ToBase64String(deriveBytes.GetBytes(keyLength));
-            }
+            var key = Rfc2898DeriveBytes.Pbkdf2(password, Convert.FromBase64String(salt),
+                iterations, type.ToHashAlgorithmName(), keyLength);
+            return Convert.ToBase64String(key);
         }
         else
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(password, saltSize, iterations, type.ToHashAlgorithmName()))
-            {
-                return Convert.ToBase64String(deriveBytes.GetBytes(keyLength));
-            }
+            var randomSalt = new byte[saltSize];
+            RandomNumberGenerator.Fill(randomSalt);
+            var key = Rfc2898DeriveBytes.Pbkdf2(password, randomSalt,
+                iterations, type.ToHashAlgorithmName(), keyLength);
+            return Convert.ToBase64String(key);
         }
     }
     #endregion

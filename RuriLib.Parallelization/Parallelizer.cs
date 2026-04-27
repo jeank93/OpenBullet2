@@ -413,6 +413,8 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     {
         StartTime = DateTime.Now;
         EndTime = null;
+        Processed = 0;
+        CPM = 0;
         CheckedTimestamps.Clear();
 
         SoftCts.Dispose();

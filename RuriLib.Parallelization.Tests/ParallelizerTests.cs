@@ -242,6 +242,32 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_CompletedParallelizerAgain_ResetsProgressForNewRun()
+    {
+        const int count = 3;
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, count),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 1,
+            totalAmount: count,
+            skip: 0);
+
+        using var cts = CreateTestTimeout();
+
+        await parallelizer.Start();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(1, parallelizer.Progress);
+
+        await parallelizer.Start();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(1, parallelizer.Progress);
+        Assert.Equal(count, parallelizer.CPM);
+    }
+
+    [Fact]
     public async Task Run_QuickTasks_UpdatesCpmForProcessedItems()
     {
         const int count = 10;

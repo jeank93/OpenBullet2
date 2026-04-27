@@ -294,7 +294,7 @@ public class SBlockBrowserAction : BlockBase
                 break;
 
             case BrowserAction.DOMtoSOURCE:
-                data.SOURCE = validatedBrowser!.FindElement(By.TagName("body")).GetAttribute("innerHTML");
+                data.SOURCE = validatedBrowser!.FindElement(By.TagName("body")).GetAttribute("innerHTML")!;
                 break;
 
             case BrowserAction.GetCookies:

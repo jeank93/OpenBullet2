@@ -187,7 +187,7 @@ public static class Methods
         var value = element.GetAttribute(attributeName);
 
         data.Logger.Log($"Got value {value} of attribute {attributeName}", LogColors.JuneBud);
-        return value;
+        return value!;
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public static class Methods
         var values = elements.Select(e => e.GetAttribute(attributeName)).ToList();
 
         data.Logger.Log($"Got {values.Count} values for attribute {attributeName}", LogColors.JuneBud);
-        return values;
+        return values!;
     }
 
     /// <summary>

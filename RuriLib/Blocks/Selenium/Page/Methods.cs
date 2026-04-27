@@ -174,7 +174,7 @@ public static class Methods
 
         data.Logger.Log("Got the full page DOM", LogColors.JuneBud);
         data.Logger.Log(dom, LogColors.JuneBud, true);
-        return dom;
+        return dom!;
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public static class Methods
         data.Logger.LogHeader();
 
         var cookies = GetBrowser(data).Manage().Cookies.AllCookies
-            .Where(c => c.Domain.Contains(domain, StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.Domain?.Contains(domain, StringComparison.OrdinalIgnoreCase) == true)
             .ToArray();
 
         data.Logger.Log($"Got {cookies.Length} cookies for {domain}", LogColors.JuneBud);

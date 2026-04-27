@@ -520,11 +520,13 @@ public class ParallelizerTests
 
         await Task.Delay(100, cts.Token);
         Assert.Equal(2, Volatile.Read(ref startedCount));
+        Assert.Equal(2, parallelizer.CPM);
 
         await parallelizer.Stop();
 
         Assert.Equal(2, Volatile.Read(ref startedCount));
         Assert.Equal(2, Volatile.Read(ref progressCount));
+        Assert.Equal(2, parallelizer.CPM);
         Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 

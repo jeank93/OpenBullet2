@@ -268,7 +268,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
                 Interlocked.Increment(ref Processed);
                 OnProgressChanged(Progress);
 
-                UpdateCpm();
+                RecordCpm();
             }
         };
     }
@@ -372,23 +372,39 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     protected bool IsCpmLimited() => CPMLimit > 0 && CPM > CPMLimit;
 
     /// <summary>
-    /// Updates the CPM (safe to be called from multiple threads).
+    /// Records a completed item and updates the CPM (safe to be called from multiple threads).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    protected void RecordCpm()
+    {
+        lock (CpmLock)
+        {
+            var now = Environment.TickCount64;
+            CheckedTimestamps.Enqueue(now);
+            UpdateCpm(now);
+        }
+    }
+
+    /// <summary>
+    /// Updates the CPM without recording a completed item (safe to be called from multiple threads).
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     protected void UpdateCpm()
     {
         lock (CpmLock)
         {
-            var now = Environment.TickCount64;
-            CheckedTimestamps.Enqueue(now);
-
-            while (CheckedTimestamps.Count > 0 && now - CheckedTimestamps.Peek() >= 60000)
-            {
-                CheckedTimestamps.Dequeue();
-            }
-
-            CPM = CheckedTimestamps.Count;
+            UpdateCpm(Environment.TickCount64);
         }
+    }
+
+    private void UpdateCpm(long now)
+    {
+        while (CheckedTimestamps.Count > 0 && now - CheckedTimestamps.Peek() >= 60000)
+        {
+            CheckedTimestamps.Dequeue();
+        }
+
+        CPM = CheckedTimestamps.Count;
     }
     #endregion
 

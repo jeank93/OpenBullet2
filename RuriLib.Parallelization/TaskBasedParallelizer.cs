@@ -18,6 +18,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     private readonly ConcurrentQueue<TInput> _queue = new();
     private int _savedDop;
     private bool _dopDecreaseRequested;
+    private int _activeTaskCount;
     private static readonly TimeSpan CpmThrottlePollingDelay = TimeSpan.FromMilliseconds(250);
     #endregion
 
@@ -138,6 +139,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         try
         {
             _dopDecreaseRequested = false;
+            _activeTaskCount = 0;
 
             // Skip the items
             using var items = WorkItems.Skip(Skip).GetEnumerator();
@@ -196,11 +198,16 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 // If we can dequeue an item, run it
                 if (_queue.TryDequeue(out var item))
                 {
+                    Interlocked.Increment(ref _activeTaskCount);
+                    var semaphore = _semaphore;
+
                     // The task will release its slot no matter what
                     _ = TaskFunction.Invoke(item)
-                        // ReSharper disable once AccessToDisposedClosure
-                        // (the semaphore is only disposed after the loop finishes)
-                        .ContinueWith(_ => _semaphore?.Release())
+                        .ContinueWith(_ =>
+                        {
+                            Interlocked.Decrement(ref _activeTaskCount);
+                            semaphore?.Release();
+                        })
                         .ConfigureAwait(false);
                 }
                 else
@@ -215,11 +222,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             }
             else
             {
-                // Wait for every remaining task from the last batch to finish unless aborted
-                while (Progress < 1 && !HardCts.IsCancellationRequested)
-                {
-                    await Task.Delay(100).ConfigureAwait(false);
-                }
+                await WaitCurrentWorkCompletion().ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -250,7 +253,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             return;
         }
 
-        while (_semaphore!.CurrentCount < DegreeOfParallelism && !HardCts.IsCancellationRequested)
+        while (Volatile.Read(ref _activeTaskCount) > 0 && !HardCts.IsCancellationRequested)
         {
             await Task.Delay(100).ConfigureAwait(false);
         }

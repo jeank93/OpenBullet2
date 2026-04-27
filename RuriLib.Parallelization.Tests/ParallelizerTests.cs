@@ -219,6 +219,33 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_WorkItemsFewerThanTotalAmount_CompletesWhenEnumerationEnds()
+    {
+        var progressCount = 0;
+        var completed = false;
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 3),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 2,
+            totalAmount: 10,
+            skip: 0);
+
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.Completed += (_, _) => completed = true;
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(3, progressCount);
+        Assert.Equal(0.3F, parallelizer.Progress);
+        Assert.True(completed);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+    }
+
+    [Fact]
     public async Task Run_QuickTasks_StopwatchStops()
     {
         const int count = 100;

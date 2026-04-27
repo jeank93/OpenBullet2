@@ -38,7 +38,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
         Stopwatch.Restart();
         Status = ParallelizerStatus.Running;
-        _ = Task.Run(Run).ConfigureAwait(false);
+        _ = Task.Run(Run);
     }
 
     /// <inheritdoc/>
@@ -132,26 +132,26 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
     #region Private Methods
     // Run is executed in fire and forget mode (not awaited)
-    private async void Run()
+    private async Task Run()
     {
-        _dopDecreaseRequested = false;
-
-        // Skip the items
-        using var items = WorkItems.Skip(Skip).GetEnumerator();
-
-        // Clear the queue
-        _queue.Clear();
-
-        // Enqueue the first batch (at most BatchSize items)
-        while (_queue.Count < BatchSize && items.MoveNext())
-        {
-            _queue.Enqueue(items.Current);
-        }
-
-        _semaphore = new SemaphoreSlim(DegreeOfParallelism, MaxDegreeOfParallelism);
-
         try
         {
+            _dopDecreaseRequested = false;
+
+            // Skip the items
+            using var items = WorkItems.Skip(Skip).GetEnumerator();
+
+            // Clear the queue
+            _queue.Clear();
+
+            // Enqueue the first batch (at most BatchSize items)
+            while (_queue.Count < BatchSize && items.MoveNext())
+            {
+                _queue.Enqueue(items.Current);
+            }
+
+            _semaphore = new SemaphoreSlim(DegreeOfParallelism, MaxDegreeOfParallelism);
+
             // While there are items in the queue, and we didn't cancel, dequeue one, wait and then
             // queue another task if there are more to queue
             while (!_queue.IsEmpty && !SoftCts.IsCancellationRequested)
@@ -236,6 +236,11 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
     private async Task WaitCurrentWorkCompletion()
     {
+        if (_semaphore is null)
+        {
+            return;
+        }
+
         while (_semaphore!.CurrentCount < DegreeOfParallelism && !HardCts.IsCancellationRequested)
         {
             await Task.Delay(100).ConfigureAwait(false);

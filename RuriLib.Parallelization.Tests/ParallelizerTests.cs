@@ -1,6 +1,7 @@
 using RuriLib.Parallelization.Models;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -238,6 +239,40 @@ public class ParallelizerTests
         var elapsed = parallelizer.Elapsed;
         await Task.Delay(100, cts.Token);
         Assert.Equal(elapsed, parallelizer.Elapsed);
+    }
+
+    [Fact]
+    public async Task Run_WorkItemsEnumerationError_ReportsErrorAndReturnsIdle()
+    {
+        var completed = false;
+        Exception? exception = null;
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: ThrowingWorkItems(),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 1,
+            totalAmount: 1,
+            skip: 0);
+
+        parallelizer.Completed += (_, _) => completed = true;
+        parallelizer.Error += (_, ex) => exception = ex;
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.True(completed);
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+
+        static IEnumerable<int> ThrowingWorkItems()
+        {
+            throw new InvalidOperationException("The work items could not be enumerated");
+#pragma warning disable CS0162 // Unreachable code detected
+            yield return 1;
+#pragma warning restore CS0162 // Unreachable code detected
+        }
     }
 
     [Fact]

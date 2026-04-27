@@ -33,7 +33,7 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
 
         Stopwatch.Restart();
         Status = ParallelizerStatus.Running;
-        _ = Task.Run(Run).ConfigureAwait(false);
+        _ = Task.Run(Run);
     }
 
     /// <inheritdoc/>
@@ -90,7 +90,7 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
 
     #region Private Methods
     // Run is executed in fire and forget mode (not awaited)
-    private async void Run()
+    private async Task Run()
     {
         // Skip the items
         using var items = WorkItems.Skip(Skip).GetEnumerator();

@@ -3,7 +3,6 @@ using RuriLib.Parallelization.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -126,9 +125,9 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     protected int Processed;
 
     /// <summary>
-    /// The list of timestamps for CPM calculation.
+    /// The queue of timestamps for CPM calculation.
     /// </summary>
-    protected List<int> CheckedTimestamps = [];
+    protected readonly Queue<long> CheckedTimestamps = [];
 
     /// <summary>
     /// A lock that can be used to update the CPM from a single thread at a time.
@@ -269,7 +268,6 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
                 Interlocked.Increment(ref Processed);
                 OnProgressChanged(Progress);
 
-                CheckedTimestamps.Add(Environment.TickCount);
                 UpdateCpm();
             }
         };
@@ -379,20 +377,17 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     protected void UpdateCpm()
     {
-        // Update CPM (only 1 thread can enter)
-        if (!Monitor.TryEnter(CpmLock))
+        lock (CpmLock)
         {
-            return;
-        }
+            var now = Environment.TickCount64;
+            CheckedTimestamps.Enqueue(now);
 
-        try
-        {
-            CheckedTimestamps = CheckedTimestamps.Where(t => Environment.TickCount - t < 60000).ToList();
+            while (CheckedTimestamps.Count > 0 && now - CheckedTimestamps.Peek() >= 60000)
+            {
+                CheckedTimestamps.Dequeue();
+            }
+
             CPM = CheckedTimestamps.Count;
-        }
-        finally
-        {
-            Monitor.Exit(CpmLock);
         }
     }
     #endregion

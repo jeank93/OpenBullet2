@@ -242,6 +242,54 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_QuickTasks_UpdatesCpmForProcessedItems()
+    {
+        const int count = 10;
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, count),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 4,
+            totalAmount: count,
+            skip: 0);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(count, parallelizer.CPM);
+    }
+
+    [Fact]
+    public async Task Run_TaskErrors_UpdateCpmForProcessedItems()
+    {
+        const int count = 10;
+        var taskErrorCount = 0;
+
+        Task<bool> ThrowingWork(int _, CancellationToken cancellationToken)
+            => throw new InvalidOperationException("The work item failed");
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, count),
+            workFunction: ThrowingWork,
+            degreeOfParallelism: 4,
+            totalAmount: count,
+            skip: 0);
+
+        parallelizer.TaskError += (_, _) => Interlocked.Increment(ref taskErrorCount);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(count, taskErrorCount);
+        Assert.Equal(count, parallelizer.CPM);
+    }
+
+    [Fact]
     public async Task Run_WorkItemsEnumerationError_ReportsErrorAndReturnsIdle()
     {
         var completed = false;

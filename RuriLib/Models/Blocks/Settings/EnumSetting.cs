@@ -43,10 +43,10 @@ public class EnumSetting : Setting
 
             foreach (var name in _enumType.GetEnumNames())
             {
-                var field = _enumType.GetField(name);
+                var enumField = _enumType.GetField(name);
                 var prettyName = name;
 
-                if (field?.GetCustomAttributes(typeof(DescriptionAttribute), false)
+                if (enumField?.GetCustomAttributes(typeof(DescriptionAttribute), false)
                     is DescriptionAttribute[] attributes && attributes.Length > 0)
                 {
                     prettyName = attributes[0].Description;

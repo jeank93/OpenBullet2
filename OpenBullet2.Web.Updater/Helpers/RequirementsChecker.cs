@@ -8,18 +8,17 @@ namespace OpenBullet2.Web.Updater.Helpers;
 
 public static class RequirementsChecker
 {
-    private static readonly Version _dotnetVersion = new(8, 0);
+    private static readonly Version _dotnetVersion = new(10, 0);
 
     public static async Task EnsureOb2WebNotRunningAsync()
         => await UpdaterRequirements.EnsureProcessNotRunningAsync("OpenBullet2.Web");
 
     /// <summary>
-    /// Checks if the ASP.NET Core Runtime is installed. If the user installed the SDK,
-    /// it will still work because the runtime is included in the SDK.
+    /// Checks if the ASP.NET Core Runtime or SDK is installed.
     /// </summary>
     public static async Task EnsureDotNetInstalledAsync()
     {
-        if (await UpdaterRequirements.IsRuntimeInstalledAsync("Microsoft.AspNetCore.App", _dotnetVersion))
+        if (await UpdaterRequirements.IsRuntimeOrSdkInstalledAsync("Microsoft.AspNetCore.App", _dotnetVersion))
         {
             return;
         }

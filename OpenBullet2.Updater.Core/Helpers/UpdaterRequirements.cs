@@ -58,6 +58,29 @@ public static class UpdaterRequirements
         }
     }
 
+    public static async Task<bool> IsRuntimeOrSdkInstalledAsync(string runtimeName, Version dotnetVersion)
+        => await IsRuntimeInstalledAsync(runtimeName, dotnetVersion)
+           || await IsSdkInstalledAsync(dotnetVersion);
+
+    public static async Task<bool> IsSdkInstalledAsync(Version dotnetVersion)
+    {
+        try
+        {
+            // If dotnet is not a valid command, this will throw an exception
+            var result = await Cli.Wrap("dotnet")
+                .WithArguments("--list-sdks")
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+
+            return result.ExitCode == 0 && result.StandardOutput.Split('\n').Any(line =>
+                line.StartsWith($"{dotnetVersion.Major}."));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static async Task InstallRuntimeAsync(string runtimeFileName, Version dotnetVersion)
     {
         var downloadUrl = $"https://aka.ms/dotnet/{dotnetVersion}/{runtimeFileName}";

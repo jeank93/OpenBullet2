@@ -331,8 +331,7 @@ public static class Methods
         var browser = GetBrowser(data);
         var element = GetElement(data, findBy, identifier, index);
 
-        using var img = TakeElementScreenshot(browser, element);
-        img.Save(fileName);
+        TakeElementScreenshot(browser, element).SaveAsFile(fileName);
 
         data.Logger.Log($"Took a screenshot of the element and saved it to {fileName}", LogColors.JuneBud);
     }
@@ -348,10 +347,7 @@ public static class Methods
         var browser = GetBrowser(data);
         var element = GetElement(data, findBy, identifier, index);
 
-        using var img = TakeElementScreenshot(browser, element);
-        using var ms = new MemoryStream();
-        img.Save(ms, ImageFormat.Jpeg);
-        var base64 = Convert.ToBase64String(ms.ToArray());
+        var base64 = TakeElementScreenshot(browser, element).AsBase64EncodedString;
 
         data.Logger.Log($"Took a screenshot of the element as base64", LogColors.JuneBud);
         return base64;
@@ -455,11 +451,24 @@ public static class Methods
         data.SOURCE = browser.PageSource;
     }
 
-    private static Bitmap TakeElementScreenshot(IWebDriver driver, IWebElement element)
+    private static Screenshot TakeElementScreenshot(IWebDriver driver, IWebElement element)
+    {
+        if (element is ITakesScreenshot screenshotElement)
+        {
+            return screenshotElement.GetScreenshot();
+        }
+
+        return TakeElementScreenshotWithCropping(driver, element);
+    }
+
+    private static Screenshot TakeElementScreenshotWithCropping(IWebDriver driver, IWebElement element)
     {
         var sc = (driver as ITakesScreenshot)!.GetScreenshot();
-        using var ms = new MemoryStream(sc.AsByteArray);
-        using var img = Image.FromStream(ms) as Bitmap;
-        return img!.Clone(new Rectangle(element.Location, element.Size), img.PixelFormat);
+        using var input = new MemoryStream(sc.AsByteArray);
+        using var img = Image.FromStream(input) as Bitmap;
+        using var cropped = img!.Clone(new Rectangle(element.Location, element.Size), img.PixelFormat);
+        using var output = new MemoryStream();
+        cropped.Save(output, ImageFormat.Png);
+        return new Screenshot(Convert.ToBase64String(output.ToArray()));
     }
 }

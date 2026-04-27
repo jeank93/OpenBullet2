@@ -433,7 +433,8 @@ public class BlockFunction : BlockBase
                     LineParser.EnsureIdentifier(ref input, "BROWSER");
                     UserAgentSpecifyBrowser = true;
                     UserAgentBrowser = LineParser.ParseEnum(ref input, "BROWSER", typeof(Browser));
-                };
+                }
+                ;
                 break;
 
             case Function.AESDecrypt:

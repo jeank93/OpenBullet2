@@ -1,7 +1,6 @@
 using RuriLib.Parallelization.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,9 +15,6 @@ public class ParallelizerTests
     private readonly Func<int, CancellationToken, Task<bool>> _parityCheck
         = (number, _) => Task.FromResult(number % 2 == 0);
 
-    private readonly Func<int, CancellationToken, Task<bool>> _longTask
-        = async (_, cancellationToken) => { await Task.Delay(100, cancellationToken); return true; };
-
     private const ParallelizerType _type = ParallelizerType.TaskBased;
     private int _progressCount;
     private bool _lastResult;
@@ -32,6 +28,30 @@ public class ParallelizerTests
     private void OnCompleted(object? sender, EventArgs e) => _completedFlag = true;
 
     private void OnException(object? sender, Exception ex) => _lastException = ex;
+
+    private static CancellationTokenSource CreateTestTimeout()
+    {
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cts.CancelAfter(10000);
+        return cts;
+    }
+
+    private static void UpdateMax(ref int target, int value)
+    {
+        var current = Volatile.Read(ref target);
+
+        while (value > current)
+        {
+            var original = Interlocked.CompareExchange(ref target, value, current);
+
+            if (original == current)
+            {
+                return;
+            }
+
+            current = original;
+        }
+    }
 
     [Theory]
     [InlineData(ParallelizerType.ThreadBased)]
@@ -130,15 +150,33 @@ public class ParallelizerTests
     [Fact]
     public async Task ParallelBased_UnsupportedOperations_Throw()
     {
+        const int degreeOfParallelism = 4;
+        var startedCount = 0;
+        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref startedCount) == degreeOfParallelism)
+            {
+                allWorkersStarted.TrySetResult();
+            }
+
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: ParallelizerType.ParallelBased,
             workItems: Enumerable.Range(1, 100),
-            workFunction: _longTask,
-            degreeOfParallelism: 4,
+            workFunction: BlockingWork,
+            degreeOfParallelism: degreeOfParallelism,
             totalAmount: 100,
             skip: 0);
 
         await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await allWorkersStarted.Task.WaitAsync(cts.Token);
 
         await Assert.ThrowsAsync<NotSupportedException>(() => parallelizer.Pause());
         await Assert.ThrowsAsync<NotSupportedException>(() => parallelizer.Stop());
@@ -198,196 +236,355 @@ public class ParallelizerTests
         await parallelizer.WaitCompletion(cts.Token);
 
         var elapsed = parallelizer.Elapsed;
-        await Task.Delay(1000, cts.Token);
+        await Task.Delay(100, cts.Token);
         Assert.Equal(elapsed, parallelizer.Elapsed);
     }
 
     [Fact]
-    public async Task Run_LongTasks_StopBeforeCompletion()
+    public async Task Run_LongTasks_StopWaitsForCurrentWork()
     {
-        // In theory this should take 1000 * 100 / 10 = 10.000 ms = 10 seconds
+        const int degreeOfParallelism = 4;
+        var startedCount = 0;
+        var progressCount = 0;
+        var completed = false;
+        Exception? exception = null;
+        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorkers = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref startedCount) == degreeOfParallelism)
+            {
+                allWorkersStarted.TrySetResult();
+            }
+
+            await releaseWorkers.Task.WaitAsync(cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
-            workItems: Enumerable.Range(1, 1000),
-            workFunction: _longTask,
-            degreeOfParallelism: 10,
-            totalAmount: 1000,
+            workItems: Enumerable.Range(1, degreeOfParallelism),
+            workFunction: BlockingWork,
+            degreeOfParallelism: degreeOfParallelism,
+            totalAmount: degreeOfParallelism,
             skip: 0);
 
-        _progressCount = 0;
-        _completedFlag = false;
-        _lastException = null;
-        parallelizer.ProgressChanged += OnProgress;
-        parallelizer.Completed += OnCompleted;
-        parallelizer.Error += OnException;
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.Completed += (_, _) => completed = true;
+        parallelizer.Error += (_, ex) => exception = ex;
 
         await parallelizer.Start();
-        await Task.Delay(250, TestCancellationToken);
 
-        await parallelizer.Stop();
+        using var cts = CreateTestTimeout();
+        await allWorkersStarted.Task.WaitAsync(cts.Token);
 
-        Assert.InRange(_progressCount, 10, 50);
-        Assert.True(_completedFlag);
-        Assert.Null(_lastException);
+        var stopTask = parallelizer.Stop();
+        releaseWorkers.SetResult();
+        await stopTask.WaitAsync(cts.Token);
+
+        Assert.Equal(degreeOfParallelism, startedCount);
+        Assert.Equal(degreeOfParallelism, progressCount);
+        Assert.True(completed);
+        Assert.Null(exception);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]
     public async Task Run_LongTasks_AbortBeforeCompletion()
     {
-        // In theory this should take 1000 * 100 / 10 = 10.000 ms = 10 seconds
+        const int degreeOfParallelism = 4;
+        var startedCount = 0;
+        var progressCount = 0;
+        var taskErrorCount = 0;
+        var completed = false;
+        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref startedCount) == degreeOfParallelism)
+            {
+                allWorkersStarted.TrySetResult();
+            }
+
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
-            workItems: Enumerable.Range(1, 1000),
-            workFunction: _longTask,
-            degreeOfParallelism: 10,
-            totalAmount: 1000,
+            workItems: Enumerable.Range(1, 100),
+            workFunction: BlockingWork,
+            degreeOfParallelism: degreeOfParallelism,
+            totalAmount: 100,
             skip: 0);
 
-        _progressCount = 0;
-        _completedFlag = false;
-        _lastException = null;
-        parallelizer.ProgressChanged += OnProgress;
-        parallelizer.Completed += OnCompleted;
-        parallelizer.Error += OnException;
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.TaskError += (_, _) => Interlocked.Increment(ref taskErrorCount);
+        parallelizer.Completed += (_, _) => completed = true;
 
         await parallelizer.Start();
-        await Task.Delay(250, TestCancellationToken);
+
+        using var cts = CreateTestTimeout();
+        await allWorkersStarted.Task.WaitAsync(cts.Token);
 
         await parallelizer.Abort();
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        cts.CancelAfter(10000);
         await parallelizer.WaitCompletion(cts.Token);
 
-        Assert.InRange(_progressCount, 10, 50);
-        Assert.True(_completedFlag);
-        Assert.Null(_lastException);
+        Assert.Equal(degreeOfParallelism, startedCount);
+        Assert.Equal(degreeOfParallelism, progressCount);
+        Assert.Equal(degreeOfParallelism, taskErrorCount);
+        Assert.True(completed);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]
-    public async Task Run_IncreaseConcurrentThreads_CompleteFaster()
+    public async Task Run_IncreaseConcurrentThreads_AllowsMoreConcurrentWork()
     {
+        const int count = 4;
+        var startedCount = 0;
+        var firstWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var allWorkersStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorkers = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> BlockingWork(int _, CancellationToken cancellationToken)
+        {
+            var currentStarted = Interlocked.Increment(ref startedCount);
+
+            if (currentStarted == 1)
+            {
+                firstWorkerStarted.TrySetResult();
+            }
+
+            if (currentStarted == count)
+            {
+                allWorkersStarted.TrySetResult();
+            }
+
+            await releaseWorkers.Task.WaitAsync(cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
-            workItems: Enumerable.Range(1, 10),
-            workFunction: _longTask,
+            workItems: Enumerable.Range(1, count),
+            workFunction: BlockingWork,
             degreeOfParallelism: 1,
-            totalAmount: 10,
+            totalAmount: count,
             skip: 0);
 
-        var stopwatch = new Stopwatch();
-
-        // Start with 1 concurrent task
-        stopwatch.Start();
         await parallelizer.Start();
 
-        // Wait for 2 rounds to fully complete
-        await Task.Delay(250, TestCancellationToken);
+        using var cts = CreateTestTimeout();
+        await firstWorkerStarted.Task.WaitAsync(cts.Token);
 
-        // Release 3 more slots
+        Assert.Equal(1, Volatile.Read(ref startedCount));
         await parallelizer.ChangeDegreeOfParallelism(4);
+        await allWorkersStarted.Task.WaitAsync(cts.Token);
 
-        // Wait until finished
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        cts.CancelAfter(10000);
+        releaseWorkers.SetResult();
         await parallelizer.WaitCompletion(cts.Token);
-        stopwatch.Stop();
 
-        // Make sure it took less than 10 * 100 ms (let's say 800)
-        Assert.InRange(stopwatch.ElapsedMilliseconds, 0, 800);
+        Assert.Equal(count, startedCount);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]
-    public async Task Run_DecreaseConcurrentThreads_CompleteSlower()
+    public async Task Run_DecreaseConcurrentThreads_LimitsNewConcurrentWork()
     {
+        const int count = 6;
+        const int originalDegreeOfParallelism = 3;
+        var startedCount = 0;
+        var runningCount = 0;
+        var maxRunningAfterDecrease = 0;
+        var trackAfterDecrease = 0;
+        var firstBatchStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fourthWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorkers = Enumerable.Range(1, count)
+            .ToDictionary(item => item, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+        var startedItems = new ConcurrentQueue<int>();
+
+        async Task<bool> BlockingWork(int item, CancellationToken cancellationToken)
+        {
+            startedItems.Enqueue(item);
+            var currentStarted = Interlocked.Increment(ref startedCount);
+            var running = Interlocked.Increment(ref runningCount);
+
+            if (Volatile.Read(ref trackAfterDecrease) == 1)
+            {
+                UpdateMax(ref maxRunningAfterDecrease, running);
+            }
+
+            if (currentStarted == originalDegreeOfParallelism)
+            {
+                firstBatchStarted.TrySetResult();
+            }
+
+            if (currentStarted == originalDegreeOfParallelism + 1)
+            {
+                fourthWorkerStarted.TrySetResult();
+            }
+
+            try
+            {
+                await releaseWorkers[item].Task.WaitAsync(cancellationToken);
+                return true;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref runningCount);
+            }
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
-            workItems: Enumerable.Range(1, 12),
-            workFunction: _longTask,
-            degreeOfParallelism: 3,
-            totalAmount: 12,
+            workItems: Enumerable.Range(1, count),
+            workFunction: BlockingWork,
+            degreeOfParallelism: originalDegreeOfParallelism,
+            totalAmount: count,
             skip: 0);
 
-        var stopwatch = new Stopwatch();
-
-        // Start with 3 concurrent tasks
-        stopwatch.Start();
         await parallelizer.Start();
 
-        // Wait for 1 round to complete (a.k.a 3 completed since there are 3 concurrent threads)
-        await Task.Delay(150, TestCancellationToken);
+        using var cts = CreateTestTimeout();
+        await firstBatchStarted.Task.WaitAsync(cts.Token);
 
-        // Remove 2 slots
-        await parallelizer.ChangeDegreeOfParallelism(1);
+        var decreaseTask = parallelizer.ChangeDegreeOfParallelism(1);
 
-        // Wait until finished
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        cts.CancelAfter(10000);
+        Assert.True(startedItems.TryDequeue(out var firstItem));
+        Assert.True(startedItems.TryDequeue(out var secondItem));
+        releaseWorkers[firstItem].SetResult();
+        releaseWorkers[secondItem].SetResult();
+        await decreaseTask.WaitAsync(cts.Token);
+
+        Volatile.Write(ref trackAfterDecrease, 1);
+
+        Assert.True(startedItems.TryDequeue(out var thirdItem));
+        releaseWorkers[thirdItem].SetResult();
+        await fourthWorkerStarted.Task.WaitAsync(cts.Token);
+
+        foreach (var releaseWorker in releaseWorkers.Values)
+        {
+            releaseWorker.TrySetResult();
+        }
+
         await parallelizer.WaitCompletion(cts.Token);
-        stopwatch.Stop();
 
-        // Make sure it took more than 12 * 100 / 3 = 400 ms (we'll say 600 to make sure)
-        Assert.True(stopwatch.ElapsedMilliseconds > 600);
+        Assert.Equal(count, startedCount);
+        Assert.Equal(1, maxRunningAfterDecrease);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]
     public async Task Run_PauseAndResume_CompleteAll()
     {
-        const int count = 10;
+        const int count = 3;
+        var progressCount = 0;
+        var startedCount = 0;
+        var completed = false;
+        Exception? exception = null;
+        var firstWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorkers = Enumerable.Range(1, count)
+            .ToDictionary(item => item, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        async Task<bool> BlockingWork(int item, CancellationToken cancellationToken)
+        {
+            var currentStarted = Interlocked.Increment(ref startedCount);
+
+            if (currentStarted == 1)
+            {
+                firstWorkerStarted.TrySetResult();
+            }
+
+            if (currentStarted == 2)
+            {
+                secondWorkerStarted.TrySetResult();
+            }
+
+            await releaseWorkers[item].Task.WaitAsync(cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
             workItems: Enumerable.Range(1, count),
-            workFunction: _longTask,
+            workFunction: BlockingWork,
             degreeOfParallelism: 1,
             totalAmount: count,
             skip: 0);
 
-        _progressCount = 0;
-        _completedFlag = false;
-        _lastException = null;
-        parallelizer.ProgressChanged += OnProgress;
-        parallelizer.NewResult += OnResult;
-        parallelizer.Completed += OnCompleted;
-        parallelizer.Error += OnException;
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.Completed += (_, _) => completed = true;
+        parallelizer.Error += (_, ex) => exception = ex;
 
         await parallelizer.Start();
-        await Task.Delay(150, TestCancellationToken);
-        await parallelizer.Pause();
 
-        // Make sure it's actually paused and nothing is going on
-        var progress = _progressCount;
-        await Task.Delay(1000, TestCancellationToken);
-        Assert.Equal(progress, _progressCount);
+        using var cts = CreateTestTimeout();
+        await firstWorkerStarted.Task.WaitAsync(cts.Token);
+
+        var pauseTask = parallelizer.Pause();
+        releaseWorkers[1].SetResult();
+        await pauseTask.WaitAsync(cts.Token);
+
+        Assert.Equal(ParallelizerStatus.Paused, parallelizer.Status);
+        Assert.Equal(1, startedCount);
+        Assert.Equal(1, progressCount);
 
         await parallelizer.Resume();
+        await secondWorkerStarted.Task.WaitAsync(cts.Token);
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        cts.CancelAfter(10000);
+        foreach (var releaseWorker in releaseWorkers.Values)
+        {
+            releaseWorker.TrySetResult();
+        }
+
         await parallelizer.WaitCompletion(cts.Token);
 
-        Assert.Equal(count, _progressCount);
-        Assert.True(_completedFlag);
-        Assert.Null(_lastException);
+        Assert.Equal(count, progressCount);
+        Assert.True(completed);
+        Assert.Null(exception);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]
     public async Task Run_Pause_StopwatchStops()
     {
-        const int count = 10;
+        const int count = 3;
+        var firstWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorkers = Enumerable.Range(1, count)
+            .ToDictionary(item => item, _ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        async Task<bool> BlockingWork(int item, CancellationToken cancellationToken)
+        {
+            if (item == 1)
+            {
+                firstWorkerStarted.TrySetResult();
+            }
+
+            await releaseWorkers[item].Task.WaitAsync(cancellationToken);
+            return true;
+        }
+
         var parallelizer = ParallelizerFactory<int, bool>.Create(
             type: _type,
             workItems: Enumerable.Range(1, count),
-            workFunction: _longTask,
+            workFunction: BlockingWork,
             degreeOfParallelism: 1,
             totalAmount: count,
             skip: 0);
 
         await parallelizer.Start();
-        await Task.Delay(150, TestCancellationToken);
-        await parallelizer.Pause();
+
+        using var cts = CreateTestTimeout();
+        await firstWorkerStarted.Task.WaitAsync(cts.Token);
+
+        var pauseTask = parallelizer.Pause();
+        releaseWorkers[1].SetResult();
+        await pauseTask.WaitAsync(cts.Token);
 
         var elapsed = parallelizer.Elapsed;
-        await Task.Delay(1000, TestCancellationToken);
+        await Task.Delay(100, cts.Token);
         Assert.Equal(elapsed, parallelizer.Elapsed);
 
         await parallelizer.Abort();

@@ -433,6 +433,54 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_CpmLimited_DelaysBeforeStartingMoreWorkUntilStopped()
+    {
+        var startedCount = 0;
+        var progressCount = 0;
+        var firstWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task<bool> Work(int _, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref startedCount) == 1)
+            {
+                firstWorkerStarted.TrySetResult();
+            }
+
+            return Task.FromResult(true);
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 100),
+            workFunction: Work,
+            degreeOfParallelism: 1,
+            totalAmount: 100,
+            skip: 0);
+
+        parallelizer.CPMLimit = 1;
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await firstWorkerStarted.Task.WaitAsync(cts.Token);
+
+        while (Volatile.Read(ref progressCount) < 2)
+        {
+            await Task.Delay(10, cts.Token);
+        }
+
+        await Task.Delay(100, cts.Token);
+        Assert.Equal(2, Volatile.Read(ref startedCount));
+
+        await parallelizer.Stop();
+
+        Assert.Equal(2, Volatile.Read(ref startedCount));
+        Assert.Equal(2, Volatile.Read(ref progressCount));
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+    }
+
+    [Fact]
     public async Task Run_DecreaseConcurrentThreads_LimitsNewConcurrentWork()
     {
         const int count = 6;

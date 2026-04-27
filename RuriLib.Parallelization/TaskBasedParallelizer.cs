@@ -18,6 +18,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     private readonly ConcurrentQueue<TInput> _queue = new();
     private int _savedDop;
     private bool _dopDecreaseRequested;
+    private static readonly TimeSpan CpmThrottlePollingDelay = TimeSpan.FromMilliseconds(250);
     #endregion
 
     #region Constructors
@@ -167,10 +168,18 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                     break;
                 }
 
-                if (_dopDecreaseRequested || IsCpmLimited())
+                if (_dopDecreaseRequested)
                 {
                     UpdateCpm();
                     _semaphore!.Release();
+                    goto WAIT;
+                }
+
+                if (IsCpmLimited())
+                {
+                    UpdateCpm();
+                    _semaphore!.Release();
+                    await Task.Delay(CpmThrottlePollingDelay, SoftCts.Token).ConfigureAwait(false);
                     goto WAIT;
                 }
 

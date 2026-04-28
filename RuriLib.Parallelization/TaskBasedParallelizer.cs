@@ -17,7 +17,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     private SemaphoreSlim? _semaphore;
     private readonly ConcurrentQueue<TInput> _queue = new();
     private int _savedDop;
-    private bool _dopDecreaseRequested;
+    private int _dopDecreaseRequested;
     private int _activeTaskCount;
     private static readonly TimeSpan CpmThrottlePollingDelay = TimeSpan.FromMilliseconds(250);
     #endregion
@@ -120,12 +120,12 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
         else
         {
-            _dopDecreaseRequested = true;
+            SetDopDecreaseRequested(true);
             for (var i = 0; i < DegreeOfParallelism - newValue; ++i)
             {
                 await _semaphore.WaitAsync().ConfigureAwait(false);
             }
-            _dopDecreaseRequested = false;
+            SetDopDecreaseRequested(false);
         }
 
         DegreeOfParallelism = newValue;
@@ -138,7 +138,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     {
         try
         {
-            _dopDecreaseRequested = false;
+            SetDopDecreaseRequested(false);
             _activeTaskCount = 0;
 
             // Skip the items
@@ -170,7 +170,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                     break;
                 }
 
-                if (_dopDecreaseRequested)
+                if (IsDopDecreaseRequested())
                 {
                     UpdateCpm();
                     _semaphore!.Release();
@@ -258,5 +258,10 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             await Task.Delay(100).ConfigureAwait(false);
         }
     }
+
+    private bool IsDopDecreaseRequested() => Volatile.Read(ref _dopDecreaseRequested) == 1;
+
+    private void SetDopDecreaseRequested(bool value) =>
+        Interlocked.Exchange(ref _dopDecreaseRequested, value ? 1 : 0);
     #endregion
 }

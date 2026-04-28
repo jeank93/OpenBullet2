@@ -28,11 +28,20 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// </summary>
     public ParallelizerStatus Status
     {
-        get => _status;
+        get
+        {
+            lock (StatusLock)
+            {
+                return _status;
+            }
+        }
         protected set
         {
-            _status = value;
-            OnStatusChanged(_status);
+            lock (StatusLock)
+            {
+                _status = value;
+                OnStatusChanged(_status);
+            }
         }
     }
 
@@ -148,6 +157,11 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// A hard cancellation token. Cancel this for hard abort only.
     /// </summary>
     protected CancellationTokenSource HardCts = new();
+
+    /// <summary>
+    /// Synchronizes status transitions with lifecycle waiters.
+    /// </summary>
+    protected readonly object StatusLock = new();
     #endregion
 
     #region Private Fields
@@ -155,6 +169,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// The status of the parallelizer.
     /// </summary>
     private ParallelizerStatus _status = ParallelizerStatus.Idle;
+    private TaskCompletionSource _completedSignal = CreateCompletedSignal(completed: true);
     #endregion
 
     #region Events
@@ -196,7 +211,17 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// <summary>
     /// Invokes a <see cref="Parallelizer{TInput, TOutput}.Completed"/> event.
     /// </summary>
-    protected virtual void OnCompleted() => Completed?.Invoke(this, EventArgs.Empty);
+    protected virtual void OnCompleted()
+    {
+        try
+        {
+            Completed?.Invoke(this, EventArgs.Empty);
+        }
+        finally
+        {
+            _completedSignal.TrySetResult();
+        }
+    }
 
     /// <summary>Called when <see cref="Status"/> changes.</summary>
     public event EventHandler<ParallelizerStatus>? StatusChanged;
@@ -361,6 +386,8 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             await Task.Delay(100, cancellationToken).ConfigureAwait(false);
         }
+
+        await _completedSignal.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
     #endregion
 
@@ -416,11 +443,25 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
         Processed = 0;
         CPM = 0;
         CheckedTimestamps.Clear();
+        _completedSignal = CreateCompletedSignal();
 
         SoftCts.Dispose();
         HardCts.Dispose();
         SoftCts = new CancellationTokenSource();
         HardCts = new CancellationTokenSource();
+    }
+
+    private static TaskCompletionSource CreateCompletedSignal(bool completed = false)
+    {
+        // Avoid running WaitCompletion continuations inline while OnCompleted is unwinding.
+        var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        if (completed)
+        {
+            signal.SetResult();
+        }
+
+        return signal;
     }
     #endregion
 

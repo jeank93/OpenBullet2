@@ -246,6 +246,31 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_CompletedEvent_IsRaisedAfterStatusBecomesIdle()
+    {
+        ParallelizerStatus? statusInCompletedHandler = null;
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 1),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 1,
+            totalAmount: 1,
+            skip: 0);
+
+        parallelizer.Completed += (_, _) =>
+        {
+            statusInCompletedHandler = parallelizer.Status;
+        };
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(ParallelizerStatus.Idle, statusInCompletedHandler);
+    }
+
+    [Fact]
     public async Task Run_QuickTasks_StopwatchStops()
     {
         const int count = 100;

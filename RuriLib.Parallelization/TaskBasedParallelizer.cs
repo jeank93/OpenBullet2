@@ -38,8 +38,11 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         await base.Start().ConfigureAwait(false);
 
         Stopwatch.Restart();
-        Status = ParallelizerStatus.Running;
-        _ = Task.Run(Run);
+        lock (StatusLock)
+        {
+            Status = ParallelizerStatus.Running;
+            _ = Task.Run(Run);
+        }
     }
 
     /// <inheritdoc/>
@@ -47,10 +50,25 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     {
         await base.Pause().ConfigureAwait(false);
 
-        Status = ParallelizerStatus.Pausing;
+        if (!TrySetStatusUnlessIdle(ParallelizerStatus.Pausing))
+        {
+            return;
+        }
+
         _savedDop = DegreeOfParallelism;
         await ChangeDegreeOfParallelism(0).ConfigureAwait(false);
-        Status = ParallelizerStatus.Paused;
+
+        lock (StatusLock)
+        {
+            if (Status == ParallelizerStatus.Idle)
+            {
+                DegreeOfParallelism = _savedDop;
+                return;
+            }
+
+            Status = ParallelizerStatus.Paused;
+        }
+
         Stopwatch.Stop();
     }
 
@@ -59,9 +77,9 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     {
         await base.Resume().ConfigureAwait(false);
 
-        Status = ParallelizerStatus.Resuming;
+        SetStatus(ParallelizerStatus.Resuming);
         await ChangeDegreeOfParallelism(_savedDop).ConfigureAwait(false);
-        Status = ParallelizerStatus.Running;
+        SetStatus(ParallelizerStatus.Running);
         Stopwatch.Start();
     }
 
@@ -70,8 +88,12 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     {
         await base.Stop().ConfigureAwait(false);
 
-        Status = ParallelizerStatus.Stopping;
-        await SoftCts.CancelAsync();
+        if (!TrySetStatusUnlessIdle(ParallelizerStatus.Stopping))
+        {
+            return;
+        }
+
+        await SoftCts.CancelAsync().ConfigureAwait(false);
         await WaitCompletion().ConfigureAwait(false);
     }
 
@@ -80,9 +102,13 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     {
         await base.Abort().ConfigureAwait(false);
 
-        Status = ParallelizerStatus.Stopping;
-        await HardCts.CancelAsync();
-        await SoftCts.CancelAsync();
+        if (!TrySetStatusUnlessIdle(ParallelizerStatus.Stopping))
+        {
+            return;
+        }
+
+        await HardCts.CancelAsync().ConfigureAwait(false);
+        await SoftCts.CancelAsync().ConfigureAwait(false);
         await WaitCompletion().ConfigureAwait(false);
     }
 
@@ -228,13 +254,17 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
         finally
         {
+            lock (StatusLock)
+            {
+                HardCts.Dispose();
+                SoftCts.Dispose();
+                _semaphore?.Dispose();
+                _semaphore = null;
+                Stopwatch.Stop();
+                Status = ParallelizerStatus.Idle;
+            }
+
             OnCompleted();
-            Status = ParallelizerStatus.Idle;
-            HardCts.Dispose();
-            SoftCts.Dispose();
-            _semaphore?.Dispose();
-            _semaphore = null;
-            Stopwatch.Stop();
         }
     }
 
@@ -255,5 +285,28 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
     private void SetDopDecreaseRequested(bool value) =>
         Interlocked.Exchange(ref _dopDecreaseRequested, value ? 1 : 0);
+
+    private void SetStatus(ParallelizerStatus status)
+    {
+        lock (StatusLock)
+        {
+            Status = status;
+        }
+    }
+
+    private bool TrySetStatusUnlessIdle(ParallelizerStatus status)
+    {
+        lock (StatusLock)
+        {
+            if (Status == ParallelizerStatus.Idle)
+            {
+                return false;
+            }
+
+            Status = status;
+            return true;
+        }
+    }
+
     #endregion
 }

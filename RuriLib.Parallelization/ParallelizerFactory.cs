@@ -30,7 +30,9 @@ public static class ParallelizerFactory<TInput, TOutput>
         var pType = type switch
         {
             ParallelizerType.TaskBased => typeof(TaskBasedParallelizer<TInput, TOutput>),
+#pragma warning disable CS0618 // Kept for backwards-compatible factory creation of the deprecated implementation.
             ParallelizerType.ThreadBased => typeof(ThreadBasedParallelizer<TInput, TOutput>),
+#pragma warning restore CS0618
             ParallelizerType.ParallelBased => typeof(ParallelBasedParallelizer<TInput, TOutput>),
             _ => throw new NotImplementedException()
         };

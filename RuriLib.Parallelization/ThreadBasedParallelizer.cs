@@ -9,6 +9,7 @@ namespace RuriLib.Parallelization;
 /// <summary>
 /// Parallelizer that expoits a custom pool of threads.
 /// </summary>
+[Obsolete("ThreadBasedParallelizer is deprecated and will be removed in a future version. Use TaskBasedParallelizer instead.")]
 public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutput>
 {
     #region Private Fields

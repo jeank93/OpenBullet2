@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -15,7 +14,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     #region Private Fields
     private int BatchSize => MaxDegreeOfParallelism * 2;
     private SemaphoreSlim? _semaphore;
-    private readonly ConcurrentQueue<TInput> _queue = new();
+    private readonly Queue<TInput> _queue = new();
     private int _savedDop;
     private int _dopDecreaseRequested;
     private int _activeTaskCount;
@@ -157,7 +156,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
             // While there are items in the queue, and we didn't cancel, dequeue one, wait and then
             // queue another task if there are more to queue
-            while (!_queue.IsEmpty && !SoftCts.IsCancellationRequested)
+            while (_queue.Count > 0 && !SoftCts.IsCancellationRequested)
             {
                 WAIT:
 
@@ -195,25 +194,18 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                     }
                 }
 
-                // If we can dequeue an item, run it
-                if (_queue.TryDequeue(out var item))
-                {
-                    Interlocked.Increment(ref _activeTaskCount);
-                    var semaphore = _semaphore;
+                var item = _queue.Dequeue();
+                Interlocked.Increment(ref _activeTaskCount);
+                var semaphore = _semaphore;
 
-                    // The task will release its slot no matter what
-                    _ = TaskFunction.Invoke(item)
-                        .ContinueWith(_ =>
-                        {
-                            Interlocked.Decrement(ref _activeTaskCount);
-                            semaphore?.Release();
-                        })
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    _semaphore?.Release();
-                }
+                // The task will release its slot no matter what
+                _ = TaskFunction.Invoke(item)
+                    .ContinueWith(_ =>
+                    {
+                        Interlocked.Decrement(ref _activeTaskCount);
+                        semaphore?.Release();
+                    })
+                    .ConfigureAwait(false);
             }
 
             if (SoftCts.IsCancellationRequested)

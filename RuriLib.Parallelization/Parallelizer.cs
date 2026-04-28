@@ -190,7 +190,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// </summary>
     protected virtual void OnProgressChanged(float progress) => ProgressChanged?.Invoke(this, progress);
 
-    /// <summary>Called when all operations were completed successfully.</summary>
+    /// <summary>Called when the parallelizer run has ended.</summary>
     public event EventHandler? Completed;
 
     /// <summary>

@@ -558,6 +558,43 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_PauseInProgress_AbortUnblocksPause()
+    {
+        var workerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> NonCooperativeWork(int _, CancellationToken cancellationToken)
+        {
+            workerStarted.TrySetResult();
+            await releaseWorker.Task;
+            return true;
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 1),
+            workFunction: NonCooperativeWork,
+            degreeOfParallelism: 1,
+            totalAmount: 1,
+            skip: 0);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await workerStarted.Task.WaitAsync(cts.Token);
+
+        var pauseTask = parallelizer.Pause();
+        await Task.Delay(100, cts.Token);
+
+        await parallelizer.Abort();
+        await pauseTask.WaitAsync(cts.Token);
+
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+
+        releaseWorker.SetResult();
+    }
+
+    [Fact]
     public async Task Run_IncreaseConcurrentThreads_AllowsMoreConcurrentWork()
     {
         const int count = 4;

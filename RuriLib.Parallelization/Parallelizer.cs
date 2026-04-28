@@ -37,11 +37,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
         }
         protected set
         {
-            lock (StatusLock)
-            {
-                _status = value;
-                OnStatusChanged(_status);
-            }
+            SetStatusValue(value);
         }
     }
 
@@ -432,6 +428,49 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
         }
 
         CPM = CheckedTimestamps.Count;
+    }
+
+    /// <summary>
+    /// Updates the status and raises <see cref="StatusChanged"/> after releasing <see cref="StatusLock"/>.
+    /// </summary>
+    protected void SetStatusValue(ParallelizerStatus status)
+    {
+        lock (StatusLock)
+        {
+            _status = status;
+        }
+
+        // Event handlers are user code. Invoke them outside StatusLock so handlers can safely
+        // query status or wait for completion without blocking the state transition that raised them.
+        OnStatusChanged(status);
+    }
+
+    /// <summary>
+    /// Updates the status if <paramref name="predicate"/> allows the transition, raising
+    /// <see cref="StatusChanged"/> after releasing <see cref="StatusLock"/>.
+    /// </summary>
+    protected bool TrySetStatusValue(ParallelizerStatus status, Func<ParallelizerStatus, bool> predicate)
+    {
+        var changed = false;
+
+        // Evaluate the transition predicate against the locked backing field, then raise the
+        // notification after releasing the lock. This keeps compound transitions atomic without
+        // invoking external event handlers while StatusLock is held.
+        lock (StatusLock)
+        {
+            if (predicate(_status))
+            {
+                _status = status;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            OnStatusChanged(status);
+        }
+
+        return changed;
     }
     #endregion
 

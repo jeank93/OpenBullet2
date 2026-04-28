@@ -19,7 +19,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     #region Public Fields
     /// <summary>
     /// The maximum value that the degree of parallelism can have when changed through the
-    /// <see cref="Parallelizer{TInput, TOutput}.ChangeDegreeOfParallelism(int)"/> method.
+    /// <see cref="Parallelizer{TInput, TOutput}.ChangeDegreeOfParallelism(int, CancellationToken)"/> method.
     /// </summary>
     public int MaxDegreeOfParallelism { get; set; }
 
@@ -299,8 +299,10 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// <summary>
     /// Starts the execution (without waiting for completion).
     /// </summary>
-    public virtual Task Start()
+    /// <param name="cancellationToken">A token that cancels the caller's request before the run is started.</param>
+    public virtual Task Start(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         RequiredStatusException.ThrowIfNot(Status, ParallelizerStatus.Idle);
 
         Reset();
@@ -309,16 +311,20 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     }
 
     /// <summary>Pauses the execution (waits until the ongoing operations are completed).</summary>
-    public virtual Task Pause()
+    /// <param name="cancellationToken">A token that cancels the caller's wait for the pause to complete.</param>
+    public virtual Task Pause(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         RequiredStatusException.ThrowIfNot(Status, ParallelizerStatus.Running);
 
         return Task.CompletedTask;
     }
 
     /// <summary>Resumes a paused execution.</summary>
-    public virtual Task Resume()
+    /// <param name="cancellationToken">A token that cancels the caller's request before resume starts.</param>
+    public virtual Task Resume(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         RequiredStatusException.ThrowIfNot(Status, ParallelizerStatus.Paused);
 
         return Task.CompletedTask;
@@ -327,8 +333,10 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// <summary>
     /// Stops the execution (waits for the current items to finish).
     /// </summary>
-    public virtual Task Stop()
+    /// <param name="cancellationToken">A token that cancels the caller's wait for stop completion.</param>
+    public virtual Task Stop(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         RequiredStatusException.ThrowIfNot(Status,
         [
             ParallelizerStatus.Running,
@@ -343,8 +351,10 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// <summary>
     /// Aborts the execution without waiting for the current work to finish.
     /// </summary>
-    public virtual Task Abort()
+    /// <param name="cancellationToken">A token that cancels the caller's wait for abort completion.</param>
+    public virtual Task Abort(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         RequiredStatusException.ThrowIfNot(Status,
         [
             ParallelizerStatus.Running,
@@ -361,8 +371,11 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// <summary>
     /// Dynamically changes the degree of parallelism.
     /// </summary>
-    public virtual Task ChangeDegreeOfParallelism(int newValue)
+    /// <param name="newValue">The new degree of parallelism.</param>
+    /// <param name="cancellationToken">A token that cancels the caller's wait for the new limit to be reached.</param>
+    public virtual Task ChangeDegreeOfParallelism(int newValue, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         // This can be 0 because we can use 0 dop as a pausing system
         if (newValue < 0 || newValue > MaxDegreeOfParallelism)
         {

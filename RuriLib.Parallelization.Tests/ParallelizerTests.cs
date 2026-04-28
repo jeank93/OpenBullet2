@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
+#pragma warning disable xUnit1051 // Most tests intentionally exercise the default-token lifecycle overloads.
+
 namespace RuriLib.Parallelization.Tests;
 
 public class ParallelizerTests
@@ -592,6 +594,95 @@ public class ParallelizerTests
         Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
 
         releaseWorker.SetResult();
+    }
+
+    [Fact]
+    public async Task Run_PauseCancellation_CancelsCallerWaitButPauseContinues()
+    {
+        var firstWorkerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var secondWorkerStarted = false;
+        var releaseFirstWorker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> Work(int item, CancellationToken cancellationToken)
+        {
+            if (item == 1)
+            {
+                firstWorkerStarted.TrySetResult();
+                await releaseFirstWorker.Task;
+            }
+            else
+            {
+                secondWorkerStarted = true;
+            }
+
+            return true;
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 2),
+            workFunction: Work,
+            degreeOfParallelism: 1,
+            totalAmount: 2,
+            skip: 0);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await firstWorkerStarted.Task.WaitAsync(cts.Token);
+
+        using var pauseCts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        pauseCts.CancelAfter(100);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parallelizer.Pause(pauseCts.Token));
+
+        Assert.Equal(ParallelizerStatus.Pausing, parallelizer.Status);
+        releaseFirstWorker.SetResult();
+
+        while (parallelizer.Status != ParallelizerStatus.Paused)
+        {
+            await Task.Delay(10, cts.Token);
+        }
+
+        Assert.False(secondWorkerStarted);
+
+        await parallelizer.Abort();
+    }
+
+    [Fact]
+    public async Task Run_StopCancellation_CancelsCallerWaitButStopContinues()
+    {
+        var workerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        async Task<bool> Work(int _, CancellationToken cancellationToken)
+        {
+            workerStarted.TrySetResult();
+            await releaseWorker.Task;
+            return true;
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 1),
+            workFunction: Work,
+            degreeOfParallelism: 1,
+            totalAmount: 1,
+            skip: 0);
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await workerStarted.Task.WaitAsync(cts.Token);
+
+        using var stopCts = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        stopCts.CancelAfter(100);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => parallelizer.Stop(stopCts.Token));
+
+        Assert.Equal(ParallelizerStatus.Stopping, parallelizer.Status);
+        releaseWorker.SetResult();
+
+        await parallelizer.WaitCompletion(cts.Token);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 
     [Fact]

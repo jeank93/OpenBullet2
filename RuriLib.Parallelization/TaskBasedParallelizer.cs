@@ -30,9 +30,9 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     }
 
     /// <inheritdoc/>
-    public override async Task Start()
+    public override async Task Start(CancellationToken cancellationToken = default)
     {
-        await base.Start().ConfigureAwait(false);
+        await base.Start(cancellationToken).ConfigureAwait(false);
 
         Stopwatch.Restart();
         SetStatus(ParallelizerStatus.Running);
@@ -40,9 +40,9 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     }
 
     /// <inheritdoc/>
-    public override async Task Pause()
+    public override async Task Pause(CancellationToken cancellationToken = default)
     {
-        await base.Pause().ConfigureAwait(false);
+        await base.Pause(cancellationToken).ConfigureAwait(false);
 
         if (!TrySetStatusUnlessIdle(ParallelizerStatus.Pausing))
         {
@@ -50,7 +50,22 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
 
         _savedDop = DegreeOfParallelism;
-        await ChangeDegreeOfParallelism(0).ConfigureAwait(false);
+
+        try
+        {
+            await FinishPause(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _ = FinishPause(CancellationToken.None);
+            throw;
+        }
+    }
+
+    private async Task FinishPause(CancellationToken cancellationToken)
+    {
+        await ChangeDegreeOfParallelism(0, cancellationToken).ConfigureAwait(false);
+        await WaitActiveCountAtMost(0, cancellationToken).ConfigureAwait(false);
 
         if (Status == ParallelizerStatus.Idle)
         {
@@ -72,20 +87,20 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
     }
 
     /// <inheritdoc/>
-    public override async Task Resume()
+    public override async Task Resume(CancellationToken cancellationToken = default)
     {
-        await base.Resume().ConfigureAwait(false);
+        await base.Resume(cancellationToken).ConfigureAwait(false);
 
         SetStatus(ParallelizerStatus.Resuming);
-        await ChangeDegreeOfParallelism(_savedDop).ConfigureAwait(false);
+        await ChangeDegreeOfParallelism(_savedDop, cancellationToken).ConfigureAwait(false);
         SetStatus(ParallelizerStatus.Running);
         Stopwatch.Start();
     }
 
     /// <inheritdoc/>
-    public override async Task Stop()
+    public override async Task Stop(CancellationToken cancellationToken = default)
     {
-        await base.Stop().ConfigureAwait(false);
+        await base.Stop(cancellationToken).ConfigureAwait(false);
 
         if (!TrySetStatusUnlessIdle(ParallelizerStatus.Stopping))
         {
@@ -93,13 +108,13 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
 
         await CancelIfNotDisposed(SoftCts).ConfigureAwait(false);
-        await WaitCompletion().ConfigureAwait(false);
+        await WaitCompletion(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public override async Task Abort()
+    public override async Task Abort(CancellationToken cancellationToken = default)
     {
-        await base.Abort().ConfigureAwait(false);
+        await base.Abort(cancellationToken).ConfigureAwait(false);
 
         if (!TrySetStatusUnlessIdle(ParallelizerStatus.Stopping))
         {
@@ -113,14 +128,15 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         // SoftCts stops the scheduler from starting replacements as those workers finish.
         await hardCancelTask.ConfigureAwait(false);
         await softCancelTask.ConfigureAwait(false);
-        await WaitActiveCountAtMost(0, TaskBasedParallelizerDefaults.HardAbortCompletionGracePeriod).ConfigureAwait(false);
-        await WaitCompletion().ConfigureAwait(false);
+        SignalScheduler();
+        await WaitActiveCountAtMost(0, TaskBasedParallelizerDefaults.HardAbortCompletionGracePeriod, cancellationToken).ConfigureAwait(false);
+        await WaitCompletion(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public override async Task ChangeDegreeOfParallelism(int newValue)
+    public override async Task ChangeDegreeOfParallelism(int newValue, CancellationToken cancellationToken = default)
     {
-        await base.ChangeDegreeOfParallelism(newValue);
+        await base.ChangeDegreeOfParallelism(newValue, cancellationToken);
 
         switch (Status)
         {
@@ -147,7 +163,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         {
             // Decrease and pause are complete only after already-running work falls to the new limit.
             // New work is naturally held back because the scheduler reads DegreeOfParallelism directly.
-            await WaitActiveCountAtMost(newValue).ConfigureAwait(false);
+            await WaitActiveCountAtMost(newValue, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -276,7 +292,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         }
     }
 
-    private async Task WaitActiveCountAtMost(int value)
+    private async Task WaitActiveCountAtMost(int value, CancellationToken cancellationToken)
     {
         while (Volatile.Read(ref _activeTaskCount) > value && Status != ParallelizerStatus.Idle)
         {
@@ -290,18 +306,11 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 return;
             }
 
-            try
-            {
-                await waitTask.WaitAsync(HardCts.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (HardCts.IsCancellationRequested)
-            {
-                return;
-            }
+            await waitTask.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task WaitActiveCountAtMost(int value, TimeSpan timeout)
+    private async Task WaitActiveCountAtMost(int value, TimeSpan timeout, CancellationToken cancellationToken)
     {
         var waitUntil = Environment.TickCount64 + (long)timeout.TotalMilliseconds;
 
@@ -325,7 +334,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
             try
             {
-                await waitTask.WaitAsync(TimeSpan.FromMilliseconds(remaining)).ConfigureAwait(false);
+                await waitTask.WaitAsync(TimeSpan.FromMilliseconds(remaining), cancellationToken).ConfigureAwait(false);
             }
             catch (TimeoutException)
             {

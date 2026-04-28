@@ -27,9 +27,9 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
 
     #region Public Methods
     /// <inheritdoc/>
-    public override async Task Start()
+    public override async Task Start(CancellationToken cancellationToken = default)
     {
-        await base.Start();
+        await base.Start(cancellationToken);
 
         Stopwatch.Restart();
         Status = ParallelizerStatus.Running;
@@ -37,52 +37,59 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
     }
 
     /// <inheritdoc/>
-    public override async Task Pause()
+    public override async Task Pause(CancellationToken cancellationToken = default)
     {
-        await base.Pause();
+        await base.Pause(cancellationToken);
 
         Status = ParallelizerStatus.Pausing;
-        await WaitCurrentWorkCompletion();
-        Status = ParallelizerStatus.Paused;
-        Stopwatch.Stop();
+
+        try
+        {
+            await FinishPause(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _ = FinishPause(CancellationToken.None);
+            throw;
+        }
     }
 
     /// <inheritdoc/>
-    public override async Task Resume()
+    public override async Task Resume(CancellationToken cancellationToken = default)
     {
-        await base.Resume();
+        await base.Resume(cancellationToken);
 
         Status = ParallelizerStatus.Running;
         Stopwatch.Start();
     }
 
     /// <inheritdoc/>
-    public override async Task Stop()
+    public override async Task Stop(CancellationToken cancellationToken = default)
     {
-        await base.Stop();
+        await base.Stop(cancellationToken);
 
         Status = ParallelizerStatus.Stopping;
         await SoftCts.CancelAsync();
-        await WaitCompletion().ConfigureAwait(false);
+        await WaitCompletion(cancellationToken).ConfigureAwait(false);
         Stopwatch.Stop();
     }
 
     /// <inheritdoc/>
-    public override async Task Abort()
+    public override async Task Abort(CancellationToken cancellationToken = default)
     {
-        await base.Abort();
+        await base.Abort(cancellationToken);
 
         Status = ParallelizerStatus.Stopping;
         await HardCts.CancelAsync();
         await SoftCts.CancelAsync();
-        await WaitCompletion().ConfigureAwait(false);
+        await WaitCompletion(cancellationToken).ConfigureAwait(false);
         Stopwatch.Stop();
     }
 
     /// <inheritdoc/>
-    public override async Task ChangeDegreeOfParallelism(int newValue)
+    public override async Task ChangeDegreeOfParallelism(int newValue, CancellationToken cancellationToken = default)
     {
-        await base.ChangeDegreeOfParallelism(newValue);
+        await base.ChangeDegreeOfParallelism(newValue, cancellationToken);
 
         DegreeOfParallelism = newValue;
     }
@@ -157,7 +164,7 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
         }
 
         // Wait until ongoing threads finish
-        await WaitCurrentWorkCompletion();
+        await WaitCurrentWorkCompletion(CancellationToken.None);
 
         OnCompleted();
         Status = ParallelizerStatus.Idle;
@@ -182,11 +189,22 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
     }
 
     // Wait until the current round is over (if we didn't cancel, it's the last one)
-    private async Task WaitCurrentWorkCompletion()
+    private async Task FinishPause(CancellationToken cancellationToken)
+    {
+        await WaitCurrentWorkCompletion(cancellationToken);
+
+        if (Status == ParallelizerStatus.Pausing)
+        {
+            Status = ParallelizerStatus.Paused;
+            Stopwatch.Stop();
+        }
+    }
+
+    private async Task WaitCurrentWorkCompletion(CancellationToken cancellationToken)
     {
         while (_threadPool.Any(t => t.IsAlive))
         {
-            await Task.Delay(100);
+            await Task.Delay(100, cancellationToken);
         }
     }
     #endregion

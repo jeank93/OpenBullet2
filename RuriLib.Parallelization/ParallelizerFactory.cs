@@ -22,7 +22,7 @@ public static class ParallelizerFactory<TInput, TOutput>
     /// <param name="totalAmount">The total amount of items that are expected to be enumerated (for Progress purposes)</param>
     /// <param name="skip">The amount of items to skip from the beginning (to restore previously aborted sessions)</param>
     /// <param name="maxDegreeOfParallelism">The maximum value that <paramref name="degreeOfParallelism"/> can assume when it is
-    /// changed with the <see cref="Parallelizer{TInput, TOutput}.ChangeDegreeOfParallelism(int)"/> method</param>
+    /// changed with the <see cref="Parallelizer{TInput, TOutput}.ChangeDegreeOfParallelism(int, CancellationToken)"/> method</param>
     public static Parallelizer<TInput, TOutput> Create(ParallelizerType type,
         IEnumerable<TInput> workItems, Func<TInput, CancellationToken, Task<TOutput>> workFunction,
         int degreeOfParallelism, long totalAmount, int skip = 0, int maxDegreeOfParallelism = 200)

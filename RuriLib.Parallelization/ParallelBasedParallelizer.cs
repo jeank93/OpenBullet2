@@ -23,9 +23,9 @@ public class ParallelBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, T
 
     #region Public Methods
     /// <inheritdoc/>
-    public override async Task Start()
+    public override async Task Start(CancellationToken cancellationToken = default)
     {
-        await base.Start().ConfigureAwait(false);
+        await base.Start(cancellationToken).ConfigureAwait(false);
 
         Stopwatch.Restart();
         Status = ParallelizerStatus.Running;
@@ -33,44 +33,44 @@ public class ParallelBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, T
     }
 
     /// <inheritdoc/>
-    public override async Task Pause()
+    public override async Task Pause(CancellationToken cancellationToken = default)
     {
-        await base.Pause().ConfigureAwait(false);
+        await base.Pause(cancellationToken).ConfigureAwait(false);
 
         throw new NotSupportedException("This parallelizer does not support pausing");
     }
 
     /// <inheritdoc/>
-    public override async Task Resume()
+    public override async Task Resume(CancellationToken cancellationToken = default)
     {
-        await base.Resume().ConfigureAwait(false);
+        await base.Resume(cancellationToken).ConfigureAwait(false);
 
         throw new NotSupportedException("This parallelizer does not support resuming");
     }
 
     /// <inheritdoc/>
-    public override async Task Stop()
+    public override async Task Stop(CancellationToken cancellationToken = default)
     {
-        await base.Stop().ConfigureAwait(false);
+        await base.Stop(cancellationToken).ConfigureAwait(false);
 
         throw new NotSupportedException("This parallelizer does not support soft stopping");
     }
 
     /// <inheritdoc/>
-    public override async Task Abort()
+    public override async Task Abort(CancellationToken cancellationToken = default)
     {
-        await base.Abort().ConfigureAwait(false);
+        await base.Abort(cancellationToken).ConfigureAwait(false);
 
         Status = ParallelizerStatus.Stopping;
         await HardCts.CancelAsync();
         await SoftCts.CancelAsync();
-        await WaitCompletion().ConfigureAwait(false);
+        await WaitCompletion(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    public override async Task ChangeDegreeOfParallelism(int newValue)
+    public override async Task ChangeDegreeOfParallelism(int newValue, CancellationToken cancellationToken = default)
     {
-        await base.ChangeDegreeOfParallelism(newValue);
+        await base.ChangeDegreeOfParallelism(newValue, cancellationToken);
 
         if (Status != ParallelizerStatus.Idle)
         {

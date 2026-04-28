@@ -508,6 +508,56 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_NonCooperativeWorkFinishesAfterAbort_StaysIdle()
+    {
+        var workerStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWorker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var progressCount = 0;
+        var completed = false;
+
+        async Task<bool> NonCooperativeWork(int _, CancellationToken cancellationToken)
+        {
+            workerStarted.TrySetResult();
+            await releaseWorker.Task;
+            return true;
+        }
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, 1),
+            workFunction: NonCooperativeWork,
+            degreeOfParallelism: 1,
+            totalAmount: 1,
+            skip: 0);
+
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.Completed += (_, _) => completed = true;
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await workerStarted.Task.WaitAsync(cts.Token);
+
+        await parallelizer.Abort();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.True(completed);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+        Assert.Equal(0, Volatile.Read(ref progressCount));
+
+        // This worker finishes after hard abort and after the parallelizer has gone idle.
+        // It must not move the parallelizer out of its completed state or touch disposed resources.
+        releaseWorker.SetResult();
+
+        while (Volatile.Read(ref progressCount) == 0)
+        {
+            await Task.Delay(10, cts.Token);
+        }
+
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+    }
+
+    [Fact]
     public async Task Run_IncreaseConcurrentThreads_AllowsMoreConcurrentWork()
     {
         const int count = 4;

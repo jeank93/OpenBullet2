@@ -223,15 +223,9 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 var item = _queue.Dequeue();
                 Interlocked.Increment(ref _activeTaskCount);
                 var semaphore = _semaphore;
+                var hardToken = HardCts.Token;
 
-                // The task will release its slot no matter what
-                _ = TaskFunction.Invoke(item)
-                    .ContinueWith(_ =>
-                    {
-                        Interlocked.Decrement(ref _activeTaskCount);
-                        semaphore?.Release();
-                    })
-                    .ConfigureAwait(false);
+                _ = RunItem(item, semaphore, hardToken);
             }
 
             if (SoftCts.IsCancellationRequested)
@@ -278,6 +272,24 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
         while (Volatile.Read(ref _activeTaskCount) > 0 && !HardCts.IsCancellationRequested)
         {
             await Task.Delay(100).ConfigureAwait(false);
+        }
+    }
+
+    private async Task RunItem(TInput item, SemaphoreSlim? semaphore, CancellationToken hardToken)
+    {
+        try
+        {
+            await TaskFunction.Invoke(item).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _activeTaskCount);
+
+            // After a hard abort, no more work can be scheduled and the semaphore may be disposed.
+            if (!hardToken.IsCancellationRequested)
+            {
+                semaphore?.Release();
+            }
         }
     }
 

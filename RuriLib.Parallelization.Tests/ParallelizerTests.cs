@@ -769,20 +769,15 @@ public class ParallelizerTests
         using var cts = CreateTestTimeout();
         await firstWorkerStarted.Task.WaitAsync(cts.Token);
 
-        while (Volatile.Read(ref progressCount) < 2)
-        {
-            await Task.Delay(10, cts.Token);
-        }
-
         await Task.Delay(100, cts.Token);
-        Assert.Equal(2, Volatile.Read(ref startedCount));
-        Assert.Equal(2, parallelizer.CPM);
+        Assert.Equal(1, Volatile.Read(ref startedCount));
+        Assert.Equal(1, parallelizer.CPM);
 
         await parallelizer.Stop();
 
-        Assert.Equal(2, Volatile.Read(ref startedCount));
-        Assert.Equal(2, Volatile.Read(ref progressCount));
-        Assert.Equal(2, parallelizer.CPM);
+        Assert.Equal(1, Volatile.Read(ref startedCount));
+        Assert.Equal(1, Volatile.Read(ref progressCount));
+        Assert.Equal(1, parallelizer.CPM);
         Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
     }
 

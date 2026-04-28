@@ -405,7 +405,35 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     /// Whether the CPM is limited to a certain amount (for throttling purposes).
     /// </summary>
     /// <returns></returns>
-    protected bool IsCpmLimited() => CPMLimit > 0 && CPM > CPMLimit;
+    protected bool IsCpmLimited() => GetCpmThrottleDelay() > TimeSpan.Zero;
+
+    /// <summary>
+    /// Gets how long the scheduler should wait before starting more work under the current CPM limit.
+    /// </summary>
+    protected TimeSpan GetCpmThrottleDelay()
+    {
+        if (CPMLimit <= 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        lock (CpmLock)
+        {
+            var now = Environment.TickCount64;
+            UpdateCpm(now);
+
+            if (CPM < CPMLimit)
+            {
+                return TimeSpan.Zero;
+            }
+
+            // Conservatively wait until the oldest completion leaves the 60-second CPM window.
+            var remainingMilliseconds = CheckedTimestamps.Peek() + 60000 - now;
+            return remainingMilliseconds > 0
+                ? TimeSpan.FromMilliseconds(remainingMilliseconds)
+                : TimeSpan.Zero;
+        }
+    }
 
     /// <summary>
     /// Records a completed item and updates the CPM (safe to be called from multiple threads).

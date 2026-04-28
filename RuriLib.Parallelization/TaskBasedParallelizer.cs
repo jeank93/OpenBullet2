@@ -193,10 +193,11 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
             {
                 await WaitForAvailableSlot(SoftCts.Token).ConfigureAwait(false);
 
-                if (IsCpmLimited())
+                var cpmThrottleDelay = GetCpmThrottleDelay();
+
+                if (cpmThrottleDelay > TimeSpan.Zero)
                 {
-                    UpdateCpm();
-                    await Task.Delay(TaskBasedParallelizerDefaults.CpmThrottlePollingDelay, SoftCts.Token).ConfigureAwait(false);
+                    await Task.Delay(cpmThrottleDelay, SoftCts.Token).ConfigureAwait(false);
                     continue;
                 }
 
@@ -420,8 +421,6 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
 
 internal static class TaskBasedParallelizerDefaults
 {
-    internal static readonly TimeSpan CpmThrottlePollingDelay = TimeSpan.FromMilliseconds(250);
-
     // Abort should not wait forever for work that ignores HardCts. This small window preserves
     // existing behavior for cooperative work while keeping hard abort bounded for non-cooperative work.
     internal static readonly TimeSpan HardAbortCompletionGracePeriod = TimeSpan.FromMilliseconds(250);

@@ -129,10 +129,11 @@ public class ThreadBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOu
             else
             {
                 // If we exceeded the CPM threshold, update CPM and go back to waiting
-                if (IsCpmLimited())
+                var cpmThrottleDelay = GetCpmThrottleDelay();
+
+                if (cpmThrottleDelay > TimeSpan.Zero)
                 {
-                    UpdateCpm();
-                    await Task.Delay(100);
+                    await Task.Delay(cpmThrottleDelay);
                     goto WAIT;
                 }
 

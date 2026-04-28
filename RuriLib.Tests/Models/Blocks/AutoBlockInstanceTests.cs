@@ -122,6 +122,20 @@ public class AutoBlockInstanceTests
     }
 
     [Fact]
+    public void ToCSharp_BlockIdOverride_UsesAsyncMethodName()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("FileExists");
+        block.OutputVariable = "exists";
+        var path = block.Settings["path"];
+
+        path.InputMode = SettingInputMode.Fixed;
+        (path.FixedSetting as StringSetting)!.Value = "test.txt";
+
+        var expected = $"bool exists = await FileExistsAsync(data, \"test.txt\").ConfigureAwait(false);{_nl}data.LogVariableAssignment(nameof(exists));{_nl}";
+        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+    }
+
+    [Fact]
     public void ToCSharp_SyncReturnValueAlreadyDeclared_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");

@@ -28,7 +28,7 @@ public class SshRequestIntegrationTests
 
         try
         {
-            SshMethods.SshAuthenticateWithPassword(
+            await SshMethods.SshAuthenticateWithPasswordAsync(
                 data,
                 connection.Host,
                 connection.Port,
@@ -38,7 +38,7 @@ public class SshRequestIntegrationTests
                 5000,
                 3);
 
-            var result = SshMethods.SshRunCommand(data, "printf ssh-ok");
+            var result = await SshMethods.SshRunCommandAsync(data, "printf ssh-ok");
             var client = data.TryGetObject<SshClient>("sshClient");
 
             Assert.NotNull(client);
@@ -57,8 +57,8 @@ public class SshRequestIntegrationTests
         var connection = await TestSshServer.GetConnectionInfo();
         var data = NewBotData();
 
-        var ex = Assert.Throws<SshAuthenticationException>(() =>
-            SshMethods.SshAuthenticateWithPassword(
+        var ex = await Assert.ThrowsAsync<SshAuthenticationException>(() =>
+            SshMethods.SshAuthenticateWithPasswordAsync(
                 data,
                 connection.Host,
                 connection.Port,
@@ -77,8 +77,8 @@ public class SshRequestIntegrationTests
         var connection = await TestSshServer.GetConnectionInfo();
         var data = NewBotData();
 
-        var ex = Assert.Throws<SshAuthenticationException>(() =>
-            SshMethods.SshAuthenticateWithNone(
+        var ex = await Assert.ThrowsAsync<SshAuthenticationException>(() =>
+            SshMethods.SshAuthenticateWithNoneAsync(
                 data,
                 connection.Host,
                 connection.Port,
@@ -91,12 +91,12 @@ public class SshRequestIntegrationTests
     }
 
     [Fact]
-    public void SshAuthenticateWithPK_MissingKeyFile_Throws()
+    public async Task SshAuthenticateWithPK_MissingKeyFile_Throws()
     {
         var data = NewBotData();
 
-        Assert.ThrowsAny<Exception>(() =>
-            SshMethods.SshAuthenticateWithPK(
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+            SshMethods.SshAuthenticateWithPKAsync(
                 data,
                 "127.0.0.1",
                 22,
@@ -120,7 +120,7 @@ public class SshRequestIntegrationTests
 
         try
         {
-            SshMethods.SshAuthenticateWithPassword(
+            await SshMethods.SshAuthenticateWithPasswordAsync(
                 data,
                 connection.InternalHost,
                 connection.InternalPort,
@@ -130,7 +130,7 @@ public class SshRequestIntegrationTests
                 5000,
                 3);
 
-            var result = SshMethods.SshRunCommand(data, "printf ssh-proxy-ok");
+            var result = await SshMethods.SshRunCommandAsync(data, "printf ssh-proxy-ok");
             var client = data.TryGetObject<SshClient>("sshClient");
 
             Assert.NotNull(client);

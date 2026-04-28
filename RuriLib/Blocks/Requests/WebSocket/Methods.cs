@@ -41,7 +41,8 @@ public static class Methods
                 new Uri(url),
                 keepAliveMilliseconds,
                 proxy,
-                customHeaders).ConfigureAwait(false);
+                customHeaders,
+                data.CancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -57,13 +58,20 @@ public static class Methods
     /// <summary>
     /// Sends a message on the Web Socket.
     /// </summary>
-    [Block("Sends a message on the Web Socket", name = "WebSocket Send")]
+    // Compatibility wrapper for existing direct C# callers; blocks use WsSendAsync.
     public static void WsSend(BotData data, string message)
+        => WsSendAsync(data, message).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Sends a message on the Web Socket.
+    /// </summary>
+    [Block("Sends a message on the Web Socket", name = "WebSocket Send", id = nameof(WsSend))]
+    public static async Task WsSendAsync(BotData data, string message)
     {
         data.Logger.LogHeader();
 
         var ws = GetSocket(data);
-        ws.SendText(message);
+        await ws.SendTextAsync(message, data.CancellationToken).ConfigureAwait(false);
 
         data.Logger.Log($"Sent {message} to the server", LogColors.MossGreen);
     }
@@ -71,13 +79,20 @@ public static class Methods
     /// <summary>
     /// Sends a raw binary message on the Web Socket.
     /// </summary>
-    [Block("Sends a raw binary message on the Web Socket", name = "WebSocket Send Raw")]
+    // Compatibility wrapper for existing direct C# callers; blocks use WsSendRawAsync.
     public static void WsSendRaw(BotData data, byte[] message)
+        => WsSendRawAsync(data, message).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Sends a raw binary message on the Web Socket.
+    /// </summary>
+    [Block("Sends a raw binary message on the Web Socket", name = "WebSocket Send Raw", id = nameof(WsSendRaw))]
+    public static async Task WsSendRawAsync(BotData data, byte[] message)
     {
         data.Logger.LogHeader();
 
         var ws = GetSocket(data);
-        ws.SendBinary(message);
+        await ws.SendBinaryAsync(message, data.CancellationToken).ConfigureAwait(false);
 
         data.Logger.Log($"Sent {message.Length} bytes to the server", LogColors.MossGreen);
     }
@@ -99,7 +114,7 @@ public static class Methods
         {
             ws.ThrowIfFaulted();
             messages = GetMessages(data);
-            await Task.Delay(pollIntervalInMilliseconds, cts.Token);
+            await Task.Delay(pollIntervalInMilliseconds, cts.Token).ConfigureAwait(false);
 
             if (cts.IsCancellationRequested)
             {
@@ -122,13 +137,20 @@ public static class Methods
     /// <summary>
     /// Disconnects the existing Web Socket.
     /// </summary>
-    [Block("Disconnects the existing Web Socket", name = "WebSocket Disconnect")]
+    // Compatibility wrapper for existing direct C# callers; blocks use WsDisconnectAsync.
     public static void WsDisconnect(BotData data)
+        => WsDisconnectAsync(data).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Disconnects the existing Web Socket.
+    /// </summary>
+    [Block("Disconnects the existing Web Socket", name = "WebSocket Disconnect", id = nameof(WsDisconnect))]
+    public static async Task WsDisconnectAsync(BotData data)
     {
         data.Logger.LogHeader();
 
         var ws = GetSocket(data);
-        ws.Dispose();
+        await ws.DisconnectAsync(data.CancellationToken).ConfigureAwait(false);
         data.SetObject("webSocket", null, disposeExisting: false);
 
         data.Logger.Log("Closed the WebSocket", LogColors.MossGreen);

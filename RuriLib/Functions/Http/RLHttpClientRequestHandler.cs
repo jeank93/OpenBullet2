@@ -72,7 +72,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
         }
         catch
         {
-            LogHttpRequestData(data, request);
+            await LogHttpRequestData(data, request).ConfigureAwait(false);
             throw;
         }
     }
@@ -114,7 +114,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
         }
         catch
         {
-            LogHttpRequestData(data, request);
+            await LogHttpRequestData(data, request).ConfigureAwait(false);
             throw;
         }
     }
@@ -157,7 +157,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
         }
         catch
         {
-            LogHttpRequestData(data, request);
+            await LogHttpRequestData(data, request).ConfigureAwait(false);
             throw;
         }
     }
@@ -245,7 +245,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
         }
         catch
         {
-            LogHttpRequestData(data, request, options.Boundary, options.Contents);
+            await LogHttpRequestData(data, request, options.Boundary, options.Contents).ConfigureAwait(false);
             throw;
         }
         finally
@@ -257,7 +257,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
         }
     }
 
-    private static void LogHttpRequestData(BotData data, HttpRequest request,
+    private static async Task LogHttpRequestData(BotData data, HttpRequest request,
         string? boundary = null, List<MyHttpContent>? multipartContents = null)
     {
         using var writer = new StringWriter();
@@ -294,14 +294,15 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
                     writer.WriteLine($"Content-Type: {x.Headers.ContentType}");
                     writer.WriteLine($"Content-Length: {x.Headers.ContentLength}");
                     writer.WriteLine();
-                    writer.WriteLine(x.ReadAsStringAsync().Result);
+                    writer.WriteLine(await x.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false));
                     break;
 
                 case ByteArrayContent x:
                     writer.WriteLine($"Content-Type: {x.Headers.ContentType}");
                     writer.WriteLine($"Content-Length: {x.Headers.ContentLength}");
                     writer.WriteLine();
-                    writer.WriteLine(RuriLib.Functions.Conversion.HexConverter.ToHexString(x.ReadAsByteArrayAsync().Result));
+                    writer.WriteLine(RuriLib.Functions.Conversion.HexConverter.ToHexString(
+                        await x.ReadAsByteArrayAsync(data.CancellationToken).ConfigureAwait(false)));
                     break;
 
                 case MultipartFormDataContent x:

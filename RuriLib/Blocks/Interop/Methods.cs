@@ -20,8 +20,15 @@ public static class Methods
     /// <summary>
     /// Executes a shell command and redirects all stdout to the output variable.
     /// </summary>
-    [Block("Executes a shell command and redirects all stdout to the output variable")]
+    // Compatibility wrapper for existing direct C# callers; blocks use ShellCommandAsync.
     public static string ShellCommand(BotData data, string executable, string arguments)
+        => ShellCommandAsync(data, executable, arguments).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Executes a shell command and redirects all stdout to the output variable.
+    /// </summary>
+    [Block("Executes a shell command and redirects all stdout to the output variable", id = nameof(ShellCommand))]
+    public static async Task<string> ShellCommandAsync(BotData data, string executable, string arguments)
     {
         data.Logger.LogHeader();
 
@@ -43,7 +50,8 @@ public static class Methods
 
         using var reader = process.StandardOutput;
 
-        var result = reader.ReadToEnd();
+        var result = await reader.ReadToEndAsync(data.CancellationToken).ConfigureAwait(false);
+        await process.WaitForExitAsync(data.CancellationToken).ConfigureAwait(false);
         data.Logger.Log($"Standard Output:", LogColors.PaleChestnut);
         data.Logger.Log(result, LogColors.PaleChestnut);
         return result;

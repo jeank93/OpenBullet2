@@ -113,17 +113,20 @@ public class DescriptorsRepository
                     continue;
                 }
 
-                if (Descriptors.ContainsKey(method.Name))
+                var blockId = attribute.id ?? method.Name;
+
+                if (Descriptors.ContainsKey(blockId))
                 {
-                    throw new Exception($"Duplicate descriptor id: {method.Name}");
+                    throw new Exception($"Duplicate descriptor id: {blockId}");
                 }
 
                 var typeNamespace = type.Namespace ?? throw new InvalidOperationException(
                     $"Type {type.FullName} has no namespace");
 
-                Descriptors[method.Name] = new AutoBlockDescriptor
+                Descriptors[blockId] = new AutoBlockDescriptor
                 {
-                    Id = method.Name,
+                    Id = blockId,
+                    MethodName = method.Name,
                     Async = method.CustomAttributes.Any(a => a.AttributeType == typeof(AsyncStateMachineAttribute)),
                     Name = attribute.name ?? method.Name.ToReadableName(),
                     Description = attribute.description ?? string.Empty,

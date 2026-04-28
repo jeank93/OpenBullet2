@@ -21,14 +21,21 @@ public static class Methods
     /// <summary>
     /// Checks if a file exists.
     /// </summary>
-    [Block("Checks if a file exists")]
+    // Compatibility wrapper for existing direct C# callers; blocks use FileExistsAsync.
     public static bool FileExists(BotData data, string path)
+        => FileExistsAsync(data, path).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// Checks if a file exists.
+    /// </summary>
+    [Block("Checks if a file exists", id = nameof(FileExists))]
+    public static async Task<bool> FileExistsAsync(BotData data, string path)
     {
         data.Logger.LogHeader();
 
         path = SanitizePath(path);
-        var exists = ExecuteFileOperation(data, path, true, (p, _)
-            => Task.FromResult(File.Exists(p))).Result;
+        var exists = await ExecuteFileOperation(data, path, true, (p, _)
+            => Task.FromResult(File.Exists(p))).ConfigureAwait(false);
 
         data.Logger.Log(path + (exists ? " exists" : " does not exist"), LogColors.Flavescent);
         return exists;

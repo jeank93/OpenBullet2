@@ -40,6 +40,18 @@ public class DescriptorsRepositoryTests
         => Assert.Throws<InvalidCastException>(() => DescriptorsRepository.ToVariableType(typeof(DateTime)));
 
     [Fact]
+    public void GetAs_BlockIdOverride_UsesStableIdAndAsyncMethodName()
+    {
+        var repository = new DescriptorsRepository();
+
+        var descriptor = repository.GetAs<AutoBlockDescriptor>("FileExists");
+
+        Assert.Equal("FileExists", descriptor.Id);
+        Assert.Equal("FileExistsAsync", descriptor.MethodName);
+        Assert.True(descriptor.Async);
+    }
+
+    [Fact]
     public void AsTree_ContainsAutoBlockDescriptors()
     {
         var repository = new DescriptorsRepository();

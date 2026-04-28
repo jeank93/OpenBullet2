@@ -16,6 +16,12 @@ public class Block : Attribute
     public string? name = null;
 
     /// <summary>
+    /// The stable block id. If not specified, the method name will be used.
+    /// </summary>
+    // ReSharper disable once InconsistentNaming
+    public string? id = null;
+
+    /// <summary>
     /// The description of what the block does.
     /// </summary>
     // ReSharper disable once InconsistentNaming

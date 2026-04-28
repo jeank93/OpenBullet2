@@ -91,7 +91,7 @@ public sealed class UtilityBlocksTests : IDisposable
 
         var text = await FileMethods.FileRead(data, filePath);
         var lines = await FileMethods.FileReadLines(data, filePath);
-        var exists = FileMethods.FileExists(data, filePath);
+        var exists = await FileMethods.FileExistsAsync(data, filePath);
         var folderExists = FileMethods.FolderExists(data, Path.GetDirectoryName(filePath)!);
         var files = FileMethods.GetFilesInFolder(data, Path.GetDirectoryName(filePath)!);
 

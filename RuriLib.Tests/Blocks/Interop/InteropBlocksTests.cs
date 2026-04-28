@@ -10,6 +10,7 @@ using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using BotProviders = RuriLib.Models.Bots.Providers;
 using InteropMethods = RuriLib.Blocks.Interop.Methods;
@@ -19,11 +20,11 @@ namespace RuriLib.Tests.Blocks.Interop;
 public class InteropBlocksTests
 {
     [Fact]
-    public void ShellCommand_DotnetVersion_ReturnsOutput()
+    public async Task ShellCommand_DotnetVersion_ReturnsOutput()
     {
         var data = NewBotData();
 
-        var output = InteropMethods.ShellCommand(data, "dotnet", "--version");
+        var output = await InteropMethods.ShellCommandAsync(data, "dotnet", "--version");
 
         Assert.False(string.IsNullOrWhiteSpace(output));
         Assert.Contains(".", output);

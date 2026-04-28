@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Requests.WebSocket;
 
-internal sealed class WebSocketConnection(List<string> messageStore) : IDisposable
+internal sealed class WebSocketConnection(List<string> messageStore) : IDisposable, IAsyncDisposable
 {
     private readonly ClientWebSocket client = new();
     private readonly List<string> messages = messageStore ?? throw new ArgumentNullException(nameof(messageStore));
@@ -21,7 +21,8 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
     private Exception? receiveException;
     private bool disposed;
 
-    public async Task ConnectAsync(Uri url, int keepAliveMilliseconds, IWebProxy? proxy, Dictionary<string, string>? customHeaders)
+    public async Task ConnectAsync(Uri url, int keepAliveMilliseconds, IWebProxy? proxy,
+        Dictionary<string, string>? customHeaders, CancellationToken cancellationToken)
     {
         client.Options.KeepAliveInterval = TimeSpan.FromMilliseconds(keepAliveMilliseconds);
         client.Options.Proxy = proxy;
@@ -34,36 +35,34 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
             }
         }
 
-        await client.ConnectAsync(url, CancellationToken.None).ConfigureAwait(false);
+        await client.ConnectAsync(url, cancellationToken).ConfigureAwait(false);
 
         if (client.State != WebSocketState.Open)
         {
             throw new BlockExecutionException("Failed to connect to the websocket");
         }
 
-        receiveLoopTask = Task.Run(() => ReceiveLoopAsync(receiveLoopCancellation.Token));
+        receiveLoopTask = ReceiveLoopAsync(receiveLoopCancellation.Token);
     }
 
-    public void SendText(string message)
+    public async Task SendTextAsync(string message, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(message);
 
         ThrowIfFaulted();
         ThrowIfNotOpen();
-        client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(message)), WebSocketMessageType.Text, true, CancellationToken.None)
-            .GetAwaiter()
-            .GetResult();
+        await client.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(message)), WebSocketMessageType.Text, true,
+            cancellationToken).ConfigureAwait(false);
     }
 
-    public void SendBinary(byte[] message)
+    public async Task SendBinaryAsync(byte[] message, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(message);
 
         ThrowIfFaulted();
         ThrowIfNotOpen();
-        client.SendAsync(new ArraySegment<byte>(message), WebSocketMessageType.Binary, true, CancellationToken.None)
-            .GetAwaiter()
-            .GetResult();
+        await client.SendAsync(new ArraySegment<byte>(message), WebSocketMessageType.Binary, true,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public void ThrowIfFaulted()
@@ -74,7 +73,7 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
         }
     }
 
-    public void Dispose()
+    public async Task DisconnectAsync(CancellationToken cancellationToken)
     {
         if (disposed)
         {
@@ -82,18 +81,16 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
         }
 
         disposed = true;
-        receiveLoopCancellation.Cancel();
 
         try
         {
             if (client.State is WebSocketState.Open or WebSocketState.CloseReceived)
             {
-                client.CloseAsync(
+                await client.CloseAsync(
                         WebSocketCloseStatus.NormalClosure,
                         "User requested",
-                        CancellationToken.None)
-                    .GetAwaiter()
-                    .GetResult();
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -104,9 +101,11 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
         }
         finally
         {
+            receiveLoopCancellation.Cancel();
+
             try
             {
-                receiveLoopTask.GetAwaiter().GetResult();
+                await receiveLoopTask.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -121,6 +120,25 @@ internal sealed class WebSocketConnection(List<string> messageStore) : IDisposab
             client.Dispose();
             receiveLoopCancellation.Dispose();
         }
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        disposed = true;
+        receiveLoopCancellation.Cancel();
+        client.Abort();
+        client.Dispose();
+        receiveLoopCancellation.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private void ThrowIfNotOpen()

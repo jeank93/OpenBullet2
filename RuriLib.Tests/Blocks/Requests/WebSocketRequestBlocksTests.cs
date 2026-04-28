@@ -31,23 +31,23 @@ public class WebSocketRequestBlocksTests
     }
 
     [Fact]
-    public void WsSend_WithoutConnection_Throws()
+    public async Task WsSend_WithoutConnection_Throws()
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() =>
-            WsMethods.WsSend(data, "ping"));
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            WsMethods.WsSendAsync(data, "ping"));
 
         Assert.Equal("You must open a websocket connection first", ex.Message);
     }
 
     [Fact]
-    public void WsDisconnect_WithoutConnection_Throws()
+    public async Task WsDisconnect_WithoutConnection_Throws()
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() =>
-            WsMethods.WsDisconnect(data));
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            WsMethods.WsDisconnectAsync(data));
 
         Assert.Equal("You must open a websocket connection first", ex.Message);
     }
@@ -67,7 +67,7 @@ public class WebSocketRequestBlocksTests
 
             Assert.NotNull(data.TryGetObject<object>("webSocket"));
 
-            WsMethods.WsSend(data, "ping");
+            await WsMethods.WsSendAsync(data, "ping");
 
             var messages = await WsMethods.WsRead(data, timeoutMilliseconds: 5000);
             var unreadMessages = data.TryGetObject<List<string>>("wsMessages");
@@ -77,13 +77,13 @@ public class WebSocketRequestBlocksTests
             Assert.NotNull(unreadMessages);
             Assert.Empty(unreadMessages!);
 
-            WsMethods.WsDisconnect(data);
+            await WsMethods.WsDisconnectAsync(data);
 
             Assert.Null(data.TryGetObject<object>("webSocket"));
         }
         finally
         {
-            DisposeClient(data);
+            await DisposeClient(data);
         }
     }
 
@@ -98,7 +98,7 @@ public class WebSocketRequestBlocksTests
         {
             await WsMethods.WsConnect(data, url);
 
-            WsMethods.WsSendRaw(data, payload);
+            await WsMethods.WsSendRawAsync(data, payload);
 
             var messages = await WsMethods.WsRead(data, timeoutMilliseconds: 5000);
 
@@ -107,7 +107,7 @@ public class WebSocketRequestBlocksTests
         }
         finally
         {
-            DisposeClient(data);
+            await DisposeClient(data);
         }
     }
 
@@ -122,7 +122,7 @@ public class WebSocketRequestBlocksTests
             new BotLogger(),
             new DataLine("hello", new WordlistType()));
 
-    private static void DisposeClient(BotData data)
+    private static async Task DisposeClient(BotData data)
     {
         if (data.TryGetObject<object>("webSocket") is null)
         {
@@ -131,7 +131,7 @@ public class WebSocketRequestBlocksTests
 
         try
         {
-            WsMethods.WsDisconnect(data);
+            await WsMethods.WsDisconnectAsync(data);
         }
         catch
         {

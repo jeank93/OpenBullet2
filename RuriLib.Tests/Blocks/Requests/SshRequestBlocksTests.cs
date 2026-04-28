@@ -5,6 +5,7 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
+using System.Threading.Tasks;
 using SshMethods = RuriLib.Blocks.Requests.Ssh.Methods;
 using Xunit;
 using BotProviders = RuriLib.Models.Bots.Providers;
@@ -14,12 +15,12 @@ namespace RuriLib.Tests.Blocks.Requests;
 public class SshRequestBlocksTests
 {
     [Fact]
-    public void SshRunCommand_WithoutClient_Throws()
+    public async Task SshRunCommand_WithoutClient_Throws()
     {
         var data = NewBotData();
 
-        var ex = Assert.Throws<BlockExecutionException>(() =>
-            SshMethods.SshRunCommand(data, "ls"));
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            SshMethods.SshRunCommandAsync(data, "ls"));
 
         Assert.Equal("The SSH client is not initialized", ex.Message);
     }

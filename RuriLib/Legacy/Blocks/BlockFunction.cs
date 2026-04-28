@@ -809,7 +809,10 @@ public class BlockFunction : BlockBase
                     break;
 
                 case Function.Delay:
-                    try { Thread.Sleep(int.Parse(localInputString)); } catch { }
+                    if (int.TryParse(localInputString, out var delayMilliseconds))
+                    {
+                        await Task.Delay(delayMilliseconds, ls.BotData.CancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case Function.CharAt:

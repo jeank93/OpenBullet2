@@ -201,8 +201,10 @@ public class AutoBlockInstance : BlockInstance
 
     private void WriteMethod(StringWriter writer)
     {
+        var descriptor = (Descriptor as AutoBlockDescriptor)!;
+
         // If async, prepend the await keyword
-        if ((Descriptor as AutoBlockDescriptor)!.Async)
+        if (descriptor.Async)
         {
             writer.Write("await ");
         }
@@ -210,9 +212,13 @@ public class AutoBlockInstance : BlockInstance
         // Append MethodName(data, param1, "param2", param3);
         List<string> parameters = ["data", .. Settings.Values.Select(CSharpWriter.FromSetting)];
 
-        writer.Write($"{Descriptor.Id}({string.Join(", ", parameters)})");
+        var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
+            ? descriptor.Id
+            : descriptor.MethodName;
 
-        if ((Descriptor as AutoBlockDescriptor)!.Async)
+        writer.Write($"{methodName}({string.Join(", ", parameters)})");
+
+        if (descriptor.Async)
         {
             writer.WriteLine(".ConfigureAwait(false);");
         }

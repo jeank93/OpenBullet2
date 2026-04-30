@@ -13,7 +13,7 @@ using System.Text;
 using FluentValidation;
 using OpenBullet2.Web.Auth;
 using OpenBullet2.Web.Interfaces;
-using Mapper = OpenBullet2.Core.Helpers.Mapper;
+using ProxyEntityMapper = OpenBullet2.Core.Helpers.ProxyEntityMapper;
 
 namespace OpenBullet2.Web.Controllers;
 
@@ -237,7 +237,7 @@ public class ProxyController(IProxyRepository proxyRepo,
             }
         }
 
-        return proxies.Select(Mapper.MapProxyToProxyEntity);
+        return proxies.Select(ProxyEntityMapper.MapProxyToProxyEntity);
     }
 
     private IQueryable<ProxyEntity> FilteredQuery(ProxyFiltersDto dto)

@@ -3,8 +3,7 @@ using RuriLib.Models.Proxies;
 
 namespace OpenBullet2.Core.Helpers;
 
-// TODO: Refactor these methods, make it so that you can call Map<TInput,TOutput>
-public static class Mapper
+public static class ProxyEntityMapper
 {
     /// <summary>
     /// Maps a <see cref="Proxy"/> to a <see cref="ProxyEntity"/>.

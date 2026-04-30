@@ -174,7 +174,7 @@ public class ProxiesViewModel : ViewModelBase
             }
         }
 
-        var entities = proxies.Select(p => Mapper.MapProxyToProxyEntity(p)).ToList();
+        var entities = proxies.Select(ProxyEntityMapper.MapProxyToProxyEntity).ToList();
         var currentGroup = await proxyGroupRepo.GetAsync(selectedGroup.Id)
             ?? throw new InvalidOperationException("Selected proxy group was not found");
         proxyRepo.Attach(currentGroup);

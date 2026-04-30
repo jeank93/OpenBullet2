@@ -9,18 +9,28 @@ public class FirewallTests
     public async Task CheckIpValidityAsync_ExactIpv4Match_ReturnsTrue()
     {
         var isValid = await Firewall.CheckIpValidityAsync(
-            IPAddress.Parse("192.168.1.10"),
-            ["192.168.1.10"]);
+            IPAddress.Parse("192.168.1.1"),
+            ["192.168.1.1"]);
 
         Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task CheckIpValidityAsync_ExactIpv4Mismatch_ReturnsFalse()
+    {
+        var isValid = await Firewall.CheckIpValidityAsync(
+            IPAddress.Parse("192.168.1.2"),
+            ["192.168.1.1"]);
+
+        Assert.False(isValid);
     }
 
     [Fact]
     public async Task CheckIpValidityAsync_ExactIpv6Match_ReturnsTrue()
     {
         var isValid = await Firewall.CheckIpValidityAsync(
-            IPAddress.Parse("2001:db8::1"),
-            ["2001:db8::1"]);
+            IPAddress.IPv6Loopback,
+            ["::1"]);
 
         Assert.True(isValid);
     }
@@ -29,14 +39,34 @@ public class FirewallTests
     public async Task CheckIpValidityAsync_Ipv4SubnetMatch_ReturnsTrue()
     {
         var isValid = await Firewall.CheckIpValidityAsync(
-            IPAddress.Parse("192.168.1.55"),
-            ["192.168.1.0/24"]);
+            IPAddress.Parse("10.0.0.42"),
+            ["10.0.0.0/24"]);
 
         Assert.True(isValid);
     }
 
     [Fact]
-    public async Task CheckIpValidityAsync_InvalidEntriesAreIgnored_ReturnsFalse()
+    public async Task CheckIpValidityAsync_Ipv4SubnetMismatch_ReturnsFalse()
+    {
+        var isValid = await Firewall.CheckIpValidityAsync(
+            IPAddress.Parse("10.0.1.42"),
+            ["10.0.0.0/24"]);
+
+        Assert.False(isValid);
+    }
+
+    [Fact]
+    public async Task CheckIpValidityAsync_InvalidEntriesAreIgnoredAndLaterValidEntryMatches_ReturnsTrue()
+    {
+        var isValid = await Firewall.CheckIpValidityAsync(
+            IPAddress.Parse("10.0.0.42"),
+            ["not-a-host", "300.300.300.300", "10.0.0.0/not-a-mask", "10.0.0.0/24"]);
+
+        Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task CheckIpValidityAsync_InvalidEntriesOnly_ReturnsFalse()
     {
         var isValid = await Firewall.CheckIpValidityAsync(
             IPAddress.Parse("10.0.0.1"),
@@ -56,5 +86,15 @@ public class FirewallTests
         var isValid = await Firewall.CheckIpValidityAsync(ip, ["localhost"]);
 
         Assert.True(isValid);
+    }
+
+    [Fact]
+    public async Task CheckIpValidityAsync_DynamicDnsMismatch_ReturnsFalse()
+    {
+        var isValid = await Firewall.CheckIpValidityAsync(
+            IPAddress.Parse("203.0.113.10"),
+            ["localhost"]);
+
+        Assert.False(isValid);
     }
 }

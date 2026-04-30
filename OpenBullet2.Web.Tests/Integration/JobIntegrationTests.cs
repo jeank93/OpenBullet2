@@ -351,7 +351,12 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(mrJob.Skip, result.Value.Skip);
         Assert.Single(result.Value.ProxySources);
         Assert.Single(result.Value.HitOutputs);
-        // TODO: Check the start condition
+        var startCondition = Assert.IsType<JsonElement>(result.Value.StartCondition);
+        Assert.Equal("relativeTimeStartCondition",
+            startCondition.GetProperty("_polyTypeName").GetString());
+        Assert.Equal(TimeSpan.FromSeconds(1),
+            JsonSerializer.Deserialize<RelativeTimeStartConditionDto>(
+                startCondition.GetRawText(), JsonSerializerOptions)?.StartAfter);
         Assert.Equal(mrJob.Config.Metadata.Name, result.Value.Config!.Name);
         Assert.Contains("Combinations", result.Value.DataPoolInfo);
         Assert.Equal(mrJob.Bots, result.Value.Bots);
@@ -2283,7 +2288,70 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(ErrorCode.NotAdmin, response.Error.Content.ErrorCode);
     }
 
-    // TODO: Test all actions for various job states
+    [Theory]
+    [InlineData("start")]
+    [InlineData("stop")]
+    [InlineData("pause")]
+    [InlineData("resume")]
+    [InlineData("abort")]
+    public async Task JobCommand_Admin_Wait_Success(string command)
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var job = CreateCommandTestJob();
+        job.Id = 1;
+        jobManager.AddJob(job);
+
+        // Act
+        var error = await PostAsync(client, $"/api/v1/job/{command}",
+            new JobCommandDto
+            {
+                JobId = job.Id,
+                Wait = true
+            });
+
+        // Assert
+        Assert.Null(error);
+        Assert.Equal(1, GetCommandCallCount(job, command));
+    }
+
+    [Theory]
+    [InlineData("start")]
+    [InlineData("stop")]
+    [InlineData("pause")]
+    [InlineData("resume")]
+    [InlineData("abort")]
+    public async Task JobCommand_Guest_NotOwned_NotFound(string command)
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        var guest = new GuestEntity { Id = 1, Username = "guest", AccessExpiration = DateTime.MaxValue };
+        dbContext.Guests.Add(guest);
+        var job = CreateCommandTestJob();
+        job.Id = 1;
+        jobManager.AddJob(job);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        RequireLogin();
+        ImpersonateGuest(client, guest);
+
+        // Act
+        var error = await PostAsync(client, $"/api/v1/job/{command}",
+            new JobCommandDto
+            {
+                JobId = job.Id,
+                Wait = true
+            });
+
+        // Assert
+        Assert.NotNull(error);
+        Assert.Equal(HttpStatusCode.BadRequest, error.Response.StatusCode);
+        Assert.Equal(ErrorCode.JobNotFound, error.Content!.ErrorCode);
+        Assert.Equal(0, GetCommandCallCount(job, command));
+    }
 
     // Admin can change the number of bots in a job
     [Fact]
@@ -2403,6 +2471,23 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         return new ProxyCheckJob(ruriLibSettingsService, pluginRepository, logger);
     }
 
+    private TestCommandJob CreateCommandTestJob()
+    {
+        var ruriLibSettingsService = GetRequiredService<RuriLibSettingsService>();
+        var pluginRepository = GetRequiredService<PluginRepository>();
+        return new TestCommandJob(ruriLibSettingsService, pluginRepository);
+    }
+
+    private static int GetCommandCallCount(TestCommandJob job, string command) => command switch
+    {
+        "start" => job.StartCalls,
+        "stop" => job.StopCalls,
+        "pause" => job.PauseCalls,
+        "resume" => job.ResumeCalls,
+        "abort" => job.AbortCalls,
+        _ => throw new ArgumentOutOfRangeException(nameof(command), command, "Unknown command")
+    };
+
     private JobEntity CreateMultiRunJobEntity(Job job, MultiRunJobOptions? options = null)
     {
         // We need to use Newtonsoft.Json here for the TypeNameHandling
@@ -2455,6 +2540,49 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
             JobOptions = Newtonsoft.Json.JsonConvert.SerializeObject(wrapper, jsonSettings),
             Owner = owner
         };
+    }
+
+    private sealed class TestCommandJob(RuriLibSettingsService settings, PluginRepository pluginRepo)
+        : Job(settings, pluginRepo)
+    {
+        public int StartCalls { get; private set; }
+        public int StopCalls { get; private set; }
+        public int PauseCalls { get; private set; }
+        public int ResumeCalls { get; private set; }
+        public int AbortCalls { get; private set; }
+
+        public override TimeSpan Remaining => TimeSpan.Zero;
+        public override float Progress => 0f;
+
+        public override Task Start(CancellationToken cancellationToken = default)
+        {
+            StartCalls++;
+            return Task.CompletedTask;
+        }
+
+        public override Task Stop()
+        {
+            StopCalls++;
+            return Task.CompletedTask;
+        }
+
+        public override Task Pause()
+        {
+            PauseCalls++;
+            return Task.CompletedTask;
+        }
+
+        public override Task Resume()
+        {
+            ResumeCalls++;
+            return Task.CompletedTask;
+        }
+
+        public override Task Abort()
+        {
+            AbortCalls++;
+            return Task.CompletedTask;
+        }
     }
 }
 

@@ -21,6 +21,9 @@ namespace OpenBullet2.Core.Services;
 /// </summary>
 public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsService openBulletSettingsService)
 {
+    private readonly object configsLock = new();
+    private int reloadVersion;
+
     /// <summary>
     /// The list of available configs.
     /// </summary>
@@ -64,15 +67,21 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
     /// </summary>
     public async Task ReloadConfigsAsync(CancellationToken cancellationToken)
     {
+        var currentReloadVersion = Interlocked.Increment(ref reloadVersion);
+
         // Load from the main repository
-        Configs = (await configRepo.GetAllAsync()).ToList();
-        SelectedConfig = null!;
+        var localConfigs = (await configRepo.GetAllAsync()).ToList();
+
+        if (!TryPublishLocalConfigs(localConfigs, currentReloadVersion))
+        {
+            return;
+        }
 
         // Load from remotes (fire and forget)
-        _ = LoadFromRemotesAsync(cancellationToken);
+        _ = LoadFromRemotesAsync(currentReloadVersion, cancellationToken);
     }
 
-    private async Task LoadFromRemotesAsync(CancellationToken cancellationToken)
+    private async Task LoadFromRemotesAsync(int currentReloadVersion, CancellationToken cancellationToken)
     {
         List<Config> remoteConfigs = [];
 
@@ -142,11 +151,53 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
-        lock (Configs)
+        if (!TryPublishRemoteConfigs(remoteConfigs, currentReloadVersion))
         {
-            Configs.AddRange(remoteConfigs);
+            return;
         }
 
         OnRemotesLoaded?.Invoke(this, EventArgs.Empty);
     }
+
+    private bool TryPublishLocalConfigs(List<Config> localConfigs, int currentReloadVersion)
+    {
+        lock (configsLock)
+        {
+            if (!IsLatestReload(currentReloadVersion))
+            {
+                return false;
+            }
+
+            Configs = localConfigs;
+            selectedConfig = null!;
+        }
+
+        OnConfigSelected?.Invoke(this, selectedConfig);
+        return true;
+    }
+
+    private bool TryPublishRemoteConfigs(List<Config> remoteConfigs, int currentReloadVersion)
+    {
+        lock (configsLock)
+        {
+            if (!IsLatestReload(currentReloadVersion))
+            {
+                return false;
+            }
+
+            var existingIds = Configs.Select(c => c.Id).ToHashSet();
+            foreach (var config in remoteConfigs)
+            {
+                if (existingIds.Add(config.Id))
+                {
+                    Configs.Add(config);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsLatestReload(int currentReloadVersion)
+        => Volatile.Read(ref reloadVersion) == currentReloadVersion;
 }

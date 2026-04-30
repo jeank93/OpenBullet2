@@ -1,9 +1,9 @@
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Web.Auth;
 using OpenBullet2.Web.Dtos.Shared;
 using OpenBullet2.Web.Exceptions;
+using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Services;
 using Endpoint = OpenBullet2.Core.Models.Sharing.Endpoint;
 
@@ -17,11 +17,11 @@ public class SharedController : ApiController
 {
     private readonly ConfigSharingService _configSharingService;
     private readonly ILogger<SharedController> _logger;
-    private readonly IMapper _mapper;
+    private readonly IObjectMapper _mapper;
 
     /// <summary></summary>
     public SharedController(ConfigSharingService configSharingService,
-        IMapper mapper, ILogger<SharedController> logger)
+        IObjectMapper mapper, ILogger<SharedController> logger)
     {
         _configSharingService = configSharingService;
         _mapper = mapper;

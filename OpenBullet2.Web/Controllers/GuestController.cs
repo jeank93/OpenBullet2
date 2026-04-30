@@ -1,4 +1,3 @@
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +7,7 @@ using OpenBullet2.Core.Services;
 using OpenBullet2.Web.Auth;
 using OpenBullet2.Web.Dtos.Guest;
 using OpenBullet2.Web.Exceptions;
+using OpenBullet2.Web.Interfaces;
 
 namespace OpenBullet2.Web.Controllers;
 
@@ -20,11 +20,11 @@ public class GuestController : ApiController
 {
     private readonly IGuestRepository _guestRepo;
     private readonly ILogger<GuestController> _logger;
-    private readonly IMapper _mapper;
+    private readonly IObjectMapper _mapper;
     private readonly OpenBulletSettingsService _obSettingsService;
 
     /// <summary></summary>
-    public GuestController(IGuestRepository guestRepo, IMapper mapper,
+    public GuestController(IGuestRepository guestRepo, IObjectMapper mapper,
         OpenBulletSettingsService obSettingsService,
         ILogger<GuestController> logger)
     {

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Core.Models.Settings;
@@ -9,6 +8,7 @@ using OpenBullet2.Web.Dtos.Settings;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Services;
+using OpenBullet2.Web.Utils;
 using RuriLib.Functions.Captchas;
 using RuriLib.Models.Settings;
 using RuriLib.Services;
@@ -21,7 +21,7 @@ namespace OpenBullet2.Web.Controllers;
 [ApiVersion("1.0")]
 public class SettingsController : ApiController
 {
-    private readonly IMapper _mapper;
+    private readonly IObjectMapper _mapper;
     private readonly IAuthTokenService _authService;
     private readonly IConfiguration _configuration;
     private readonly OpenBulletSettingsService _obSettingsService;
@@ -31,7 +31,7 @@ public class SettingsController : ApiController
 
     /// <summary></summary>
     public SettingsController(RuriLibSettingsService ruriLibSettingsService,
-        OpenBulletSettingsService obSettingsService, IMapper mapper,
+        OpenBulletSettingsService obSettingsService, IObjectMapper mapper,
         IAuthTokenService authService, IConfiguration configuration,
         ThemeService themeService, ILogger<SettingsController> logger)
     {
@@ -107,7 +107,8 @@ public class SettingsController : ApiController
 
         // NOTE: To check this we can just print the hashcode before
         // and after this instruction.
-        _mapper.Map(settings, _ruriLibSettingsService.RuriLibSettings);
+        WebMappingMethods.ApplyRuriLibSettings(
+            settings, _ruriLibSettingsService.RuriLibSettings, _mapper);
         await _ruriLibSettingsService.Save();
 
         _logger.LogInformation("Updated RuriLib settings");
@@ -161,7 +162,8 @@ public class SettingsController : ApiController
 
         // NOTE: To check this we can just print the hashcodes before
         // and after this instruction.
-        _mapper.Map(settings, _obSettingsService.Settings);
+        WebMappingMethods.ApplyOpenBulletSettings(
+            settings, _obSettingsService.Settings, _mapper);
         await _obSettingsService.SaveAsync();
 
         _logger.LogInformation("Updated OpenBullet settings");

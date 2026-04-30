@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
@@ -13,6 +12,7 @@ using RuriLib.Models.Proxies;
 using System.Text;
 using FluentValidation;
 using OpenBullet2.Web.Auth;
+using OpenBullet2.Web.Interfaces;
 using Mapper = OpenBullet2.Core.Helpers.Mapper;
 
 namespace OpenBullet2.Web.Controllers;
@@ -24,12 +24,12 @@ namespace OpenBullet2.Web.Controllers;
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
 public class ProxyController(IProxyRepository proxyRepo,
-    IProxyGroupRepository proxyGroupRepo, IMapper mapper,
+    IProxyGroupRepository proxyGroupRepo, IObjectMapper mapper,
     HttpClient httpClient,
     ILogger<ProxyController> logger) : ApiController
 {
     private readonly ILogger<ProxyController> _logger = logger;
-    private readonly IMapper _mapper = mapper;
+    private readonly IObjectMapper _mapper = mapper;
     private readonly HttpClient _httpClient = httpClient;
     private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
     private readonly IProxyRepository _proxyRepo = proxyRepo;

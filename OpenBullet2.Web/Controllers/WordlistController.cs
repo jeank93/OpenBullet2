@@ -1,4 +1,3 @@
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +8,7 @@ using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.Wordlist;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Extensions;
+using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Models.Identity;
 using RuriLib.Extensions;
 using RuriLib.Functions.Files;
@@ -23,14 +23,14 @@ namespace OpenBullet2.Web.Controllers;
 [ApiVersion("1.0")]
 public class WordlistController(IWordlistRepository wordlistRepo,
     IConfiguration config,
-    IGuestRepository guestRepo, IMapper mapper,
+    IGuestRepository guestRepo, IObjectMapper mapper,
     ILogger<WordlistController> logger) : ApiController
 {
     private readonly string _baseDir = config.GetSection("Settings")
             .GetValue<string>("UserDataFolder") ?? "UserData";
     private readonly IGuestRepository _guestRepo = guestRepo;
     private readonly ILogger<WordlistController> _logger = logger;
-    private readonly IMapper _mapper = mapper;
+    private readonly IObjectMapper _mapper = mapper;
     private readonly IWordlistRepository _wordlistRepo = wordlistRepo;
 
     /// <summary>

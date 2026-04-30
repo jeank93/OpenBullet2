@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentValidation;
+using Mapster;
 using Microsoft.OpenApi;
 using OpenBullet2.Core.Models.Proxies;
 using Serilog;
@@ -101,7 +102,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty,
         b => b.MigrationsAssembly("OpenBullet2.Core")));
 
-builder.Services.AddAutoMapper(_ => { }, typeof(AutoMapperProfile).Assembly);
+builder.Services.AddSingleton(_ => WebMapperConfig.Create());
+builder.Services.AddScoped<IObjectMapper, MapsterObjectMapper>();
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));

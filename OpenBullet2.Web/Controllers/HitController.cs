@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
@@ -19,6 +18,7 @@ using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Web.Auth;
+using OpenBullet2.Web.Interfaces;
 using RuriLib.Services;
 
 namespace OpenBullet2.Web.Controllers;
@@ -33,7 +33,7 @@ public class HitController : ApiController
     private readonly IGuestRepository _guestRepo;
     private readonly IHitRepository _hitRepo;
     private readonly ILogger<HitController> _logger;
-    private readonly IMapper _mapper;
+    private readonly IObjectMapper _mapper;
     private readonly OpenBulletSettingsService _obSettingsService;
     private readonly RuriLibSettingsService _rlSettingsService;
     private readonly ConfigService _configService;
@@ -43,7 +43,7 @@ public class HitController : ApiController
 
     /// <summary></summary>
     public HitController(IHitRepository hitRepo, IGuestRepository guestRepo,
-        IMapper mapper, ILogger<HitController> logger,
+        IObjectMapper mapper, ILogger<HitController> logger,
         OpenBulletSettingsService obSettingsService,
         RuriLibSettingsService rlSettingsService,
         ConfigService configService, IJobRepository jobRepo,

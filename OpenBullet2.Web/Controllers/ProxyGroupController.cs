@@ -1,4 +1,3 @@
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +10,7 @@ using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.ProxyGroup;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Extensions;
+using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Models.Identity;
 using RuriLib.Models.Jobs;
 
@@ -24,13 +24,13 @@ namespace OpenBullet2.Web.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/proxy-group")]
 public class ProxyGroupController(IProxyGroupRepository proxyGroupRepo,
-    IProxyRepository proxyRepo, IGuestRepository guestRepo, IMapper mapper,
+    IProxyRepository proxyRepo, IGuestRepository guestRepo, IObjectMapper mapper,
     JobManagerService jobManagerService, ILogger<ProxyGroupController> logger) : ApiController
 {
     private readonly IGuestRepository _guestRepo = guestRepo;
     private readonly JobManagerService _jobManagerService = jobManagerService;
     private readonly ILogger<ProxyGroupController> _logger = logger;
-    private readonly IMapper _mapper = mapper;
+    private readonly IObjectMapper _mapper = mapper;
     private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
     private readonly IProxyRepository _proxyRepo = proxyRepo;
 

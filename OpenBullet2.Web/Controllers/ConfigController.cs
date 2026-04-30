@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using OpenBullet2.Core.Repositories;
@@ -10,6 +9,7 @@ using OpenBullet2.Web.Dtos.Config;
 using OpenBullet2.Web.Dtos.Config.Blocks;
 using OpenBullet2.Web.Dtos.Config.Convert;
 using OpenBullet2.Web.Exceptions;
+using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Services;
 using OpenBullet2.Web.Utils;
 using RuriLib.Extensions;
@@ -34,7 +34,7 @@ public class ConfigController : ApiController
     private readonly IConfigRepository _configRepo;
     private readonly ConfigService _configService;
     private readonly ILogger<ConfigController> _logger;
-    private readonly IMapper _mapper;
+    private readonly IObjectMapper _mapper;
     private readonly OpenBulletSettingsService _obSettingsService;
     private readonly LoliCodeAutocompletionService _loliCodeAutocompletionService;
     private readonly ConfigDebuggerService _configDebuggerService;
@@ -44,7 +44,7 @@ public class ConfigController : ApiController
     /// <summary></summary>
     public ConfigController(IConfigRepository configRepo,
         PluginRepository pluginRepository, HttpClient httpClient,
-        ConfigService configService, IMapper mapper,
+        ConfigService configService, IObjectMapper mapper,
         OpenBulletSettingsService obSettingsService,
         LoliCodeAutocompletionService loliCodeAutocompletionService,
         ConfigDebuggerService configDebuggerService,
@@ -400,7 +400,7 @@ public class ConfigController : ApiController
     public ActionResult<ConvertedLoliCodeDto> ConvertStackToLoliCode(
         ConvertStackToLoliCodeDto dto)
     {
-        var mapped = dto.Stack.MapStack(_mapper);
+        var mapped = dto.Stack.MapStack();
         var converted = Stack2LoliTranspiler.Transpile(mapped);
 
         return new ConvertedLoliCodeDto { LoliCode = converted };

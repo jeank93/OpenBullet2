@@ -32,6 +32,12 @@ public class PuppeteerBrowserBlockIntegrationTests
     {
         yield return [ProxyType.Http, false];
         yield return [ProxyType.Http, true];
+        // With remote Chromium over CDP, plain --proxy-server works for SOCKS4 and SOCKS5 without auth.
+        // The remaining combinations are intentionally excluded here:
+        // - authenticated SOCKS4/SOCKS5 fail without the local Yove.Proxy bridge
+        // - SOCKS4a is rejected by Chromium as an unsupported proxy scheme in this setup
+        // - credentials embedded directly in the proxy URI are also rejected by Chromium
+        yield return [ProxyType.Socks4, false];
         yield return [ProxyType.Socks5, false];
     }
 

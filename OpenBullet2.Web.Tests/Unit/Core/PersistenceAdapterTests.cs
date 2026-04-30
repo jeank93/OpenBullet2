@@ -113,6 +113,20 @@ public class PersistenceAdapterTests
     }
 
     [Fact]
+    public async Task DatabaseProxyCheckOutput_StoreAsync_RepositoryFailureDoesNotThrow()
+    {
+        using var services = new ServiceCollection()
+            .AddScoped<IProxyRepository, ThrowingProxyRepository>()
+            .BuildServiceProvider();
+        var output = new DatabaseProxyCheckOutput(services.GetRequiredService<IServiceScopeFactory>());
+        var proxy = new Proxy("127.0.0.1", 8080) { Id = 12345 };
+
+        var exception = await Record.ExceptionAsync(() => output.StoreAsync(proxy));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public async Task HitStorageService_StoreAsync_MapsHitToEntity()
     {
         using var database = new TestDatabase();
@@ -175,5 +189,31 @@ public class PersistenceAdapterTests
             Services.Dispose();
             connection.Dispose();
         }
+    }
+
+    private sealed class ThrowingProxyRepository : IProxyRepository
+    {
+        public Task AddAsync(ProxyEntity entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task AddAsync(IEnumerable<ProxyEntity> entities, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public void Attach<TEntity>(TEntity entity) where TEntity : Entity
+        {
+        }
+
+        public Task DeleteAsync(ProxyEntity entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task DeleteAsync(IEnumerable<ProxyEntity> entities, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public IQueryable<ProxyEntity> GetAll() => Enumerable.Empty<ProxyEntity>().AsQueryable();
+
+        public Task<ProxyEntity> GetAsync(int id, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Expected failure");
+
+        public Task<int> RemoveDuplicatesAsync(int groupId) => Task.FromResult(0);
+
+        public Task UpdateAsync(ProxyEntity entity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task UpdateAsync(IEnumerable<ProxyEntity> entities, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

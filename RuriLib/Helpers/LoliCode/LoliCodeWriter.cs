@@ -126,7 +126,8 @@ public class LoliCodeWriter : StringWriter
     {
         ArgumentNullException.ThrowIfNull(setting);
 
-        // TODO: Make a valid variable name if it's invalid
+        // Preserve the original reference when serializing. Invalid names should be
+        // validated where they are entered instead of being rewritten on save.
         if (setting.InputMode == SettingInputMode.Variable)
         {
             return $"@{setting.InputVariableName}";

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OpenBullet2.Core;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
@@ -19,6 +20,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using OpenBullet2.Core.Models.Proxies;
+using Serilog;
+using Serilog.Events;
+using Serilog.Exceptions;
+using Serilog.Formatting.Compact;
 
 namespace OpenBullet2.Native;
 
@@ -27,6 +32,7 @@ namespace OpenBullet2.Native;
 /// </summary>
 public partial class App : Application
 {
+    private const string LogsPath = "UserData/Logs/log-.txt";
     private readonly ServiceProvider serviceProvider;
     private readonly IConfiguration config;
 
@@ -74,6 +80,26 @@ public partial class App : Application
 
     private void ConfigureServices(IServiceCollection services)
     {
+        Directory.CreateDirectory(Path.GetDirectoryName(LogsPath) ?? "UserData/Logs");
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .Enrich.FromLogContext()
+            .Enrich.WithExceptionDetails()
+            .WriteTo.File(new CompactJsonFormatter(), LogsPath,
+                rollingInterval: RollingInterval.Day,
+                rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 1_000_000)
+            .CreateLogger();
+
+        services.AddLogging(builder =>
+        {
+            builder.ClearProviders();
+            builder.AddSerilog(Log.Logger, dispose: true);
+        });
+
         // Windows and pages
         services.AddSingleton<MainWindow>();
         services.AddSingleton<Debugger>();
@@ -128,6 +154,12 @@ public partial class App : Application
         mainWindow.Show();
     }
 
+    protected override void OnExit(ExitEventArgs e)
+    {
+        Log.CloseAndFlush();
+        base.OnExit(e);
+    }
+
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         ReportCrash(e.Exception);
@@ -156,6 +188,7 @@ public partial class App : Application
 
     private static void ReportCrash(Exception ex)
     {
+        Log.Fatal(ex, "Unhandled exception");
         File.WriteAllText("crash.log", $"Unhandled exception thrown on {DateTime.Now}\r\n{ex}");
 
         Alert.Error("Unhandled exception", $"An unhandled exception was thrown, the application will try to continue running." +

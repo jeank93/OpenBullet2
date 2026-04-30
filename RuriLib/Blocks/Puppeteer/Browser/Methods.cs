@@ -113,6 +113,9 @@ public static class Methods
         var browser = GetBrowser(data);
         await browser.CloseAsync();
         StopYoveProxyInternalServer(data);
+        data.SetObject("puppeteer", null, false);
+        data.SetObject("puppeteerPage", null, false);
+        data.SetObject("puppeteerFrame", null, false);
         data.Logger.Log("Browser closed successfully!", LogColors.DarkSalmon);
     }
 
@@ -147,7 +150,7 @@ public static class Methods
         await page.CloseAsync();
 
         // Set the first page as active
-        page = (await browser.PagesAsync()).FirstOrDefault();
+        page = (await browser.PagesAsync()).FirstOrDefault(p => !p.IsClosed);
         SetPageAndFrame(data, page);
 
         if (page != null)
@@ -237,6 +240,13 @@ public static class Methods
     private static void SetPageAndFrame(BotData data, IPage? page)
     {
         data.SetObject("puppeteerPage", page, false);
+
+        if (page is null)
+        {
+            data.SetObject("puppeteerFrame", null, false);
+            return;
+        }
+
         SwitchToMainFramePrivate(data);
     }
 

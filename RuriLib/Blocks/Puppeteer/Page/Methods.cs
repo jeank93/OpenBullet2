@@ -34,9 +34,19 @@ public static class Methods
             WaitUntil = [loadedEvent]
         };
         var response = await page.GoToAsync(url, options);
-        data.ADDRESS = response.Url;
-        data.SOURCE = await response.TextAsync();
-        data.RAWSOURCE = await response.BufferAsync();
+        data.ADDRESS = response?.Url ?? page.Url;
+
+        if (response is not null)
+        {
+            data.SOURCE = await response.TextAsync();
+            data.RAWSOURCE = await response.BufferAsync();
+        }
+        else
+        {
+            data.SOURCE = await page.GetContentAsync();
+            data.RAWSOURCE = Encoding.UTF8.GetBytes(data.SOURCE);
+        }
+
         SwitchToMainFramePrivate(data);
 
         data.Logger.Log($"Navigated to {url}", LogColors.DarkSalmon);
@@ -330,8 +340,8 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var page = GetPage(data);
-        var response = await page.EvaluateExpressionAsync(expression);
+        var frame = GetFrame(data);
+        var response = await frame.EvaluateExpressionAsync(expression);
         var json = response != null ? response.ToString() : "undefined";
         data.Logger.Log($"Evaluated {expression}", LogColors.DarkSalmon);
         data.Logger.Log($"Got result: {json}", LogColors.DarkSalmon);
@@ -353,7 +363,7 @@ public static class Methods
             Timeout = timeoutMilliseconds
         };
 
-        var response = await page.WaitForResponseAsync(url, options);
+        var response = await page.WaitForResponseAsync(r => UrlsMatch(r.Url, url), options);
 
         data.ADDRESS = response.Url;
         data.RESPONSECODE = (int)response.Status;
@@ -379,6 +389,22 @@ public static class Methods
     private static IPage GetPage(BotData data)
         => data.TryGetObject<IPage>("puppeteerPage") ?? throw new BlockExecutionException("No pages open!");
 
+    private static IFrame GetFrame(BotData data)
+        => data.TryGetObject<IFrame>("puppeteerFrame") ?? GetPage(data).MainFrame;
+
     private static void SwitchToMainFramePrivate(BotData data)
         => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);
+
+    private static bool UrlsMatch(string actual, string expected)
+    {
+        if (!Uri.TryCreate(actual, UriKind.Absolute, out var actualUri) ||
+            !Uri.TryCreate(expected, UriKind.Absolute, out var expectedUri))
+        {
+            return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return string.Equals(actualUri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.Unescaped),
+                             expectedUri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.Unescaped),
+                             StringComparison.OrdinalIgnoreCase);
+    }
 }

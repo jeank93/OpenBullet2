@@ -27,10 +27,9 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var elemScript = GetElementScript(findBy, identifier, index);
-        var frame = GetFrame(data);
-        var script = elemScript + $".setAttribute('{attributeName}', '{value}');";
-        await frame.EvaluateExpressionAsync(script);
+        var elem = await GetElement(GetFrame(data), findBy, identifier, index);
+        var script = "(element, attributeName, value) => element.setAttribute(attributeName, value)";
+        await elem.EvaluateFunctionAsync(script, attributeName, value);
 
         data.Logger.Log($"Set value {value} of attribute {attributeName} by executing {script}", LogColors.DarkSalmon);
     }
@@ -97,10 +96,26 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var elemScript = GetElementScript(findBy, identifier, index);
-        var frame = GetFrame(data);
-        var script = elemScript + ".submit();";
-        await frame.EvaluateExpressionAsync(script);
+        var elem = await GetElement(GetFrame(data), findBy, identifier, index);
+        var script = """
+                     element => {
+                         const form = element.tagName === 'FORM' ? element : element.form;
+                         if (!form) {
+                             throw new Error('The selected element is not associated with a form');
+                         }
+
+                         if (typeof form.requestSubmit === 'function') {
+                             form.requestSubmit();
+                             return;
+                         }
+
+                         const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                         if (form.dispatchEvent(submitEvent)) {
+                             form.submit();
+                         }
+                     }
+                     """;
+        await elem.EvaluateFunctionAsync(script);
 
         data.Logger.Log($"Submitted the form by executing {script}", LogColors.DarkSalmon);
     }
@@ -149,7 +164,7 @@ public static class Methods
 
         var frame = GetFrame(data);
         var elemScript = GetElementScript(findBy, identifier, index);
-        var script = $"el={elemScript};for(let i=0;i<el.options.length;i++){{if(el.options[i].text=='{text}'){{el.selectedIndex = i;break;}}}}";
+        var script = $"el={elemScript};for(let i=0;i<el.options.length;i++){{if(el.options[i].text=={ToJavaScriptStringLiteral(text)}){{el.selectedIndex = i;break;}}}}";
         await frame.EvaluateExpressionAsync(script);
 
         data.Logger.Log($"Selected text {text}", LogColors.DarkSalmon);
@@ -164,10 +179,16 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var elemScript = GetElementScript(findBy, identifier, index);
-        var frame = GetFrame(data);
-        var script = $"{elemScript}.{attributeName};";
-        var value = await frame.EvaluateExpressionAsync<string>(script);
+        var elem = await GetElement(GetFrame(data), findBy, identifier, index);
+        var script = """
+                     (element, attributeName) => {
+                         const value = attributeName
+                             .split('.')
+                             .reduce((current, part) => current?.[part], element);
+                         return value?.toString() ?? '';
+                     }
+                     """;
+        var value = await elem.EvaluateFunctionAsync<string>(script, attributeName);
 
         data.Logger.Log($"Got value {value} of attribute {attributeName} by executing {script}", LogColors.DarkSalmon);
         return value;
@@ -417,17 +438,17 @@ public static class Methods
     {
         if (findBy == FindElementBy.XPath)
         {
-            var script = $"document.evaluate(\"{identifier.Replace("\"", "\\\"")}\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)";
+            var script = $"document.evaluate({ToJavaScriptStringLiteral(identifier)}, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)";
             return $"Array.from({{ length: {script}.snapshotLength }}, (_, index) => {script}.snapshotItem(index))";
         }
 
-        return $"document.querySelectorAll('{BuildSelector(findBy, identifier)}')";
+        return $"document.querySelectorAll({ToJavaScriptStringLiteral(BuildSelector(findBy, identifier))})";
     }
 
     private static string GetElementScript(FindElementBy findBy, string identifier, int index)
         => findBy == FindElementBy.XPath
-            ? $"document.evaluate(\"{identifier.Replace("\"", "\\\"")}\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue"
-            : $"document.querySelectorAll('{BuildSelector(findBy, identifier)}')[{index}]";
+            ? $"document.evaluate({ToJavaScriptStringLiteral(identifier)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue"
+            : $"document.querySelectorAll({ToJavaScriptStringLiteral(BuildSelector(findBy, identifier))})[{index}]";
 
     private static string BuildSelector(FindElementBy findBy, string identifier)
         => findBy switch
@@ -437,6 +458,9 @@ public static class Methods
             FindElementBy.Selector => identifier,
             _ => throw new NotSupportedException()
         };
+
+    private static string ToJavaScriptStringLiteral(string value)
+        => $"'{value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\r", "\\r").Replace("\n", "\\n")}'";
 
     private static IBrowser GetBrowser(BotData data)
         => data.TryGetObject<IBrowser>("puppeteer") ?? throw new BlockExecutionException("The browser is not open!");

@@ -150,7 +150,7 @@ public class ProxyPool : IDisposable
     /// Removes duplicates.
     /// </summary>
     public void RemoveDuplicates()
-        => proxies = proxies.Distinct(new GenericComparer<Proxy>()).ToList();
+        => proxies = proxies.Distinct(ProxyIdentityComparer.Instance).ToList();
 
     /// <summary>
     /// Shuffles proxies.
@@ -270,5 +270,32 @@ public class ProxyPool : IDisposable
                 // ignored
             }
         }
+    }
+
+    private sealed class ProxyIdentityComparer : IEqualityComparer<Proxy>
+    {
+        public static ProxyIdentityComparer Instance { get; } = new();
+
+        public bool Equals(Proxy? x, Proxy? y)
+        {
+            if (ReferenceEquals(x, y))
+            {
+                return true;
+            }
+
+            if (x is null || y is null)
+            {
+                return false;
+            }
+
+            return x.Port == y.Port
+                && x.Type == y.Type
+                && x.Host == y.Host
+                && x.Username == y.Username
+                && x.Password == y.Password;
+        }
+
+        public int GetHashCode(Proxy obj)
+            => HashCode.Combine(obj.Host, obj.Port, obj.Type, obj.Username, obj.Password);
     }
 }

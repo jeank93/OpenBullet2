@@ -31,6 +31,51 @@ public class ProxyPoolTests
     }
 
     [Fact]
+    public async Task RemoveDuplicates_SameIdentityDifferentRuntimeState_ReturnDistinct()
+    {
+        ListProxySource source = new([
+            new("127.0.0.1", 8000, username: "user", password: "pass")
+            {
+                ProxyStatus = ProxyStatus.Busy,
+                WorkingStatus = ProxyWorkingStatus.Working,
+                Country = "IT",
+                Ping = 42
+            },
+            new("127.0.0.1", 8000, username: "user", password: "pass")
+            {
+                ProxyStatus = ProxyStatus.Banned,
+                WorkingStatus = ProxyWorkingStatus.NotWorking,
+                Country = "US",
+                Ping = 999
+            }
+        ]);
+
+        using var pool = new ProxyPool([source]);
+
+        await pool.ReloadAllAsync(false, TestCancellationToken);
+        pool.RemoveDuplicates();
+
+        Assert.Single(pool.Proxies);
+    }
+
+    [Fact]
+    public async Task RemoveDuplicates_DifferentIdentity_KeepsDistinct()
+    {
+        ListProxySource source = new([
+            new("127.0.0.1", 8000, ProxyType.Http, "user", "pass"),
+            new("127.0.0.1", 8000, ProxyType.Socks5, "user", "pass"),
+            new("127.0.0.1", 8000, ProxyType.Http, "other-user", "pass")
+        ]);
+
+        using var pool = new ProxyPool([source]);
+
+        await pool.ReloadAllAsync(false, TestCancellationToken);
+        pool.RemoveDuplicates();
+
+        Assert.Equal(3, pool.Proxies.Count());
+    }
+
+    [Fact]
     public async Task GetProxy_Available_ReturnValidProxy()
     {
         ListProxySource source = new(new Proxy[]

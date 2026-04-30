@@ -31,13 +31,12 @@ public class CSharpWriter
 
         if (setting.InputMode == SettingInputMode.Variable)
         {
-            // TODO: Find a better way to cast things from an ExpandoObject
-
-            // If it's a variable from an ExpandoObject we need to hard cast it, otherwise we get
-            // a runtime exception when trying to use extension methods on it.
+            // ExpandoObject members are resolved dynamically, so extension-method syntax like
+            // globals.foo.AsString() will fail at runtime. Route those conversions through the
+            // static helper instead of forcing a cast on the generated member access.
             if (setting.InputVariableName.StartsWith("globals.") || setting.InputVariableName.StartsWith("input."))
             {
-                return $"({GetTypeName(setting)})((object){setting.InputVariableName}){GetCasting(setting, true)}";
+                return GetDynamicCasting(setting);
             }
 
             return $"{setting.InputVariableName}{GetCasting(setting)}";
@@ -189,7 +188,7 @@ public class CSharpWriter
         return dynamic ? $".Dynamic{method}" : $".{method}";
     }
 
-    private static string GetTypeName(BlockSetting setting)
+    private static string GetDynamicCasting(BlockSetting setting)
     {
         if (setting.FixedSetting is null)
         {
@@ -198,13 +197,13 @@ public class CSharpWriter
 
         return setting.FixedSetting switch
         {
-            BoolSetting _ => "bool",
-            ByteArraySetting _ => "byte[]",
-            DictionaryOfStringsSetting _ => "Dictionary<string, string>",
-            FloatSetting _ => "float",
-            IntSetting _ => "int",
-            ListOfStringsSetting _ => "List<string>",
-            StringSetting _ => "string",
+            BoolSetting _ => $"ObjectExtensions.DynamicAsBool({setting.InputVariableName})",
+            ByteArraySetting _ => $"ObjectExtensions.DynamicAsBytes({setting.InputVariableName})",
+            DictionaryOfStringsSetting _ => $"ObjectExtensions.DynamicAsDict({setting.InputVariableName})",
+            FloatSetting _ => $"ObjectExtensions.DynamicAsFloat({setting.InputVariableName})",
+            IntSetting _ => $"ObjectExtensions.DynamicAsInt({setting.InputVariableName})",
+            ListOfStringsSetting _ => $"ObjectExtensions.DynamicAsList({setting.InputVariableName})",
+            StringSetting _ => $"ObjectExtensions.DynamicAsString({setting.InputVariableName})",
             _ => throw new NotImplementedException()
         };
     }

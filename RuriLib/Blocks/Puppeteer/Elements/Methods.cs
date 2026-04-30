@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PuppeteerSharp.Media;
 
 namespace RuriLib.Blocks.Puppeteer.Elements;
 
@@ -83,7 +84,7 @@ public static class Methods
 
         var frame = GetFrame(data);
         var elem = await GetElement(frame, findBy, identifier, index);
-        await elem.ClickAsync(new PuppeteerSharp.Input.ClickOptions { Button = mouseButton, ClickCount = clickCount, Delay = timeBetweenClicks });
+        await elem.ClickAsync(new PuppeteerSharp.Input.ClickOptions { Button = mouseButton, Count = clickCount, Delay = timeBetweenClicks });
 
         data.Logger.Log($"Clicked {clickCount} time(s) with {mouseButton} button", LogColors.DarkSalmon);
     }
@@ -144,11 +145,21 @@ public static class Methods
         data.Logger.LogHeader();
 
         var frame = GetFrame(data);
-        var elemScript = GetElementScript(findBy, identifier, index);
-        var script = elemScript + $".getElementsByTagName('option')[{selectionIndex}].value;";
-        var value = (await frame.EvaluateExpressionAsync(script)).ToString();
-
         var elem = await GetElement(frame, findBy, identifier, index);
+        var value = await elem.EvaluateFunctionAsync<string>(
+            """
+            (element, selectedIndex) => {
+                const option = element.getElementsByTagName('option')[selectedIndex];
+                return option?.value ?? null;
+            }
+            """,
+            selectionIndex);
+
+        if (value is null)
+        {
+            throw new BlockExecutionException($"Expected an option at index {selectionIndex} but none was found");
+        }
+
         await elem.SelectAsync(value);
 
         data.Logger.Log($"Selected value {value}", LogColors.DarkSalmon);
@@ -341,19 +352,17 @@ public static class Methods
         string fileName, bool fullPage = false, bool omitBackground = false)
     {
         data.Logger.LogHeader();
+        // Element screenshots no longer support a FullPage option in PuppeteerSharp, keep the parameter for block compatibility.
+        _ = fullPage;
 
         if (data.Providers.Security.RestrictBlocksToCWD)
             FileUtils.ThrowIfNotInCWD(fileName);
 
         var frame = GetFrame(data);
         var elem = await GetElement(frame, findBy, identifier, index);
-        await elem.ScreenshotAsync(fileName, new ScreenshotOptions
-        {
-            FullPage = fullPage,
-            OmitBackground = omitBackground,
-            Type = omitBackground ? ScreenshotType.Png : ScreenshotType.Jpeg,
-            Quality = omitBackground ? null : 100
-        });
+        var page = GetPage(data);
+        var options = await BuildElementScreenshotOptions(elem, omitBackground);
+        await page.ScreenshotAsync(fileName, options);
 
         data.Logger.Log($"Took a screenshot of the element and saved it to {fileName}", LogColors.DarkSalmon);
     }
@@ -366,16 +375,14 @@ public static class Methods
         bool fullPage = false, bool omitBackground = false)
     {
         data.Logger.LogHeader();
+        // Element screenshots no longer support a FullPage option in PuppeteerSharp, keep the parameter for block compatibility.
+        _ = fullPage;
 
         var frame = GetFrame(data);
         var elem = await GetElement(frame, findBy, identifier, index);
-        var base64 = await elem.ScreenshotBase64Async(new ScreenshotOptions
-        {
-            FullPage = fullPage,
-            OmitBackground = omitBackground,
-            Type = omitBackground ? ScreenshotType.Png : ScreenshotType.Jpeg,
-            Quality = omitBackground ? null : 100
-        });
+        var page = GetPage(data);
+        var options = await BuildElementScreenshotOptions(elem, omitBackground);
+        var base64 = await page.ScreenshotBase64Async(options);
 
         data.Logger.Log("Took a screenshot of the element as base64", LogColors.DarkSalmon);
         return base64;
@@ -470,4 +477,27 @@ public static class Methods
 
     private static IFrame GetFrame(BotData data)
         => data.TryGetObject<IFrame>("puppeteerFrame") ?? GetPage(data).MainFrame;
+
+    private static async Task<ScreenshotOptions> BuildElementScreenshotOptions(IElementHandle element, bool omitBackground)
+    {
+        await element.ScrollIntoViewAsync();
+        var boundingBox = await element.BoundingBoxAsync() ?? throw new BlockExecutionException("Could not determine the element bounds");
+
+        return new ScreenshotOptions
+        {
+            Clip = new Clip
+            {
+                X = boundingBox.X,
+                Y = boundingBox.Y,
+                Width = boundingBox.Width,
+                Height = boundingBox.Height
+            },
+            CaptureBeyondViewport = false,
+            FromSurface = false,
+            OptimizeForSpeed = true,
+            OmitBackground = omitBackground,
+            Type = omitBackground ? ScreenshotType.Png : ScreenshotType.Jpeg,
+            Quality = omitBackground ? null : 100
+        };
+    }
 }

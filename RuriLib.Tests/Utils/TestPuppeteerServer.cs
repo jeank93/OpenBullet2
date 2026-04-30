@@ -3,6 +3,7 @@ using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,7 +14,8 @@ namespace RuriLib.Tests.Utils;
 internal static class TestPuppeteerServer
 {
     private const ushort DevToolsPort = 9222;
-    private const string ContainerImage = "chromedp/headless-shell:stable";
+    private const string ContainerImage = "chromedp/headless-shell:147.0.7727.102";
+    private static readonly string[] DefaultCommandLineArgs = ["--disable-dev-shm-usage"];
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
 
     private static readonly Dictionary<string, BrowserState> States = [];
@@ -59,9 +61,11 @@ internal static class TestPuppeteerServer
                     .WithPortBinding(DevToolsPort, true)
                     .WithWaitStrategy(Wait.ForUnixContainer().UntilInternalTcpPortIsAvailable(DevToolsPort));
 
-                if (state.CommandLineArgs.Length > 0)
+                var commandLineArgs = DefaultCommandLineArgs.Concat(state.CommandLineArgs).ToArray();
+
+                if (commandLineArgs.Length > 0)
                 {
-                    builder = builder.WithCommand(state.CommandLineArgs);
+                    builder = builder.WithCommand(commandLineArgs);
                 }
 
                 state.Container = builder.Build();

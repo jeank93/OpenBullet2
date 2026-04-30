@@ -3,10 +3,13 @@ using RuriLib.Attributes;
 using RuriLib.Exceptions;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace RuriLib.Blocks.Puppeteer.Page;
@@ -315,7 +318,10 @@ public static class Methods
         data.Logger.LogHeader();
 
         var page = GetPage(data);
-        await page.SetUserAgentAsync(userAgent);
+        await page.SetUserAgentAsync(new SetUserAgentOptions
+        {
+            UserAgent = userAgent
+        });
 
         data.Logger.Log($"User Agent set to {userAgent}", LogColors.DarkSalmon);
     }
@@ -341,8 +347,9 @@ public static class Methods
         data.Logger.LogHeader();
 
         var frame = GetFrame(data);
-        var response = await frame.EvaluateExpressionAsync(expression);
-        var json = response != null ? response.ToString() : "undefined";
+        await using var response = await frame.EvaluateExpressionHandleAsync(expression);
+        var value = await response.JsonValueAsync<object>();
+        var json = SerializeJavaScriptResult(value);
         data.Logger.Log($"Evaluated {expression}", LogColors.DarkSalmon);
         data.Logger.Log($"Got result: {json}", LogColors.DarkSalmon);
 
@@ -407,4 +414,24 @@ public static class Methods
                              expectedUri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.Unescaped),
                              StringComparison.OrdinalIgnoreCase);
     }
+
+    private static string SerializeJavaScriptResult(object value)
+        => value switch
+        {
+            null => "undefined",
+            JsonElement jsonElement => SerializeJsonElement(jsonElement),
+            string stringValue => stringValue,
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+            _ => JsonConvert.SerializeObject(value)
+        };
+
+    private static string SerializeJsonElement(JsonElement value)
+        => value.ValueKind switch
+        {
+            JsonValueKind.Undefined or JsonValueKind.Null => "undefined",
+            JsonValueKind.String => value.GetString() ?? string.Empty,
+            JsonValueKind.True or JsonValueKind.False => value.GetBoolean().ToString(),
+            JsonValueKind.Number => value.GetRawText(),
+            _ => value.GetRawText()
+        };
 }

@@ -1,6 +1,4 @@
 using Yove.Proxy;
-using PuppeteerExtraSharp;
-using PuppeteerExtraSharp.Plugins.ExtraStealth;
 using PuppeteerSharp;
 using RuriLib.Attributes;
 using RuriLib.Exceptions;
@@ -76,16 +74,11 @@ public static class Methods
             ExecutablePath = data.Providers.PuppeteerBrowser.ChromeBinaryLocation,
             IgnoredDefaultArgs = ["--disable-extensions", "--enable-automation"],
             Headless = data.ConfigSettings.BrowserSettings.Headless,
+            AcceptInsecureCerts = data.ConfigSettings.BrowserSettings.IgnoreHttpsErrors,
             DefaultViewport = null // This is important
         };
 
-        // Add the plugins
-        var extra = new PuppeteerExtra();
-        extra.Use(new StealthPlugin());
-
-        // Launch the browser
-        var browser = await extra.LaunchAsync(launchOptions);
-        browser.IgnoreHTTPSErrors = data.ConfigSettings.BrowserSettings.IgnoreHttpsErrors;
+        var browser = await PuppeteerSharp.Puppeteer.LaunchAsync(launchOptions);
 
         // Save the browser for further use
         data.SetObject("puppeteer", browser);
@@ -289,4 +282,5 @@ public static class Methods
             };
         }
     }
+
 }

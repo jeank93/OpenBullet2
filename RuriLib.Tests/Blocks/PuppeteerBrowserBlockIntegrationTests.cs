@@ -213,9 +213,6 @@ public class PuppeteerBrowserBlockIntegrationTests
             Assert.True(await PuppeteerElementMethods.PuppeteerGetPositionX(data, FindElementBy.Id, "name", 0) >= 0);
             Assert.True(await PuppeteerElementMethods.PuppeteerGetPositionY(data, FindElementBy.Id, "name", 0) >= 0);
 
-            await PuppeteerElementMethods.PuppeteerUploadFiles(data, FindElementBy.Id, "upload", 0, [uploadPath]);
-            Assert.EndsWith(Path.GetFileName(uploadPath), await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('upload').value;"));
-
             var screenshotPath = Path.Combine(Path.GetTempPath(), $"ob2-puppeteer-element-{Guid.NewGuid():N}.jpg");
             try
             {
@@ -235,6 +232,10 @@ public class PuppeteerBrowserBlockIntegrationTests
             await PuppeteerElementMethods.PuppeteerSwitchToFrame(data, FindElementBy.Id, "inner-frame", 0);
             await PuppeteerElementMethods.PuppeteerWaitForElement(data, FindElementBy.Id, "inside", timeout: 5000);
             Assert.Equal("inside", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('inside').innerText;"));
+            PuppeteerPageMethods.PuppeteerSwitchToMainFrame(data);
+
+            await PuppeteerElementMethods.PuppeteerUploadFiles(data, FindElementBy.Id, "upload", 0, [uploadPath]);
+            Assert.EndsWith(Path.GetFileName(uploadPath), await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('upload').value;"));
         }
         finally
         {

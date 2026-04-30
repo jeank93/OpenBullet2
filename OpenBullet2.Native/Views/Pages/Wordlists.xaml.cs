@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -75,17 +76,7 @@ public partial class Wordlists : Page
 
     private void Search(object sender, RoutedEventArgs e) => vm.SearchString = filterTextbox.Text;
 
-    public async void AddWordlist(WordlistEntity wordlist)
-    {
-        try
-        {
-            await vm.AddAsync(wordlist);
-        }
-        catch (Exception ex)
-        {
-            Alert.Exception(ex);
-        }
-    }
+    public Task AddWordlistAsync(WordlistEntity wordlist) => vm.AddAsync(wordlist);
 
     private void ColumnHeaderClicked(object sender, RoutedEventArgs e)
     {

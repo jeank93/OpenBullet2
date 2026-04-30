@@ -31,10 +31,10 @@ namespace OpenBullet2.Native.Views.Dialogs;
 /// </summary>
 public partial class MultiRunJobOptionsDialog : Page
 {
-    private readonly Action<JobOptions>? onAccept;
+    private readonly Func<JobOptions, Task>? onAccept;
     private readonly MultiRunJobOptionsViewModel vm;
 
-    public MultiRunJobOptionsDialog(MultiRunJobOptions? options = null, Action<JobOptions>? onAccept = null)
+    public MultiRunJobOptionsDialog(MultiRunJobOptions? options = null, Func<JobOptions, Task>? onAccept = null)
     {
         this.onAccept = onAccept;
         vm = new MultiRunJobOptionsViewModel(options);
@@ -73,13 +73,13 @@ public partial class MultiRunJobOptionsDialog : Page
         }
     }
 
-    public async void SelectConfig(ConfigViewModel config)
+    public async Task SelectConfigAsync(ConfigViewModel config)
     {
         vm.SelectConfig(config);
         await vm.TrySetRecordAsync();
     }
 
-    public async void SelectWordlist(WordlistEntity entity)
+    public async Task SelectWordlistAsync(WordlistEntity entity)
     {
         if (vm.DataPoolOptions is WordlistDataPoolOptionsViewModel wordlistOptions)
         {
@@ -92,7 +92,7 @@ public partial class MultiRunJobOptionsDialog : Page
     private void AddWordlist(object sender, RoutedEventArgs e)
         => new MainDialog(new AddWordlistDialog(this), "Add a wordlist").ShowDialog();
 
-    public async void AddWordlist(WordlistEntity entity) => await vm.AddWordlist(entity);
+    public Task AddWordlistAsync(WordlistEntity entity) => vm.AddWordlist(entity);
 
     private void SelectConfig(object sender, RoutedEventArgs e)
         => new MainDialog(new SelectConfigDialog(this), "Select a config").ShowDialog();
@@ -100,25 +100,36 @@ public partial class MultiRunJobOptionsDialog : Page
     private void SelectWordlist(object sender, RoutedEventArgs e)
         => new MainDialog(new SelectWordlistDialog(this), "Select a wordlist").ShowDialog();
 
-    private void Accept(object sender, RoutedEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
     {
-        if (!vm.IsConfigSelected)
+        try
         {
-            Alert.Error("No config selected", "Please select a config before proceeding");
-            return;
-        }
+            if (!vm.IsConfigSelected)
+            {
+                Alert.Error("No config selected", "Please select a config before proceeding");
+                return;
+            }
 
-        if (vm.SelectedConfig is not null && vm.SelectedConfig.HasCSharpCode())
+            if (vm.SelectedConfig is not null && vm.SelectedConfig.HasCSharpCode())
+            {
+                Alert.Warning("Potentially dangerous config", "The Config you selected might have some C# code in it" +
+                    " (or blocks that call external programs). Although C# can be helpful for config makers who want to" +
+                    " use functionalities that are not implemented through blocks, it can also be used to harm your computer" +
+                    " or steal information. It's STRONGLY advised that you review the code of the config and make sure nothing" +
+                    " fishy is going on. Please review the config and make sure it is completely safe to run!");
+            }
+
+            if (onAccept is not null)
+            {
+                await onAccept(vm.Options);
+            }
+
+            ((MainDialog)Parent).Close();
+        }
+        catch (Exception ex)
         {
-            Alert.Warning("Potentially dangerous config", "The Config you selected might have some C# code in it" +
-                " (or blocks that call external programs). Although C# can be helpful for config makers who want to" +
-                " use functionalities that are not implemented through blocks, it can also be used to harm your computer" +
-                " or steal information. It's STRONGLY advised that you review the code of the config and make sure nothing" +
-                " fishy is going on. Please review the config and make sure it is completely safe to run!");
+            Alert.Exception(ex);
         }
-
-        onAccept?.Invoke(vm.Options);
-        ((MainDialog)Parent).Close();
     }
 
     private void SelectFileForProxySource(object sender, RoutedEventArgs e)

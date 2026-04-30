@@ -262,10 +262,10 @@ public partial class MainWindow : MetroWindow
         }
     }
 
-    public void EditJob(JobViewModel jobVM)
+    public Task EditJobAsync(JobViewModel jobVM)
     {
         NavigateTo(MainWindowPage.Jobs);
-        jobsPage!.EditJob(jobVM);
+        return jobsPage!.EditJobAsync(jobVM);
     }
 
     private void OpenHomePage(object sender, MouseEventArgs e) => NavigateTo(MainWindowPage.Home);

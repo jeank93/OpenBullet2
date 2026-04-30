@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -133,22 +134,22 @@ public partial class MultiRunJobViewer : Page
         }
     }
 
-    private void ChangeOptions(object sender, RoutedEventArgs e) => mainWindow.EditJob(ViewModel.Job);
-
-    private void ChangeBots(object sender, MouseButtonEventArgs e)
-        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
-
-    public async void ChangeBots(int newValue)
+    private async void ChangeOptions(object sender, RoutedEventArgs e)
     {
         try
         {
-            await ViewModel.ChangeBotsAsync(newValue);
+            await mainWindow.EditJobAsync(ViewModel.Job);
         }
         catch (Exception ex)
         {
             Alert.Exception(ex);
         }
     }
+
+    private void ChangeBots(object sender, MouseButtonEventArgs e)
+        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
+
+    public Task ChangeBotsAsync(int newValue) => ViewModel.ChangeBotsAsync(newValue);
 
     private void CopySelectedHits(object sender, RoutedEventArgs e)
         => SelectedHits.CopyToClipboard(h => h.Data);

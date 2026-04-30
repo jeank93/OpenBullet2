@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -72,10 +73,10 @@ public partial class SelectConfigDialog : Page
         }
     }
 
-    private void ListItemDoubleClick(object sender, MouseButtonEventArgs e) => ConfirmSelection();
-    private void Accept(object sender, RoutedEventArgs e) => ConfirmSelection();
+    private async void ListItemDoubleClick(object sender, MouseButtonEventArgs e) => await ConfirmSelectionAsync();
+    private async void Accept(object sender, RoutedEventArgs e) => await ConfirmSelectionAsync();
 
-    private void ConfirmSelection()
+    private async Task ConfirmSelectionAsync()
     {
         if (vm.HoveredConfig is null)
         {
@@ -85,7 +86,7 @@ public partial class SelectConfigDialog : Page
 
         if (caller is MultiRunJobOptionsDialog page)
         {
-            page.SelectConfig(vm.HoveredConfig);
+            await page.SelectConfigAsync(vm.HoveredConfig);
         }
 
         ((MainDialog)Parent).Close();

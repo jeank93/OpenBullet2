@@ -4,6 +4,7 @@ using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -125,17 +126,7 @@ public partial class ProxyCheckJobViewer : Page
     private void ChangeBots(object sender, MouseButtonEventArgs e)
         => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
 
-    public async void ChangeBots(int newValue)
-    {
-        try
-        {
-            await ViewModel.ChangeBotsAsync(newValue);
-        }
-        catch (Exception ex)
-        {
-            Alert.Exception(ex);
-        }
-    }
+    public Task ChangeBotsAsync(int newValue) => ViewModel.ChangeBotsAsync(newValue);
 
     private void OnResultMessage(object? sender, string message, Color color)
         => Application.Current.Dispatcher.Invoke(() =>

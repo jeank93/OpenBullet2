@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -70,7 +71,7 @@ public partial class Configs : Page
     private void Create(object sender, RoutedEventArgs e)
         => new MainDialog(new CreateConfigDialog(this), "Create config").ShowDialog();
 
-    public async void CreateConfig(ConfigForCreationDto dto) => await vm.CreateAsync(dto);
+    public Task CreateConfigAsync(ConfigForCreationDto dto) => vm.CreateAsync(dto);
 
     private void Edit(object sender, RoutedEventArgs e) => EditConfig();
 

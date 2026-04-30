@@ -1,6 +1,7 @@
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Native.Views.Pages;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -25,13 +26,9 @@ public partial class CreateJobDialog : Page
 
     private void CreateJob(JobType type)
     {
-        Action<JobOptions> onAccept = options =>
-        {
-            if (caller is Jobs page)
-            {
-                page.CreateJob(options);
-            }
-        };
+        Func<JobOptions, Task>? onAccept = caller is Jobs page
+            ? page.CreateJobAsync
+            : null;
 
         switch (type)
         {

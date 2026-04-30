@@ -97,7 +97,7 @@ public partial class ImportProxiesDialog : Page
 
         if (caller is Proxies page)
         {
-            page.AddProxies(dto);
+            await page.AddProxiesAsync(dto);
         }
 
         await Dispatcher.InvokeAsync(() => ((MainDialog)Parent).Close());

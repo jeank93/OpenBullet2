@@ -4,6 +4,7 @@ using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Views.Pages;
 using RuriLib.Functions.Files;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -41,7 +42,7 @@ public partial class CreateConfigDialog : Page
         categoryCombobox.SelectedIndex = 0;
     }
 
-    private void CreateAndClose()
+    private async Task CreateAndCloseAsync()
     {
         if (caller is Configs page)
         {
@@ -59,18 +60,18 @@ public partial class CreateConfigDialog : Page
                 return;
             }
 
-            page.CreateConfig(dto);
+            await page.CreateConfigAsync(dto);
         }
         ((MainDialog)Parent).Close();
     }
 
-    private void Accept(object sender, RoutedEventArgs e) => CreateAndClose();
+    private async void Accept(object sender, RoutedEventArgs e) => await CreateAndCloseAsync();
 
-    private void TextboxKeyDown(object sender, KeyEventArgs e)
+    private async void TextboxKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
         {
-            CreateAndClose();
+            await CreateAndCloseAsync();
         }
     }
 }

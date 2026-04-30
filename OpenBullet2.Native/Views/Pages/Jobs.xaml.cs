@@ -6,6 +6,7 @@ using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -47,20 +48,27 @@ public partial class Jobs : Page
         }
     }
 
-    private void EditJob(object sender, RoutedEventArgs e)
+    private async void EditJob(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: JobViewModel job })
+        try
         {
-            EditJob(job);
+            if (sender is Button { Tag: JobViewModel job })
+            {
+                await EditJobAsync(job);
+            }
+        }
+        catch (Exception ex)
+        {
+            Alert.Exception(ex);
         }
     }
 
-    public async void EditJob(JobViewModel jobVM)
+    public async Task EditJobAsync(JobViewModel jobVM)
     {
         var entity = await jobRepo.GetAsync(jobVM.Id);
         var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions ?? string.Empty, JsonSettings)?.Options
             ?? throw new InvalidOperationException("Could not deserialize job options");
-        async void onAccept(JobOptions options)
+        async Task OnAcceptAsync(JobOptions options)
         {
             jobVM = await vm.EditJobAsync(entity, options);
             mainWindow.DisplayJob(jobVM);
@@ -68,8 +76,8 @@ public partial class Jobs : Page
 
         Page page = jobVM switch
         {
-            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)jobOptions, onAccept),
-            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)jobOptions, onAccept),
+            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)jobOptions, OnAcceptAsync),
+            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)jobOptions, OnAcceptAsync),
             _ => throw new NotImplementedException()
         };
 
@@ -88,7 +96,7 @@ public partial class Jobs : Page
             ?? throw new InvalidOperationException("Could not deserialize job options");
         var newOptions = JobOptionsFactory.CloneExistant(oldOptions);
 
-        async void onAccept(JobOptions options)
+        async Task OnAcceptAsync(JobOptions options)
         {
             var cloned = await vm.CloneJobAsync(entity.JobType, options);
             mainWindow.DisplayJob(cloned);
@@ -96,8 +104,8 @@ public partial class Jobs : Page
 
         Page page = jobVM switch
         {
-            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)newOptions, onAccept),
-            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)newOptions, onAccept),
+            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)newOptions, OnAcceptAsync),
+            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)newOptions, OnAcceptAsync),
             _ => throw new NotImplementedException()
         };
 
@@ -119,7 +127,7 @@ public partial class Jobs : Page
         }
     }
 
-    public async void CreateJob(JobOptions options) => await vm.CreateJobAsync(options);
+    public Task CreateJobAsync(JobOptions options) => vm.CreateJobAsync(options);
 
     private void ViewJob(object sender, MouseButtonEventArgs e)
     {

@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -55,10 +56,10 @@ public partial class SelectWordlistDialog : Page
         }
     }
 
-    private void ListItemDoubleClick(object sender, MouseButtonEventArgs e) => ConfirmSelection();
-    private void Accept(object sender, RoutedEventArgs e) => ConfirmSelection();
+    private async void ListItemDoubleClick(object sender, MouseButtonEventArgs e) => await ConfirmSelectionAsync();
+    private async void Accept(object sender, RoutedEventArgs e) => await ConfirmSelectionAsync();
 
-    private void ConfirmSelection()
+    private async Task ConfirmSelectionAsync()
     {
         if (vm.HoveredWordlist is null)
         {
@@ -68,7 +69,7 @@ public partial class SelectWordlistDialog : Page
 
         if (caller is MultiRunJobOptionsDialog page)
         {
-            page.SelectWordlist(vm.HoveredWordlist);
+            await page.SelectWordlistAsync(vm.HoveredWordlist);
         }
 
         ((MainDialog)Parent).Close();

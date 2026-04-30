@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -108,28 +109,8 @@ public partial class Proxies : Page
         new MainDialog(new ImportProxiesDialog(this), "Import proxies").ShowDialog();
     }
 
-    public async void AddGroup(ProxyGroupEntity entity)
-    {
-        try
-        {
-            await vm.AddGroupAsync(entity);
-        }
-        catch (Exception ex)
-        {
-            Alert.Exception(ex);
-        }
-    }
-    public async void EditGroup(ProxyGroupEntity entity)
-    {
-        try
-        {
-            await vm.EditGroupAsync(entity);
-        }
-        catch (Exception ex)
-        {
-            Alert.Exception(ex);
-        }
-    }
+    public Task AddGroupAsync(ProxyGroupEntity entity) => vm.AddGroupAsync(entity);
+    public Task EditGroupAsync(ProxyGroupEntity entity) => vm.EditGroupAsync(entity);
 
     public void UpdateViewModel() => vm.UpdateViewModel();
 
@@ -161,17 +142,7 @@ public partial class Proxies : Page
     private void CopySelectedProxiesFull(object sender, RoutedEventArgs e)
         => SelectedProxies.CopyToClipboard(p => p.ToString());
 
-    public async void AddProxies(ProxiesForImportDto dto)
-    {
-        try
-        {
-            await vm.AddProxiesAsync(dto);
-        }
-        catch (Exception ex)
-        {
-            Alert.Exception(ex);
-        }
-    }
+    public Task AddProxiesAsync(ProxiesForImportDto dto) => vm.AddProxiesAsync(dto);
 
     private async void DeleteSelected(object sender, RoutedEventArgs e)
     {

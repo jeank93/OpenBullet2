@@ -3,6 +3,7 @@ using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -60,10 +61,10 @@ public class HomeViewModel : ViewModelBase
 
         updateService.UpdateAvailable += NotifyUpdateAvailable;
 
-        FetchAnnouncement();
+        _ = FetchAnnouncementAsync();
     }
 
-    private async void FetchAnnouncement() => Announcement = await annService.FetchAnnouncementAsync();
+    private async Task FetchAnnouncementAsync() => Announcement = await annService.FetchAnnouncementAsync();
 
     private void NotifyUpdateAvailable()
     {

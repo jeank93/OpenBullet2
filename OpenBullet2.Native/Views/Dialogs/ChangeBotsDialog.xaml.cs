@@ -1,5 +1,6 @@
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Views.Pages;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,22 +22,29 @@ public partial class ChangeBotsDialog : Page
         bots.Value = oldValue;
     }
 
-    private void Accept(object sender, RoutedEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
     {
-        if (bots.Value is not double value)
+        try
         {
-            return;
-        }
+            if (bots.Value is not double value)
+            {
+                return;
+            }
 
-        if (caller is MultiRunJobViewer mr)
-        {
-            mr.ChangeBots((int)value);
-        }
-        else if (caller is ProxyCheckJobViewer pc)
-        {
-            pc.ChangeBots((int)value);
-        }
+            if (caller is MultiRunJobViewer mr)
+            {
+                await mr.ChangeBotsAsync((int)value);
+            }
+            else if (caller is ProxyCheckJobViewer pc)
+            {
+                await pc.ChangeBotsAsync((int)value);
+            }
 
-        ((MainDialog)Parent).Close();
+            ((MainDialog)Parent).Close();
+        }
+        catch (Exception ex)
+        {
+            Helpers.Alert.Exception(ex);
+        }
     }
 }

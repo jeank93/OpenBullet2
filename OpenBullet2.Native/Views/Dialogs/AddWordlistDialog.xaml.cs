@@ -54,41 +54,48 @@ public partial class AddWordlistDialog : Page
         catch { }
     }
 
-    private void Accept(object sender, RoutedEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(nameTextbox.Text))
+        try
         {
-            Alert.Error("Invalid name", "The name cannot be blank");
-            return;
+            if (string.IsNullOrWhiteSpace(nameTextbox.Text))
+            {
+                Alert.Error("Invalid name", "The name cannot be blank");
+                return;
+            }
+
+            var path = locationTextbox.Text;
+            var cwd = Directory.GetCurrentDirectory();
+
+            // Make the path relative if inside the CWD
+            if (path.StartsWith(cwd))
+            {
+                path = path[(cwd.Length + 1)..];
+            }
+
+            var entity = new WordlistEntity
+            {
+                Name = nameTextbox.Text,
+                FileName = path.Replace("\\", "/"),
+                Type = typeCombobox.Text,
+                Purpose = purposeTextbox.Text,
+                Total = File.ReadLines(path).Count()
+            };
+
+            if (caller is Wordlists page)
+            {
+                await page.AddWordlistAsync(entity);
+            }
+            else if (caller is MultiRunJobOptionsDialog dialog)
+            {
+                await dialog.AddWordlistAsync(entity);
+            }
+
+            ((MainDialog)Parent).Close();
         }
-
-        var path = locationTextbox.Text;
-        var cwd = Directory.GetCurrentDirectory();
-
-        // Make the path relative if inside the CWD
-        if (path.StartsWith(cwd))
+        catch (Exception ex)
         {
-            path = path[(cwd.Length + 1)..];
+            Alert.Exception(ex);
         }
-
-        var entity = new WordlistEntity
-        {
-            Name = nameTextbox.Text,
-            FileName = path.Replace("\\", "/"),
-            Type = typeCombobox.Text,
-            Purpose = purposeTextbox.Text,
-            Total = File.ReadLines(path).Count()
-        };
-
-        if (caller is Wordlists page)
-        {
-            page.AddWordlist(entity);
-        }
-        else if (caller is MultiRunJobOptionsDialog dialog)
-        {
-            dialog.AddWordlist(entity);
-        }
-
-        ((MainDialog)Parent).Close();
     }
 }

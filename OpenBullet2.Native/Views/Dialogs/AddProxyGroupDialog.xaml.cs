@@ -1,6 +1,7 @@
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Views.Pages;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -32,27 +33,34 @@ public partial class AddProxyGroupDialog : Page
         nameTextbox.Text = entity.Name;
     }
 
-    private void Accept(object sender, RoutedEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(nameTextbox.Text))
+        try
         {
-            Alert.Error("Invalid name", "The name cannot be blank");
-            return;
-        }
+            if (string.IsNullOrWhiteSpace(nameTextbox.Text))
+            {
+                Alert.Error("Invalid name", "The name cannot be blank");
+                return;
+            }
 
-        if (caller is Proxies page)
+            if (caller is Proxies page)
+            {
+                if (entity is null)
+                {
+                    await page.AddGroupAsync(new ProxyGroupEntity { Name = nameTextbox.Text });
+                }
+                else
+                {
+                    entity.Name = nameTextbox.Text;
+                    await page.EditGroupAsync(entity);
+                }
+            }
+
+            ((MainDialog)Parent).Close();
+        }
+        catch (Exception ex)
         {
-            if (entity is null)
-            {
-                page.AddGroup(new ProxyGroupEntity { Name = nameTextbox.Text });
-            }
-            else
-            {
-                entity.Name = nameTextbox.Text;
-                page.EditGroup(entity);
-            }
+            Alert.Exception(ex);
         }
-
-        ((MainDialog)Parent).Close();
     }
 }

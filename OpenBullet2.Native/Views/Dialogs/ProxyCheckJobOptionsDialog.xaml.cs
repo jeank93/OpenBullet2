@@ -3,11 +3,13 @@ using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
+using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Jobs.StartConditions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,10 +20,10 @@ namespace OpenBullet2.Native.Views.Dialogs;
 /// </summary>
 public partial class ProxyCheckJobOptionsDialog : Page
 {
-    private readonly Action<JobOptions>? onAccept;
+    private readonly Func<JobOptions, Task>? onAccept;
     private readonly ProxyCheckJobOptionsViewModel vm;
 
-    public ProxyCheckJobOptionsDialog(ProxyCheckJobOptions? options = null, Action<JobOptions>? onAccept = null)
+    public ProxyCheckJobOptionsDialog(ProxyCheckJobOptions? options = null, Func<JobOptions, Task>? onAccept = null)
     {
         this.onAccept = onAccept;
         vm = new ProxyCheckJobOptionsViewModel(options);
@@ -34,10 +36,21 @@ public partial class ProxyCheckJobOptionsDialog : Page
         startConditionTabControl.SelectedIndex = (int)vm.StartConditionMode;
     }
 
-    private void Accept(object sender, RoutedEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
     {
-        onAccept?.Invoke(vm.Options);
-        ((MainDialog)Parent).Close();
+        try
+        {
+            if (onAccept is not null)
+            {
+                await onAccept(vm.Options);
+            }
+
+            ((MainDialog)Parent).Close();
+        }
+        catch (Exception ex)
+        {
+            Alert.Exception(ex);
+        }
     }
 }
 

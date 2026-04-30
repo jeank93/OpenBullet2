@@ -387,9 +387,10 @@ public class SBlockBrowserAction : BlockBase
                     chromeop.AddArgument("--disable-notifications");
                 }
 
-                if (!string.IsNullOrWhiteSpace(data.ConfigSettings.BrowserSettings.CommandLineArgs))
+                var chromeArguments = Helpers.CommandLineArgumentParser.Parse(data.ConfigSettings.BrowserSettings.CommandLineArgs);
+                if (chromeArguments.Length > 0)
                 {
-                    chromeop.AddArgument(data.ConfigSettings.BrowserSettings.CommandLineArgs);
+                    chromeop.AddArguments(chromeArguments);
                 }
 
                 if (data.UseProxy)
@@ -431,9 +432,10 @@ public class SBlockBrowserAction : BlockBase
                     fireprofile.SetPreference("dom.webnotifications.enabled", false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(data.ConfigSettings.BrowserSettings.CommandLineArgs))
+                var firefoxArguments = Helpers.CommandLineArgumentParser.Parse(data.ConfigSettings.BrowserSettings.CommandLineArgs);
+                if (firefoxArguments.Length > 0)
                 {
-                    fireop.AddArgument(data.ConfigSettings.BrowserSettings.CommandLineArgs);
+                    fireop.AddArguments(firefoxArguments);
                 }
 
                 if (data.UseProxy)

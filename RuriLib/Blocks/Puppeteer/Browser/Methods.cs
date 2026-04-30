@@ -35,25 +35,21 @@ public static class Methods
             return;
         }
 
-        var args = data.ConfigSettings.BrowserSettings.CommandLineArgs;
-
-        // Extra command line args (to have dynamic args via variables)
-        if (!string.IsNullOrWhiteSpace(extraCmdLineArgs))
-        {
-            args += ' ' + extraCmdLineArgs;
-        }
+        var args = CommandLineArgumentParser.ParseMany(
+            data.ConfigSettings.BrowserSettings.CommandLineArgs,
+            extraCmdLineArgs).ToList();
 
         // If it's running in docker, currently it runs under root, so add the --no-sandbox otherwise chrome won't work
         if (Utils.IsDocker())
         {
-            args += " --no-sandbox";
+            args.Add("--no-sandbox");
         }
 
         if (data.Proxy != null && data.UseProxy)
         {
             if (data.Proxy.Type == ProxyType.Http || !data.Proxy.NeedsAuthentication)
             {
-                args += $" --proxy-server={data.Proxy.Type.ToString().ToLower()}://{data.Proxy.Host}:{data.Proxy.Port}";
+                args.Add($"--proxy-server={data.Proxy.Type.ToString().ToLower()}://{data.Proxy.Host}:{data.Proxy.Port}");
             }
             else
             {
@@ -63,14 +59,14 @@ public static class Methods
                     data.Proxy.Username, data.Proxy.Password,
                     proxyType);
                 data.SetObject("puppeteer.yoveproxy", proxyClient);
-                args += $" --proxy-server={proxyClient.GetProxy(null!)!.Authority}";
+                args.Add($"--proxy-server={proxyClient.GetProxy(null!)!.Authority}");
             }
         }
 
         // Configure the options
         var launchOptions = new LaunchOptions
         {
-            Args = [args],
+            Args = [.. args],
             ExecutablePath = data.Providers.PuppeteerBrowser.ChromeBinaryLocation,
             IgnoredDefaultArgs = ["--disable-extensions", "--enable-automation"],
             Headless = data.ConfigSettings.BrowserSettings.Headless,

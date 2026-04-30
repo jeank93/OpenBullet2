@@ -40,7 +40,6 @@ public static class Methods
         }
 
         var provider = data.Providers.SeleniumBrowser;
-        var args = string.Empty;
 
         switch (provider.BrowserType)
         {
@@ -74,17 +73,13 @@ public static class Methods
                     chromeop.AddArgument("--disable-notifications");
                 }
 
-                args = data.ConfigSettings.BrowserSettings.CommandLineArgs;
+                var chromeArguments = CommandLineArgumentParser.ParseMany(
+                    data.ConfigSettings.BrowserSettings.CommandLineArgs,
+                    extraCmdLineArgs);
 
-                if (!string.IsNullOrWhiteSpace(args))
+                if (chromeArguments.Length > 0)
                 {
-                    // Extra command line args (to have dynamic args via variables)
-                    if (!string.IsNullOrWhiteSpace(extraCmdLineArgs))
-                    {
-                        args += ' ' + extraCmdLineArgs;
-                    }
-
-                    chromeop.AddArguments(args.Split(' '));
+                    chromeop.AddArguments(chromeArguments);
                 }
 
                 if (data is { UseProxy: true, Proxy: not null })
@@ -120,17 +115,13 @@ public static class Methods
                     fireprofile.SetPreference("dom.webnotifications.enabled", false);
                 }
 
-                args = data.ConfigSettings.BrowserSettings.CommandLineArgs;
+                var firefoxArguments = CommandLineArgumentParser.ParseMany(
+                    data.ConfigSettings.BrowserSettings.CommandLineArgs,
+                    extraCmdLineArgs);
 
-                if (!string.IsNullOrWhiteSpace(args))
+                if (firefoxArguments.Length > 0)
                 {
-                    // Extra command line args (to have dynamic args via variables)
-                    if (!string.IsNullOrWhiteSpace(extraCmdLineArgs))
-                    {
-                        args += ' ' + extraCmdLineArgs;
-                    }
-
-                    fireop.AddArguments(args.Split(' '));
+                    fireop.AddArguments(firefoxArguments);
                 }
 
                 if (data is { UseProxy: true, Proxy: not null })

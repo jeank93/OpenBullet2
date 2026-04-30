@@ -360,37 +360,37 @@ public class SBlockBrowserAction : BlockBase
         switch (provider.BrowserType)
         {
             case SeleniumBrowserType.Chrome:
-                var chromeop = new ChromeOptions();
-                var chromeservice = ChromeDriverService.CreateDefaultService();
-                chromeservice.SuppressInitialDiagnosticInformation = true;
-                chromeservice.HideCommandPromptWindow = true;
-                chromeservice.EnableVerboseLogging = false;
-                chromeop.AddArgument("--log-level=3");
-                chromeop.BinaryLocation = provider.ChromeBinaryLocation;
+                var chromeOptions = new ChromeOptions();
+                var chromeService = ChromeDriverService.CreateDefaultService();
+                chromeService.SuppressInitialDiagnosticInformation = true;
+                chromeService.HideCommandPromptWindow = true;
+                chromeService.EnableVerboseLogging = false;
+                chromeOptions.AddArgument("--log-level=3");
+                chromeOptions.BinaryLocation = provider.ChromeBinaryLocation;
 
                 if (Helpers.Utils.IsDocker())
                 {
-                    chromeop.AddArgument("--no-sandbox");
-                    chromeop.AddArgument("--whitelisted-ips=''");
-                    chromeop.AddArgument("--disable-dev-shm-usage");
+                    chromeOptions.AddArgument("--no-sandbox");
+                    chromeOptions.AddArgument("--whitelisted-ips=''");
+                    chromeOptions.AddArgument("--disable-dev-shm-usage");
                 }
 
                 if (data.ConfigSettings.BrowserSettings.Headless)
                 {
-                    chromeop.AddArgument("--headless");
+                    chromeOptions.AddArgument("--headless");
                 }
 
                 // TODO: Readd support for chrome extensions
 
                 if (data.ConfigSettings.BrowserSettings.DismissDialogs)
                 {
-                    chromeop.AddArgument("--disable-notifications");
+                    chromeOptions.AddArgument("--disable-notifications");
                 }
 
                 var chromeArguments = Helpers.CommandLineArgumentParser.Parse(data.ConfigSettings.BrowserSettings.CommandLineArgs);
                 if (chromeArguments.Length > 0)
                 {
-                    chromeop.AddArguments(chromeArguments);
+                    chromeOptions.AddArguments(chromeArguments);
                 }
 
                 if (data.UseProxy)
@@ -401,46 +401,46 @@ public class SBlockBrowserAction : BlockBase
                         throw new InvalidOperationException("A proxy is required when UseProxy is enabled");
                     }
 
-                    chromeop.AddArgument($"--proxy-server={data.Proxy.Type.ToString().ToLower()}://{data.Proxy.Host}:{data.Proxy.Port}");
+                    chromeOptions.AddArgument($"--proxy-server={data.Proxy.Type.ToString().ToLower()}://{data.Proxy.Host}:{data.Proxy.Port}");
                 }
 
-                data.SetObject("selenium", new ChromeDriver(chromeservice, chromeop));
+                data.SetObject("selenium", new ChromeDriver(chromeService, chromeOptions));
                 break;
 
             case SeleniumBrowserType.Firefox:
-                var fireop = new FirefoxOptions();
-                var fireservice = FirefoxDriverService.CreateDefaultService();
-                var fireprofile = new FirefoxProfile();
+                var firefoxOptions = new FirefoxOptions();
+                var firefoxService = FirefoxDriverService.CreateDefaultService();
+                var firefoxProfile = new FirefoxProfile();
 
-                fireservice.SuppressInitialDiagnosticInformation = true;
-                fireservice.HideCommandPromptWindow = true;
-                fireop.AddArgument("--log-level=3");
-                fireop.BinaryLocation = provider.FirefoxBinaryLocation;
+                firefoxService.SuppressInitialDiagnosticInformation = true;
+                firefoxService.HideCommandPromptWindow = true;
+                firefoxOptions.AddArgument("--log-level=3");
+                firefoxOptions.BinaryLocation = provider.FirefoxBinaryLocation;
 
                 if (Helpers.Utils.IsDocker())
                 {
-                    fireop.AddArgument("--whitelisted-ips=''");
+                    firefoxOptions.AddArgument("--whitelisted-ips=''");
                 }
 
                 if (data.ConfigSettings.BrowserSettings.Headless)
                 {
-                    fireop.AddArgument("--headless");
+                    firefoxOptions.AddArgument("--headless");
                 }
 
                 if (data.ConfigSettings.BrowserSettings.DismissDialogs)
                 {
-                    fireprofile.SetPreference("dom.webnotifications.enabled", false);
+                    firefoxProfile.SetPreference("dom.webnotifications.enabled", false);
                 }
 
                 var firefoxArguments = Helpers.CommandLineArgumentParser.Parse(data.ConfigSettings.BrowserSettings.CommandLineArgs);
                 if (firefoxArguments.Length > 0)
                 {
-                    fireop.AddArguments(firefoxArguments);
+                    firefoxOptions.AddArguments(firefoxArguments);
                 }
 
                 if (data.UseProxy)
                 {
-                    fireprofile.SetPreference("network.proxy.type", 1);
+                    firefoxProfile.SetPreference("network.proxy.type", 1);
                     if (data.Proxy == null)
                     {
                         throw new InvalidOperationException("A proxy is required when UseProxy is enabled");
@@ -448,29 +448,29 @@ public class SBlockBrowserAction : BlockBase
 
                     if (data.Proxy.Type == ProxyType.Http)
                     {
-                        fireprofile.SetPreference("network.proxy.http", data.Proxy.Host);
-                        fireprofile.SetPreference("network.proxy.http_port", data.Proxy.Port);
-                        fireprofile.SetPreference("network.proxy.ssl", data.Proxy.Host);
-                        fireprofile.SetPreference("network.proxy.ssl_port", data.Proxy.Port);
+                        firefoxProfile.SetPreference("network.proxy.http", data.Proxy.Host);
+                        firefoxProfile.SetPreference("network.proxy.http_port", data.Proxy.Port);
+                        firefoxProfile.SetPreference("network.proxy.ssl", data.Proxy.Host);
+                        firefoxProfile.SetPreference("network.proxy.ssl_port", data.Proxy.Port);
                     }
                     else
                     {
-                        fireprofile.SetPreference("network.proxy.socks", data.Proxy.Host);
-                        fireprofile.SetPreference("network.proxy.socks_port", data.Proxy.Port);
+                        firefoxProfile.SetPreference("network.proxy.socks", data.Proxy.Host);
+                        firefoxProfile.SetPreference("network.proxy.socks_port", data.Proxy.Port);
 
                         if (data.Proxy.Type == ProxyType.Socks4)
                         {
-                            fireprofile.SetPreference("network.proxy.socks_version", 4);
+                            firefoxProfile.SetPreference("network.proxy.socks_version", 4);
                         }
                         else if (data.Proxy.Type == ProxyType.Socks5)
                         {
-                            fireprofile.SetPreference("network.proxy.socks_version", 5);
+                            firefoxProfile.SetPreference("network.proxy.socks_version", 5);
                         }
                     }
                 }
 
-                fireop.Profile = fireprofile;
-                data.SetObject("selenium", new FirefoxDriver(fireservice, fireop, new TimeSpan(0, 1, 0)));
+                firefoxOptions.Profile = firefoxProfile;
+                data.SetObject("selenium", new FirefoxDriver(firefoxService, firefoxOptions, new TimeSpan(0, 1, 0)));
                 break;
         }
 

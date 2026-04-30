@@ -131,6 +131,7 @@ public partial class App : Application
         services.AddSingleton<ProxyReloadService>();
         services.AddSingleton<ProxyCheckOutputFactory>();
         services.AddSingleton<JobFactoryService>();
+        services.AddSingleton<TriggeredActionExecutor>();
         services.AddSingleton<JobManagerService>();
         services.AddSingleton<JobMonitorService>();
         services.AddSingleton<HitStorageService>();

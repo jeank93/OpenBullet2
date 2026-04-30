@@ -141,9 +141,12 @@ builder.Services.AddSingleton(service =>
 builder.Services.AddSingleton<ProxyReloadService>();
 builder.Services.AddSingleton<JobFactoryService>();
 builder.Services.AddSingleton<ProxyCheckOutputFactory>();
+builder.Services.AddSingleton<TriggeredActionExecutor>();
 builder.Services.AddSingleton<JobManagerService>();
 builder.Services.AddSingleton(service =>
     new JobMonitorService(service.GetRequiredService<JobManagerService>(),
+        service.GetRequiredService<TriggeredActionExecutor>(),
+        service.GetRequiredService<ILogger<JobMonitorService>>(),
         $"{Globals.UserDataFolder}/triggeredActions.json", false));
 builder.Services.AddSingleton<HitStorageService>();
 builder.Services.AddSingleton(_ => new RuriLibSettingsService(Globals.UserDataFolder));

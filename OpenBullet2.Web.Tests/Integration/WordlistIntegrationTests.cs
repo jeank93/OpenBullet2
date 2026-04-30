@@ -555,7 +555,6 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
             Path.Combine(UserDataFolder, "Wordlists")));
     }
 
-    // TODO: Delete wordlist (admin)
     [Fact]
     public async Task DeleteWordlist_Admin_WithoutFile_Success()
     {

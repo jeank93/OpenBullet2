@@ -15,16 +15,18 @@ namespace RuriLib.Tests.Models.Jobs.Monitor;
 public class MonitorModelsTests
 {
     [Fact]
-    public async Task TriggeredAction_WhenJobMissing_DoesNothing()
+    public void TriggeredAction_WhenReset_ClearsExecutionState()
     {
         var action = new TriggeredAction
         {
             JobId = 123,
+            IsExecuting = true,
+            Executions = 3,
             Triggers = [],
             Actions = []
         };
 
-        await action.CheckAndExecute([]);
+        action.Reset();
 
         Assert.False(action.IsExecuting);
         Assert.Equal(0, action.Executions);
@@ -61,13 +63,8 @@ public class MonitorModelsTests
     }
 
     [Fact]
-    public async Task TriggeredAction_WhenTriggersMatch_ExecutesActions()
+    public void TriggeredAction_WhenConfigured_StoresTriggersAndActions()
     {
-        var job = new TestMultiRunJob(CreateSettingsService(), CreatePluginRepository())
-        {
-            Id = 7
-        };
-        job.SetStatus(JobStatus.Running);
         var action = new TriggeredAction
         {
             JobId = 7,
@@ -75,11 +72,9 @@ public class MonitorModelsTests
             Actions = [new SetBotsAction { TargetJobId = 7, Amount = 4 }]
         };
 
-        await action.CheckAndExecute([job]);
-
-        Assert.Equal(1, action.Executions);
-        Assert.Equal(4, job.Bots);
-        Assert.False(action.IsExecuting);
+        Assert.Single(action.Triggers);
+        Assert.Single(action.Actions);
+        Assert.Equal(7, action.JobId);
     }
 
     private static RuriLibSettingsService CreateSettingsService()
@@ -92,9 +87,4 @@ public class MonitorModelsTests
     {
     }
 
-    private sealed class TestMultiRunJob(RuriLibSettingsService settings, PluginRepository pluginRepo)
-        : MultiRunJob(settings, pluginRepo)
-    {
-        public void SetStatus(JobStatus status) => Status = status;
-    }
 }

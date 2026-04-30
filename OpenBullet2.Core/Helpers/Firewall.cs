@@ -9,7 +9,6 @@ namespace OpenBullet2.Core.Helpers;
 
 public static class Firewall
 {
-    // TODO: Write unit tests.
     /// <summary>
     /// Checks if an <paramref name="ip"/> is allowed according to a whitelist of <paramref name="allowed"/>
     /// IPs. Supports individual IPv4, individual IPv6, masked IPv4 range, dynamic DNS.

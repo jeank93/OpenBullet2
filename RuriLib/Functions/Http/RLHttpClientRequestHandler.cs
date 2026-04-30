@@ -260,30 +260,31 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
     private static async Task LogHttpRequestData(BotData data, HttpRequest request,
         string? boundary = null, List<MyHttpContent>? multipartContents = null)
     {
-        using var writer = new StringWriter();
+        await using var writer = new StringWriter();
 
         // Log the method, uri and http version
         var uri = request.Uri ?? throw new InvalidOperationException("Request URI cannot be null.");
-        writer.WriteLine($"{request.Method.Method} {uri.PathAndQuery} HTTP/{request.Version.Major}.{request.Version.Minor}");
+        await writer.WriteLineAsync($"{request.Method.Method} {uri.PathAndQuery} HTTP/{request.Version.Major}.{request.Version.Minor}");
 
         // Log the headers
         if (!request.HeaderExists("Host", out _))
         {
-            writer.WriteLine($"Host: {uri.Host}");
+            await writer.WriteLineAsync($"Host: {uri.Host}");
         }
 
         foreach (var header in request.Headers)
         {
             var separator = commaHeaders.Contains(header.Key) ? ", " : " ";
-            writer.WriteLine($"{header.Key}: {string.Join(separator, header.Value)}");
+            await writer.WriteLineAsync($"{header.Key}: {string.Join(separator, header.Value)}");
         }
 
         // Log the cookie header
         var cookies = data.COOKIES.Select(c => $"{c.Key}={c.Value}");
 
-        if (cookies.Any())
+        var cookiesArray = cookies as string[] ?? cookies.ToArray();
+        if (cookiesArray.Length != 0)
         {
-            writer.WriteLine($"Cookie: {string.Join("; ", cookies)}");
+            await writer.WriteLineAsync($"Cookie: {string.Join("; ", cookiesArray)}");
         }
 
         if (request.Content != null)
@@ -291,26 +292,26 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
             switch (request.Content)
             {
                 case StringContent x:
-                    writer.WriteLine($"Content-Type: {x.Headers.ContentType}");
-                    writer.WriteLine($"Content-Length: {x.Headers.ContentLength}");
-                    writer.WriteLine();
-                    writer.WriteLine(await x.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false));
+                    await writer.WriteLineAsync($"Content-Type: {x.Headers.ContentType}");
+                    await writer.WriteLineAsync($"Content-Length: {x.Headers.ContentLength}");
+                    await writer.WriteLineAsync();
+                    await writer.WriteLineAsync(await x.ReadAsStringAsync(data.CancellationToken).ConfigureAwait(false));
                     break;
 
                 case ByteArrayContent x:
-                    writer.WriteLine($"Content-Type: {x.Headers.ContentType}");
-                    writer.WriteLine($"Content-Length: {x.Headers.ContentLength}");
-                    writer.WriteLine();
-                    writer.WriteLine(RuriLib.Functions.Conversion.HexConverter.ToHexString(
+                    await writer.WriteLineAsync($"Content-Type: {x.Headers.ContentType}");
+                    await writer.WriteLineAsync($"Content-Length: {x.Headers.ContentLength}");
+                    await writer.WriteLineAsync();
+                    await writer.WriteLineAsync(Conversion.HexConverter.ToHexString(
                         await x.ReadAsByteArrayAsync(data.CancellationToken).ConfigureAwait(false)));
                     break;
 
                 case MultipartFormDataContent x:
-                    writer.WriteLine($"Content-Type: multipart/form-data; boundary=\"{boundary}\"");
+                    await writer.WriteLineAsync($"Content-Type: multipart/form-data; boundary=\"{boundary}\"");
                     var serializedMultipart = SerializeMultipart(boundary ?? string.Empty, multipartContents ?? []);
-                    writer.WriteLine($"Content-Length: (not calculated)");
-                    writer.WriteLine();
-                    writer.WriteLine(serializedMultipart);
+                    await writer.WriteLineAsync("Content-Length: (not calculated)");
+                    await writer.WriteLineAsync();
+                    await writer.WriteLineAsync(serializedMultipart);
                     break;
             }
         }
@@ -332,7 +333,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
     }
 
     private static async Task LogHttpResponseData(BotData data, HttpResponse response, HttpRequest request,
-        RuriLib.Functions.Http.Options.HttpRequestOptions requestOptions)
+        Options.HttpRequestOptions requestOptions)
     {
         // Try to read the raw source for Content-Length calculation
         var responseContent = response.Content;

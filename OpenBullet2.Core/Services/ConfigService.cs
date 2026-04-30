@@ -69,10 +69,10 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
         SelectedConfig = null!;
 
         // Load from remotes (fire and forget)
-        LoadFromRemotes(cancellationToken);
+        _ = LoadFromRemotesAsync(cancellationToken);
     }
 
-    private async void LoadFromRemotes(CancellationToken cancellationToken)
+    private async Task LoadFromRemotesAsync(CancellationToken cancellationToken)
     {
         List<Config> remoteConfigs = [];
 
@@ -98,7 +98,7 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
                 var fileStream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 // Unpack the archive in memory
-                using ZipArchive archive = new(fileStream, ZipArchiveMode.Read);
+                await using ZipArchive archive = new(fileStream, ZipArchiveMode.Read);
                 foreach (var entry in archive.Entries)
                 {
                     if (!entry.Name.EndsWith(".opk"))
@@ -108,7 +108,7 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
 
                     try
                     {
-                        using var entryStream = entry.Open();
+                        await using var entryStream = await entry.OpenAsync(cancellationToken);
                         var config = await ConfigPacker.UnpackAsync(entryStream);
 
                         // Calculate the hash of the metadata of the remote config to use as id.

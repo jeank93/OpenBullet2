@@ -8,6 +8,7 @@ using RuriLib.Providers.RandomNumbers;
 using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Xunit;
 using BotProviders = RuriLib.Models.Bots.Providers;
 
@@ -77,6 +78,16 @@ public class StringFunctionsTests
         var result = Methods.RandomString(data, "?c?c?c", "Z");
 
         Assert.Equal("ZZZ", result);
+    }
+
+    [Fact]
+    public void RandomString_MixedMask_PreservesLiteralsAndTokenRules()
+    {
+        var data = NewBotData();
+
+        var result = Methods.RandomString(data, "A?l?u?d?h?H?c??x?", "Z");
+
+        Assert.Matches(new Regex(@"^A[a-z][A-Z][0-9][0-9a-f][0-9A-F]Z\?\?x\?$"), result);
     }
 
     [Fact]

@@ -243,21 +243,71 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        // TODO: The performance of this method can be improved by using a StringBuilder
-        input = Regex.Replace(input, @"\?l", m => _lowercase[data.Random.Next(_lowercase.Length)].ToString());
-        input = Regex.Replace(input, @"\?u", m => _uppercase[data.Random.Next(_uppercase.Length)].ToString());
-        input = Regex.Replace(input, @"\?d", m => _digits[data.Random.Next(_digits.Length)].ToString());
-        input = Regex.Replace(input, @"\?s", m => _symbols[data.Random.Next(_symbols.Length)].ToString());
-        input = Regex.Replace(input, @"\?h", m => _hex[data.Random.Next(_hex.Length)].ToString());
-        input = Regex.Replace(input, @"\?H", m => _hex[data.Random.Next(_hex.Length)].ToString().ToUpper());
-        input = Regex.Replace(input, @"\?a", m => _allChars[data.Random.Next(_allChars.Length)].ToString());
-        input = Regex.Replace(input, @"\?m", m => _udChars[data.Random.Next(_udChars.Length)].ToString());
-        input = Regex.Replace(input, @"\?n", m => _ldChars[data.Random.Next(_ldChars.Length)].ToString());
-        input = Regex.Replace(input, @"\?i", m => _upperLowerDigits[data.Random.Next(_upperLowerDigits.Length)].ToString());
-        input = Regex.Replace(input, @"\?f", m => _upperLower[data.Random.Next(_upperLower.Length)].ToString());
-        input = Regex.Replace(input, @"\?c", m => customCharset[data.Random.Next(customCharset.Length)].ToString());
-        data.Logger.Log($"Generated string: {input}", LogColors.YellowGreen);
-        return input;
+        var output = new StringBuilder(input.Length);
+
+        for (var i = 0; i < input.Length; i++)
+        {
+            if (input[i] == '?' && i + 1 < input.Length)
+            {
+                switch (input[i + 1])
+                {
+                    case 'l':
+                        output.Append(_lowercase[data.Random.Next(_lowercase.Length)]);
+                        i++;
+                        continue;
+                    case 'u':
+                        output.Append(_uppercase[data.Random.Next(_uppercase.Length)]);
+                        i++;
+                        continue;
+                    case 'd':
+                        output.Append(_digits[data.Random.Next(_digits.Length)]);
+                        i++;
+                        continue;
+                    case 's':
+                        output.Append(_symbols[data.Random.Next(_symbols.Length)]);
+                        i++;
+                        continue;
+                    case 'h':
+                        output.Append(_hex[data.Random.Next(_hex.Length)]);
+                        i++;
+                        continue;
+                    case 'H':
+                        output.Append(char.ToUpperInvariant(_hex[data.Random.Next(_hex.Length)]));
+                        i++;
+                        continue;
+                    case 'a':
+                        output.Append(_allChars[data.Random.Next(_allChars.Length)]);
+                        i++;
+                        continue;
+                    case 'm':
+                        output.Append(_udChars[data.Random.Next(_udChars.Length)]);
+                        i++;
+                        continue;
+                    case 'n':
+                        output.Append(_ldChars[data.Random.Next(_ldChars.Length)]);
+                        i++;
+                        continue;
+                    case 'i':
+                        output.Append(_upperLowerDigits[data.Random.Next(_upperLowerDigits.Length)]);
+                        i++;
+                        continue;
+                    case 'f':
+                        output.Append(_upperLower[data.Random.Next(_upperLower.Length)]);
+                        i++;
+                        continue;
+                    case 'c':
+                        output.Append(customCharset[data.Random.Next(customCharset.Length)]);
+                        i++;
+                        continue;
+                }
+            }
+
+            output.Append(input[i]);
+        }
+
+        var generated = output.ToString();
+        data.Logger.Log($"Generated string: {generated}", LogColors.YellowGreen);
+        return generated;
     }
 
     /// <summary>

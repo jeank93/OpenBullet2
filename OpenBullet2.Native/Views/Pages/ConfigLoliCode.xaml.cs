@@ -5,7 +5,6 @@ using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using ICSharpCode.AvalonEdit.Search;
-using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
@@ -27,7 +26,6 @@ public partial class ConfigLoliCode : Page
 {
     private readonly ConfigLoliCodeViewModel vm;
     private readonly ConfigService configService;
-    private readonly IConfigRepository configRepo; // TODO: This should not be here
     private CompletionWindow? completionWindow;
 
     public ConfigLoliCode()
@@ -37,7 +35,6 @@ public partial class ConfigLoliCode : Page
 
         InitializeComponent();
         configService = SP.GetService<ConfigService>();
-        configRepo = SP.GetService<IConfigRepository>();
 
         HighlightSyntax(editor);
         AddAutoCompletion(editor);
@@ -194,7 +191,7 @@ public partial class ConfigLoliCode : Page
 
             configService.SelectedConfig.LoliCodeScript = editor.Text;
             configService.SelectedConfig.StartupLoliCodeScript = startupEditor.Text;
-            await configRepo.SaveAsync(configService.SelectedConfig);
+            await configService.SaveSelectedConfigAsync();
             Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
         }
     }

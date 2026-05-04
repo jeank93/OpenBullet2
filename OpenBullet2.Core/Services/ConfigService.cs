@@ -200,4 +200,23 @@ public class ConfigService(IConfigRepository configRepo, OpenBulletSettingsServi
 
     private bool IsLatestReload(int currentReloadVersion)
         => Volatile.Read(ref reloadVersion) == currentReloadVersion;
+
+    /// <summary>
+    /// Saves a config through the configured repository.
+    /// </summary>
+    public Task SaveAsync(Config config)
+        => configRepo.SaveAsync(config);
+
+    /// <summary>
+    /// Saves the currently selected config.
+    /// </summary>
+    public Task SaveSelectedConfigAsync()
+    {
+        if (selectedConfig is null)
+        {
+            throw new InvalidOperationException("No config selected");
+        }
+
+        return configRepo.SaveAsync(selectedConfig);
+    }
 }

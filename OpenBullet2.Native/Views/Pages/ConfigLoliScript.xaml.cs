@@ -1,6 +1,5 @@
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
-using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using RuriLib.Models.Configs;
@@ -19,13 +18,11 @@ namespace OpenBullet2.Native.Views.Pages;
 public partial class ConfigLoliScript : Page
 {
     private readonly ConfigService configService;
-    private readonly IConfigRepository configRepo; // TODO: This should not be here
 
     public ConfigLoliScript()
     {
         InitializeComponent();
         configService = SP.GetService<ConfigService>();
-        configRepo = SP.GetService<IConfigRepository>();
 
         HighlightSyntax();
     }
@@ -72,7 +69,7 @@ public partial class ConfigLoliScript : Page
         if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
         {
             configService.SelectedConfig.LoliScript = editor.Text;
-            await configRepo.SaveAsync(configService.SelectedConfig);
+            await configService.SaveSelectedConfigAsync();
             Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
         }
     }

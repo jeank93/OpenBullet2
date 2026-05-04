@@ -112,7 +112,7 @@ public partial class App : Application
         // Repositories
         services.AddSingleton<IProxyRepository, DbProxyRepository>();
         services.AddSingleton<IProxyGroupRepository, DbProxyGroupRepository>();
-        services.AddSingleton<IHitRepository, DbHitRepository>();
+        services.AddScoped<IHitRepository, DbHitRepository>();
         services.AddSingleton<IJobRepository, DbJobRepository>();
         services.AddSingleton<IRecordRepository, DbRecordRepository>();
         services.AddSingleton<IConfigRepository>(service =>

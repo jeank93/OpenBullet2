@@ -4,7 +4,6 @@ using OpenBullet2.Core.Repositories;
 using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Hits;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace OpenBullet2.Core.Services;
@@ -14,12 +13,10 @@ namespace OpenBullet2.Core.Services;
 /// </summary>
 public class HitStorageService : IDisposable
 {
-    private readonly SemaphoreSlim _semaphore;
     private readonly IServiceScopeFactory _scopeFactory;
 
     public HitStorageService(IServiceScopeFactory scopeFactory)
     {
-        _semaphore = new SemaphoreSlim(1, 1);
         _scopeFactory = scopeFactory;
     }
 
@@ -76,23 +73,11 @@ public class HitStorageService : IDisposable
                 break;
         }
 
-        // Only allow saving one hit at a time (multiple threads should
-        // not use the same DbContext at the same time).
-        await _semaphore.WaitAsync();
-
-        try
-        {
-            await hitRepo.AddAsync(entity);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
+        await hitRepo.AddAsync(entity);
     }
 
     public void Dispose()
     {
-        _semaphore?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

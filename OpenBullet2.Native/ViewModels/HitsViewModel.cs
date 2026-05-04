@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
@@ -14,7 +15,7 @@ namespace OpenBullet2.Native.ViewModels;
 public class HitsViewModel : ViewModelBase
 {
     private readonly OpenBulletSettingsService obSettingsService;
-    private readonly IHitRepository hitRepo;
+    private readonly IServiceScopeFactory scopeFactory;
     private bool initialized;
 
     private ObservableCollection<HitEntity> hitsCollection = [];
@@ -83,7 +84,7 @@ public class HitsViewModel : ViewModelBase
     public HitsViewModel()
     {
         obSettingsService = SP.GetService<OpenBulletSettingsService>();
-        hitRepo = SP.GetService<IHitRepository>();
+        scopeFactory = SP.GetService<IServiceScopeFactory>();
         HitsCollection = [];
     }
 
@@ -121,9 +122,7 @@ public class HitsViewModel : ViewModelBase
     {
         try
         {
-            // TODO: Make this not fail when hits are being written and we try to read them!
-            // A.k.a. make this use another repo, not the singleton, and refresh it when new hits come in
-            var items = await hitRepo.GetAll().ToListAsync();
+            var items = await WithRepositoryAsync(repo => repo.GetAll().ToListAsync());
             HitsCollection = new ObservableCollection<HitEntity>(items);
             OnPropertyChanged(nameof(Total));
             HookFilters();
@@ -134,11 +133,12 @@ public class HitsViewModel : ViewModelBase
         }
     }
 
-    public Task Update(HitEntity hit) => hitRepo.UpdateAsync(hit);
+    public Task Update(HitEntity hit)
+        => WithRepositoryAsync(repo => repo.UpdateAsync(hit));
 
     public async Task DeleteAsync(IEnumerable<HitEntity> hits)
     {
-        await hitRepo.DeleteAsync(hits);
+        await WithRepositoryAsync(repo => repo.DeleteAsync(hits));
         await RefreshListAsync();
         OnPropertyChanged(nameof(Total));
     }
@@ -146,7 +146,7 @@ public class HitsViewModel : ViewModelBase
     public async Task PurgeAsync()
     {
         HitsCollection.Clear();
-        await hitRepo.PurgeAsync();
+        await WithRepositoryAsync(repo => repo.PurgeAsync());
         OnPropertyChanged(nameof(Total));
     }
 
@@ -158,10 +158,24 @@ public class HitsViewModel : ViewModelBase
             .SelectMany(g => g.OrderBy(h => h.Date)
             .Reverse().Skip(1)).ToList();
 
-        await hitRepo.DeleteAsync(duplicates);
+        await WithRepositoryAsync(repo => repo.DeleteAsync(duplicates));
         await RefreshListAsync();
 
         return duplicates.Count;
+    }
+
+    private async Task WithRepositoryAsync(Func<IHitRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IHitRepository>();
+        await action(repo);
+    }
+
+    private async Task<T> WithRepositoryAsync<T>(Func<IHitRepository, Task<T>> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IHitRepository>();
+        return await action(repo);
     }
 
     public override void UpdateViewModel()

@@ -158,7 +158,7 @@ public class PersistenceAdapterTests
         Assert.Equal("Config", entity.ConfigName);
         Assert.Equal("Cat", entity.ConfigCategory);
         Assert.Equal(-3, entity.WordlistId);
-        Assert.Equal("10|3|True", entity.WordlistName);
+        Assert.Equal("10|3|1|True", entity.WordlistName);
         Assert.Equal(42, entity.OwnerId);
     }
 

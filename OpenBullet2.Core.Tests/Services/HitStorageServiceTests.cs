@@ -60,7 +60,28 @@ public sealed class HitStorageServiceTests
         Assert.Equal("user10:pass10", entities.Last().Data);
     }
 
-    private static Hit CreateHit(int index) => new()
+    [Fact]
+    public async Task StoreAsync_RangeDataPoolsWithDifferentSteps_PersistDifferentWordlistNames()
+    {
+        using var database = new TestDatabase();
+        var service = database.Services.GetRequiredService<HitStorageService>();
+
+        await service.StoreAsync(CreateHit(1, new RangeDataPool(10, 3, 1, true)))
+            .WaitAsync(TestContext.Current.CancellationToken);
+        await service.StoreAsync(CreateHit(2, new RangeDataPool(10, 3, 2, true)))
+            .WaitAsync(TestContext.Current.CancellationToken);
+
+        using var scope = database.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var wordlistNames = await context.Hits
+            .OrderBy(h => h.OwnerId)
+            .Select(h => h.WordlistName)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["10|3|1|True", "10|3|2|True"], wordlistNames);
+    }
+
+    private static Hit CreateHit(int index, RangeDataPool? dataPool = null) => new()
     {
         Data = new DataLine($"user{index}:pass{index}", new WordlistType()),
         CapturedData = new Dictionary<string, object> { ["token"] = $"abc{index}" },
@@ -72,7 +93,7 @@ public sealed class HitStorageServiceTests
             Id = $"cfg-{index}",
             Metadata = new ConfigMetadata { Name = "Config", Category = "Cat" }
         },
-        DataPool = new RangeDataPool(index, 3, pad: true),
+        DataPool = dataPool ?? new RangeDataPool(index, 3, pad: true),
         OwnerId = index
     };
 

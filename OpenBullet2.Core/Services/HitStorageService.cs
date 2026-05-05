@@ -60,7 +60,7 @@ public class HitStorageService : IDisposable
 
             case RangeDataPool rangeDataPool:
                 entity.WordlistId = rangeDataPool.POOL_CODE;
-                entity.WordlistName = $"{rangeDataPool.Start}|{rangeDataPool.Amount}|{rangeDataPool.Pad}";
+                entity.WordlistName = $"{rangeDataPool.Start}|{rangeDataPool.Amount}|{rangeDataPool.Step}|{rangeDataPool.Pad}";
                 break;
 
             case CombinationsDataPool combationsDataPool:

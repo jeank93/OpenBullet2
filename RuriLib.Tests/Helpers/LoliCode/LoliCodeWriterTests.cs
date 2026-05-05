@@ -40,6 +40,30 @@ public class LoliCodeWriterTests
     }
 
     [Fact]
+    public void GetSettingValue_InterpolatedStringWithEscapedAngleBrackets_PreservesEscapes()
+    {
+        var setting = new BlockSetting
+        {
+            InputMode = SettingInputMode.Interpolated,
+            InterpolatedSetting = new InterpolatedStringSetting { Value = "hello <<name>>" }
+        };
+
+        Assert.Equal("$\"hello <<name>>\"", LoliCodeWriter.GetSettingValue(setting));
+    }
+
+    [Fact]
+    public void GetSettingValue_InterpolatedStringWithTripleAngleBrackets_PreservesEscapes()
+    {
+        var setting = new BlockSetting
+        {
+            InputMode = SettingInputMode.Interpolated,
+            InterpolatedSetting = new InterpolatedStringSetting { Value = "hello <<<name>>>" }
+        };
+
+        Assert.Equal("$\"hello <<<name>>>\"", LoliCodeWriter.GetSettingValue(setting));
+    }
+
+    [Fact]
     public void AppendSetting_DefaultFixedValue_DoesNotWriteLine()
     {
         var parameter = new StringParameter("name", "hello");

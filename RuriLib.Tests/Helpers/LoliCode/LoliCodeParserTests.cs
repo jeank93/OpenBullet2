@@ -178,6 +178,30 @@ public class LoliCodeParserTests
     }
 
     [Fact]
+    public void ParseSetting_InterpolatedStringWithEscapedAngleBrackets_PreservesRawValue()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("ConstantString");
+        var valueSetting = block.Settings["value"];
+
+        var input = "value = $\"hello <<name>>\"";
+        LoliCodeParser.ParseSetting(ref input, block.Settings, block.Descriptor);
+        Assert.Equal(SettingInputMode.Interpolated, valueSetting.InputMode);
+        Assert.Equal("hello <<name>>", ((InterpolatedStringSetting)valueSetting.InterpolatedSetting!).Value);
+    }
+
+    [Fact]
+    public void ParseSetting_InterpolatedStringWithTripleAngleBrackets_PreservesRawValue()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("ConstantString");
+        var valueSetting = block.Settings["value"];
+
+        var input = "value = $\"hello <<<name>>>\"";
+        LoliCodeParser.ParseSetting(ref input, block.Settings, block.Descriptor);
+        Assert.Equal(SettingInputMode.Interpolated, valueSetting.InputMode);
+        Assert.Equal("hello <<<name>>>", ((InterpolatedStringSetting)valueSetting.InterpolatedSetting!).Value);
+    }
+
+    [Fact]
     public void ParseSetting_MissingEquals_Throws()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("ConstantString");

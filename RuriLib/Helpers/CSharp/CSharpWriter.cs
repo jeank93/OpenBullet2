@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace RuriLib.Helpers.CSharp;
 
@@ -91,17 +90,77 @@ public class CSharpWriter
     public static string SerializeInterpString(string? value)
     {
         value ??= string.Empty;
+        var segments = new List<(string? Literal, string? Expression)>();
+        var literal = new StringBuilder();
 
-        var sb = new StringBuilder(SerializeString(value))
-            .Replace("{", "{{")
-            .Replace("}", "}}");
-
-        foreach (Match match in Regex.Matches(value, @"<([^>]+)>"))
+        for (var i = 0; i < value.Length;)
         {
-            sb.Replace(match.Groups[0].Value.Replace("\\", "\\\\").Replace("\"", "\\\""), '{' + match.Groups[1].Value + '}');
+            if (i + 1 < value.Length && value[i] == '<' && value[i + 1] == '<')
+            {
+                literal.Append('<');
+                i += 2;
+                continue;
+            }
+
+            if (i + 1 < value.Length && value[i] == '>' && value[i + 1] == '>')
+            {
+                literal.Append('>');
+                i += 2;
+                continue;
+            }
+
+            if (value[i] == '<')
+            {
+                var closingIndex = value.IndexOf('>', i + 1);
+
+                // Keep unmatched or empty angle brackets as literal text.
+                if (closingIndex == -1 || closingIndex == i + 1)
+                {
+                    literal.Append('<');
+                    i++;
+                    continue;
+                }
+
+                if (literal.Length > 0)
+                {
+                    segments.Add((literal.ToString(), null));
+                    literal.Clear();
+                }
+
+                segments.Add((null, value[(i + 1)..closingIndex]));
+                i = closingIndex + 1;
+                continue;
+            }
+
+            literal.Append(value[i]);
+            i++;
         }
 
-        return '$' + sb.ToString();
+        if (literal.Length > 0)
+        {
+            segments.Add((literal.ToString(), null));
+        }
+
+        var sb = new StringBuilder("$\"");
+
+        foreach (var segment in segments)
+        {
+            if (segment.Expression is not null)
+            {
+                sb.Append('{').Append(segment.Expression).Append('}');
+            }
+            else
+            {
+                sb.Append(segment.Literal!
+                    .Replace("\\", "\\\\")
+                    .Replace("\"", "\\\"")
+                    .Replace("{", "{{")
+                    .Replace("}", "}}"));
+            }
+        }
+
+        sb.Append('"');
+        return sb.ToString();
     }
 
     /// <summary>

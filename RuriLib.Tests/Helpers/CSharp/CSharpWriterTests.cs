@@ -25,6 +25,42 @@ public class CSharpWriterTests
     }
 
     [Fact]
+    public void SerializeInterpString_EscapedAngleBrackets_RemainLiteral()
+    {
+        Assert.Equal("$\"hello <name>\"", CSharpWriter.SerializeInterpString("hello <<name>>"));
+    }
+
+    [Fact]
+    public void SerializeInterpString_TripleAngleBrackets_EscapeAndInterpolate()
+    {
+        Assert.Equal("$\"hello <{name}>\"", CSharpWriter.SerializeInterpString("hello <<<name>>>"));
+    }
+
+    [Fact]
+    public void SerializeInterpString_StandaloneEscapedAngleBrackets_RemainLiteral()
+    {
+        Assert.Equal("$\"< and >\"", CSharpWriter.SerializeInterpString("<< and >>"));
+    }
+
+    [Fact]
+    public void SerializeInterpString_QuadrupleAngleBrackets_RemainLiteral()
+    {
+        Assert.Equal("$\"<<name>>\"", CSharpWriter.SerializeInterpString("<<<<name>>>>"));
+    }
+
+    [Fact]
+    public void SerializeInterpString_EmptyAngleBrackets_RemainLiteral()
+    {
+        Assert.Equal("$\"<>\"", CSharpWriter.SerializeInterpString("<>"));
+    }
+
+    [Fact]
+    public void SerializeInterpString_Braces_AreEscapedAroundInterpolations()
+    {
+        Assert.Equal("$\"{{{value}}}\"", CSharpWriter.SerializeInterpString("{<value>}"));
+    }
+
+    [Fact]
     public void SerializeByteArray_Null_ReturnsNullLiteral()
     {
         Assert.Equal("null", CSharpWriter.SerializeByteArray(null));

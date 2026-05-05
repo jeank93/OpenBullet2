@@ -156,4 +156,26 @@ public class AutoBlockInstanceTests
         var expected = $"myOutput = Substring(data, $\"my {{interp}} string\", 3, myLength.AsInt());{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
         Assert.Equal(expected, block.ToCSharp(["myOutput"], new ConfigSettings()));
     }
+
+    [Fact]
+    public void ToCSharp_SyncReturnValueEscapedAngleBrackets_OutputScript()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
+        block.OutputVariable = "myOutput";
+        var input = block.Settings["input"];
+        var index = block.Settings["index"];
+        var length = block.Settings["length"];
+
+        input.InputMode = SettingInputMode.Interpolated;
+        input.InterpolatedSetting = new InterpolatedStringSetting { Value = "hello <<<name>>> and <<friend>>" };
+
+        index.InputMode = SettingInputMode.Fixed;
+        (index.FixedSetting as IntSetting)!.Value = 3;
+
+        length.InputMode = SettingInputMode.Variable;
+        length.InputVariableName = "myLength";
+
+        var expected = $"myOutput = Substring(data, $\"hello <{{name}}> and <friend>\", 3, myLength.AsInt());{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
+        Assert.Equal(expected, block.ToCSharp(["myOutput"], new ConfigSettings()));
+    }
 }

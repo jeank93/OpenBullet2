@@ -5,6 +5,7 @@
   <Project Path="OpenBullet2.Console/OpenBullet2.Console.csproj" />
   <Project Path="OpenBullet2.Core.Tests/OpenBullet2.Core.Tests.csproj" />
   <Project Path="OpenBullet2.Core/OpenBullet2.Core.csproj" />
+  <Project Path="OpenBullet2.Native.Tests/OpenBullet2.Native.Tests.csproj" />
   <Project Path="OpenBullet2.Native.Updater/OpenBullet2.Native.Updater.csproj" />
   <Project Path="OpenBullet2.Native/OpenBullet2.Native.csproj" />
   <Project Path="OpenBullet2.Updater.Core/OpenBullet2.Updater.Core.csproj" />

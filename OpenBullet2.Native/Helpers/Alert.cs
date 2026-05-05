@@ -6,6 +6,8 @@ namespace OpenBullet2.Native.Helpers;
 
 public static class Alert
 {
+    public static bool SuppressDialogs { get; set; }
+
     public static void Info(string title, string message) => ShowAlert(AlertType.Info, title, message);
     public static void Success(string title, string message) => ShowAlert(AlertType.Success, title, message);
     public static void Warning(string title, string message) => ShowAlert(AlertType.Warning, title, message);
@@ -37,7 +39,14 @@ public static class Alert
     }
 
     private static void ShowAlert(AlertType type, string title, string message, string? copyText = null)
-        => Application.Current.Dispatcher.Invoke(() => new MainDialog(new AlertDialog(type, title, message, copyText), title).ShowDialog());
+    {
+        if (SuppressDialogs)
+        {
+            return;
+        }
+
+        Application.Current.Dispatcher.Invoke(() => new MainDialog(new AlertDialog(type, title, message, copyText), title).ShowDialog());
+    }
 
     public static void Exception(Exception ex) => Error(ex.GetType().Name, ex.Message);
 }

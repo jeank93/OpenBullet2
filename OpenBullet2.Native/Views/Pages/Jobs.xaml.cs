@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Repositories;
@@ -18,23 +19,25 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class Jobs : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly MainWindow mainWindow;
-    private readonly IJobRepository jobRepo;
     private readonly JobsViewModel vm;
+    private readonly IServiceScopeFactory scopeFactory;
     private static readonly JsonSerializerSettings JsonSettings = new() { TypeNameHandling = TypeNameHandling.Auto };
 
-    public Jobs()
+    public Jobs(IUiFactory uiFactory, MainWindow mainWindow, JobsViewModel vm, IServiceScopeFactory scopeFactory)
     {
-        mainWindow = SP.GetService<MainWindow>();
-        jobRepo = SP.GetService<IJobRepository>();
-        vm = SP.GetService<ViewModelsService>().Jobs;
+        this.uiFactory = uiFactory;
+        this.mainWindow = mainWindow;
+        this.vm = vm;
+        this.scopeFactory = scopeFactory;
         DataContext = vm;
 
         InitializeComponent();
     }
 
     private void NewJob(object sender, RoutedEventArgs e)
-        => new MainDialog(new CreateJobDialog(this), "Select job type").ShowDialog();
+        => new MainDialog(uiFactory.Create<CreateJobDialog>(this), "Select job type").ShowDialog();
 
     private void RemoveAll(object sender, RoutedEventArgs e)
     {
@@ -65,7 +68,7 @@ public partial class Jobs : Page
 
     public async Task EditJobAsync(JobViewModel jobVM)
     {
-        var entity = await jobRepo.GetAsync(jobVM.Id);
+        var entity = await GetJobEntityAsync(jobVM.Id);
         var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions ?? string.Empty, JsonSettings)?.Options
             ?? throw new InvalidOperationException("Could not deserialize job options");
         async Task OnAcceptAsync(JobOptions options)
@@ -76,8 +79,8 @@ public partial class Jobs : Page
 
         Page page = jobVM switch
         {
-            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)jobOptions, OnAcceptAsync),
-            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)jobOptions, OnAcceptAsync),
+            MultiRunJobViewModel => uiFactory.Create<MultiRunJobOptionsDialog>((MultiRunJobOptions)jobOptions, (Func<JobOptions, Task>)OnAcceptAsync),
+            ProxyCheckJobViewModel => uiFactory.Create<ProxyCheckJobOptionsDialog>((ProxyCheckJobOptions)jobOptions, (Func<JobOptions, Task>)OnAcceptAsync),
             _ => throw new NotImplementedException()
         };
 
@@ -91,7 +94,7 @@ public partial class Jobs : Page
             return;
         }
 
-        var entity = await jobRepo.GetAsync(jobVM.Id);
+        var entity = await GetJobEntityAsync(jobVM.Id);
         var oldOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions ?? string.Empty, JsonSettings)?.Options
             ?? throw new InvalidOperationException("Could not deserialize job options");
         var newOptions = JobOptionsFactory.CloneExistant(oldOptions);
@@ -104,8 +107,8 @@ public partial class Jobs : Page
 
         Page page = jobVM switch
         {
-            MultiRunJobViewModel => new MultiRunJobOptionsDialog((MultiRunJobOptions)newOptions, OnAcceptAsync),
-            ProxyCheckJobViewModel => new ProxyCheckJobOptionsDialog((ProxyCheckJobOptions)newOptions, OnAcceptAsync),
+            MultiRunJobViewModel => uiFactory.Create<MultiRunJobOptionsDialog>((MultiRunJobOptions)newOptions, (Func<JobOptions, Task>)OnAcceptAsync),
+            ProxyCheckJobViewModel => uiFactory.Create<ProxyCheckJobOptionsDialog>((ProxyCheckJobOptions)newOptions, (Func<JobOptions, Task>)OnAcceptAsync),
             _ => throw new NotImplementedException()
         };
 
@@ -133,7 +136,14 @@ public partial class Jobs : Page
     {
         if (sender is WrapPanel { Tag: JobViewModel job })
         {
-            SP.GetService<MainWindow>().DisplayJob(job);
+            mainWindow.DisplayJob(job);
         }
+    }
+
+    private async Task<OpenBullet2.Core.Entities.JobEntity> GetJobEntityAsync(int id)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IJobRepository>();
+        return await repo.GetAsync(id);
     }
 }

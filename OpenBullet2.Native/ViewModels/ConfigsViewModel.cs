@@ -79,12 +79,12 @@ public class ConfigsViewModel : ViewModelBase
 
     public int Total => ConfigsCollection.Count;
 
-    public ConfigsViewModel()
+    public ConfigsViewModel(ConfigService configService, IConfigRepository configRepo)
     {
-        configService = SP.GetService<ConfigService>();
+        this.configService = configService;
         configService.OnRemotesLoaded += (s, e) => CreateCollection();
 
-        configRepo = SP.GetService<IConfigRepository>();
+        this.configRepo = configRepo;
         CreateCollection();
     }
 

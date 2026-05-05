@@ -168,14 +168,20 @@ public class DebuggerViewModel : ViewModelBase
 
     public string MatchInfo => $"{CurrentMatchIndex + 1} of {Indices.Length}";
 
-    public DebuggerViewModel()
+    public DebuggerViewModel(
+        RuriLibSettingsService rlSettingsService,
+        OpenBulletSettingsService obSettingsService,
+        ConfigService configService,
+        IRandomUAProvider randomUAProvider,
+        IRNGProvider rngProvider,
+        PluginRepository pluginRepo)
     {
-        rlSettingsService = SP.GetService<RuriLibSettingsService>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
-        configService = SP.GetService<ConfigService>();
-        randomUAProvider = SP.GetService<IRandomUAProvider>();
-        rngProvider = SP.GetService<IRNGProvider>();
-        pluginRepo = SP.GetService<PluginRepository>();
+        this.rlSettingsService = rlSettingsService;
+        this.obSettingsService = obSettingsService;
+        this.configService = configService;
+        this.randomUAProvider = randomUAProvider;
+        this.rngProvider = rngProvider;
+        this.pluginRepo = pluginRepo;
 
         WordlistType = WordlistTypes.First();
     }

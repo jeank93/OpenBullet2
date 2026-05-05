@@ -1,4 +1,5 @@
 using OpenBullet2.Core.Models.Jobs;
+using OpenBullet2.Native.Services;
 using OpenBullet2.Native.Views.Pages;
 using System;
 using System.Threading.Tasks;
@@ -13,10 +14,12 @@ namespace OpenBullet2.Native.Views.Dialogs;
 public partial class CreateJobDialog : Page
 {
     private readonly object caller;
+    private readonly IUiFactory uiFactory;
 
-    public CreateJobDialog(object caller)
+    public CreateJobDialog(object caller, IUiFactory uiFactory)
     {
         this.caller = caller;
+        this.uiFactory = uiFactory;
 
         InitializeComponent();
     }
@@ -33,11 +36,11 @@ public partial class CreateJobDialog : Page
         switch (type)
         {
             case JobType.MultiRun:
-                new MainDialog(new MultiRunJobOptionsDialog(null, onAccept), "Create Multi Run Job", 800, 600).ShowDialog();
+                new MainDialog(uiFactory.Create<MultiRunJobOptionsDialog>(onAccept!), "Create Multi Run Job", 800, 600).ShowDialog();
                 break;
 
             case JobType.ProxyCheck:
-                new MainDialog(new ProxyCheckJobOptionsDialog(null, onAccept), "Create Proxy Check Job").ShowDialog();
+                new MainDialog(uiFactory.Create<ProxyCheckJobOptionsDialog>(onAccept!), "Create Proxy Check Job").ShowDialog();
                 break;
         }
 

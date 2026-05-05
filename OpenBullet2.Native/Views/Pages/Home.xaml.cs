@@ -14,13 +14,14 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class Home : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly HomeViewModel vm;
 
-    public Home()
+    public Home(IUiFactory uiFactory, HomeViewModel vm)
     {
+        this.uiFactory = uiFactory;
+        this.vm = vm;
         InitializeComponent();
-
-        vm = new HomeViewModel();
         DataContext = vm;
     }
 
@@ -28,10 +29,10 @@ public partial class Home : Page
         => Url.Open("https://discourse.openbullet.dev/t/how-to-download-and-start-openbullet-2/29");
 
     private void ShowChangelog(object sender, RoutedEventArgs e)
-        => new MainDialog(new ShowChangelogDialog(), "Changelog", true).ShowDialog();
+        => new MainDialog(uiFactory.Create<ShowChangelogDialog>(), "Changelog", true).ShowDialog();
 
     private void ShowUpdateConfirmation(object sender, RoutedEventArgs e)
-        => new MainDialog(new UpdateConfirmationDialog(vm.CurrentVersion, vm.RemoteVersion), "Update confirmation").ShowDialog();
+        => new MainDialog(uiFactory.Create<UpdateConfirmationDialog>(vm.CurrentVersion, vm.RemoteVersion), "Update confirmation").ShowDialog();
 }
 
 public class HomeViewModel : ViewModelBase
@@ -54,10 +55,10 @@ public class HomeViewModel : ViewModelBase
         }
     }
 
-    public HomeViewModel()
+    public HomeViewModel(AnnouncementService annService, UpdateService updateService)
     {
-        annService = SP.GetService<AnnouncementService>();
-        updateService = SP.GetService<UpdateService>();
+        this.annService = annService;
+        this.updateService = updateService;
 
         updateService.UpdateAvailable += NotifyUpdateAvailable;
 

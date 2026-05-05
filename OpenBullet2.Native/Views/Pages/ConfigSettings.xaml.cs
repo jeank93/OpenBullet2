@@ -18,11 +18,13 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class ConfigSettings : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly ConfigSettingsViewModel vm;
 
-    public ConfigSettings()
+    public ConfigSettings(IUiFactory uiFactory, ConfigSettingsViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().ConfigSettings;
+        this.uiFactory = uiFactory;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
@@ -66,5 +68,5 @@ public partial class ConfigSettings : Page
     private void SetMultiLineTextBoxContents() => blockedUrlsTextBox.Text = string.Join(Environment.NewLine, vm.BlockedUrls);
 
     private void TestDataRules(object sender, RoutedEventArgs e)
-        => new MainDialog(new TestDataRulesDialog(vm.TestDataForRules, vm.TestWordlistTypeForRules, vm.DataRulesCollection), "Test Results").ShowDialog();
+        => new MainDialog(uiFactory.Create<TestDataRulesDialog>(vm.TestDataForRules, vm.TestWordlistTypeForRules, vm.DataRulesCollection), "Test Results").ShowDialog();
 }

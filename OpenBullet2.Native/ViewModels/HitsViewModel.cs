@@ -81,10 +81,10 @@ public class HitsViewModel : ViewModelBase
 
     private static readonly string[] _firstConfigNamesOption = ["All"];
 
-    public HitsViewModel()
+    public HitsViewModel(OpenBulletSettingsService obSettingsService, IServiceScopeFactory scopeFactory)
     {
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
-        scopeFactory = SP.GetService<IServiceScopeFactory>();
+        this.obSettingsService = obSettingsService;
+        this.scopeFactory = scopeFactory;
         HitsCollection = [];
     }
 

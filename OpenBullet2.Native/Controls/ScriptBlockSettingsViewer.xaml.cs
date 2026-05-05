@@ -25,14 +25,14 @@ public partial class ScriptBlockSettingsViewer : UserControl
     private readonly ScriptBlockSettingsViewerViewModel vm;
     private readonly OpenBulletSettingsService obSettingsService;
 
-    public ScriptBlockSettingsViewer(BlockViewModel blockVM)
+    public ScriptBlockSettingsViewer(BlockViewModel blockVM, OpenBulletSettingsService obSettingsService)
     {
         if (blockVM.Block is not ScriptBlockInstance)
         {
             throw new Exception("Wrong block type for this UC");
         }
 
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.obSettingsService = obSettingsService;
         vm = new ScriptBlockSettingsViewerViewModel(blockVM);
         DataContext = vm;
 

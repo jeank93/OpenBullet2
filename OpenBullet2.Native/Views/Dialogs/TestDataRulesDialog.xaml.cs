@@ -19,9 +19,10 @@ public partial class TestDataRulesDialog : Page
 {
     private readonly TestDataRulesDialogViewModel vm;
 
-    public TestDataRulesDialog(string testData, string wordlistType, IEnumerable<DataRule> rules)
+    public TestDataRulesDialog(string testData, string wordlistType, IEnumerable<DataRule> rules,
+        RuriLibSettingsService rlSettingsService)
     {
-        vm = new TestDataRulesDialogViewModel(testData, wordlistType, rules);
+        vm = new TestDataRulesDialogViewModel(testData, wordlistType, rules, rlSettingsService);
         DataContext = vm;
 
         InitializeComponent();
@@ -65,11 +66,12 @@ public class TestDataRulesDialogViewModel : ViewModelBase
         }
     }
 
-    public TestDataRulesDialogViewModel(string testData, string wordlistType, IEnumerable<DataRule> rules)
+    public TestDataRulesDialogViewModel(string testData, string wordlistType, IEnumerable<DataRule> rules,
+        RuriLibSettingsService rlSettingsService)
     {
         WordlistType = wordlistType;
 
-        var env = SP.GetService<RuriLibSettingsService>().Environment;
+        var env = rlSettingsService.Environment;
         var wt = env.WordlistTypes.First(w => w.Name == wordlistType);
         var dataLine = new DataLine(testData, wt);
         var slices = dataLine.GetVariables().Select(v => new SliceViewModel(v.Name, v.AsString()));

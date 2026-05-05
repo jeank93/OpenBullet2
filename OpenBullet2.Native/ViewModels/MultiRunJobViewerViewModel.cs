@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Proxies.Sources;
@@ -32,6 +33,7 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
 {
     private readonly OpenBulletSettingsService obSettingsService;
     private readonly List<ProxyGroupEntity> proxyGroups;
+    private readonly IServiceScopeFactory scopeFactory;
     private readonly Timer botsInfoTimer;
     private readonly Timer secondsTicker;
     private readonly SoundPlayer soundPlayer;
@@ -170,9 +172,13 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     }
     #endregion
 
-    public MultiRunJobViewerViewModel(MultiRunJobViewModel jobVM)
+    public MultiRunJobViewerViewModel(
+        MultiRunJobViewModel jobVM,
+        OpenBulletSettingsService obSettingsService,
+        IServiceScopeFactory scopeFactory)
     {
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.obSettingsService = obSettingsService;
+        this.scopeFactory = scopeFactory;
         Job = jobVM;
 
         #region Setup
@@ -182,8 +188,10 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
             ConfigNameAndAuthor = $"{MultiRunJob.Config.Metadata.Name} by {MultiRunJob.Config.Metadata.Author}";
         }
 
-        var proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
-        proxyGroups = [.. proxyGroupRepo.GetAll()];
+        using (var scope = scopeFactory.CreateScope())
+        {
+            proxyGroups = [.. scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>().GetAll()];
+        }
 
         var sb = new StringBuilder();
         for (var i = 0; i < MultiRunJob.ProxySources.Count; i++)

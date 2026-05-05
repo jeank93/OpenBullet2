@@ -10,12 +10,12 @@ namespace OpenBullet2.Native.Views.Dialogs;
 /// </summary>
 public partial class ShowChangelogDialog : Page
 {
-    private ChangelogViewModel vm;
+    private readonly ChangelogViewModel vm;
 
-    public ShowChangelogDialog()
+    public ShowChangelogDialog(UpdateService updateService)
     {
         InitializeComponent();
-        vm = new ChangelogViewModel();
+        vm = new ChangelogViewModel(updateService);
         DataContext = vm;
     }
 
@@ -32,15 +32,13 @@ public partial class ShowChangelogDialog : Page
             }
         }
 
-        public ChangelogViewModel()
+        public ChangelogViewModel(UpdateService updateService)
         {
-            FetchChangelog();
+            FetchChangelog(updateService);
         }
 
-        private async void FetchChangelog()
+        private async void FetchChangelog(UpdateService updateService)
         {
-            var updateService = SP.GetService<UpdateService>();
-
             using var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:84.0) Gecko/20100101 Firefox/84.0");
 

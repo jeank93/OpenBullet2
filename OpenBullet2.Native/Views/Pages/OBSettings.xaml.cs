@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Native.Helpers;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using System;
 using System.Linq;
@@ -17,9 +16,9 @@ public partial class OBSettings : Page
 {
     private readonly OBSettingsViewModel vm;
 
-    public OBSettings()
+    public OBSettings(OBSettingsViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().OBSettings;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();

@@ -8,6 +8,7 @@ using OpenBullet2.Native.Views.Dialogs;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Configs;
+using RuriLib.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,15 +23,30 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class ConfigStacker : Page
 {
+    private readonly IUiFactory uiFactory;
+    private readonly MainWindow mainWindow;
+    private readonly OpenBulletSettingsService obSettingsService;
+    private readonly RuriLibSettingsService rlSettingsService;
     private readonly ConfigService configService;
     private readonly IConfigRepository configRepo;
     private readonly ConfigStackerViewModel vm;
 
-    public ConfigStacker()
+    public ConfigStacker(
+        IUiFactory uiFactory,
+        MainWindow mainWindow,
+        OpenBulletSettingsService obSettingsService,
+        RuriLibSettingsService rlSettingsService,
+        ConfigService configService,
+        IConfigRepository configRepo,
+        ConfigStackerViewModel vm)
     {
-        configService = SP.GetService<ConfigService>();
-        configRepo = SP.GetService<IConfigRepository>();
-        vm = SP.GetService<ViewModelsService>().ConfigStacker;
+        this.uiFactory = uiFactory;
+        this.mainWindow = mainWindow;
+        this.obSettingsService = obSettingsService;
+        this.rlSettingsService = rlSettingsService;
+        this.configService = configService;
+        this.configRepo = configRepo;
+        this.vm = vm;
         vm.SelectionChanged += SelectionChanged;
         DataContext = vm;
 
@@ -41,7 +57,7 @@ public partial class ConfigStacker : Page
     {
         if (configService.SelectedConfig is null)
         {
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
             return;
         }
 
@@ -54,7 +70,7 @@ public partial class ConfigStacker : Page
         {
             // On fail, prompt it to the user and go back to the configs page
             Alert.Exception(ex);
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
         }
 
         vm.SelectBlock(null, false);
@@ -64,7 +80,7 @@ public partial class ConfigStacker : Page
     public void CreateBlock(BlockDescriptor descriptor) => vm.CreateBlock(descriptor);
 
     private void AddBlock(object sender, RoutedEventArgs e)
-        => new MainDialog(new AddBlockDialog(this), "Add block").ShowDialog();
+        => new MainDialog(uiFactory.Create<AddBlockDialog>(this), "Add block").ShowDialog();
 
     private void RemoveBlock(object sender, RoutedEventArgs e) => vm.RemoveSelected();
     private void MoveBlockUp(object sender, RoutedEventArgs e) => vm.MoveSelectedUp();
@@ -101,10 +117,10 @@ public partial class ConfigStacker : Page
             {
                 AutoBlockInstance => new AutoBlockSettingsViewer(first),
                 ParseBlockInstance => new ParseBlockSettingsViewer(first),
-                ScriptBlockInstance => new ScriptBlockSettingsViewer(first),
+                ScriptBlockInstance => new ScriptBlockSettingsViewer(first, obSettingsService),
                 HttpRequestBlockInstance => new HttpRequestBlockSettingsViewer(first),
-                KeycheckBlockInstance => new KeycheckBlockSettingsViewer(first),
-                LoliCodeBlockInstance => new LoliCodeBlockSettingsViewer(first),
+                KeycheckBlockInstance => new KeycheckBlockSettingsViewer(first, rlSettingsService),
+                LoliCodeBlockInstance => new LoliCodeBlockSettingsViewer(first, obSettingsService),
                 _ => null
             };
 

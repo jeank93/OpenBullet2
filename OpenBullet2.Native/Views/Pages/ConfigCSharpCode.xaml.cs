@@ -22,18 +22,24 @@ namespace OpenBullet2.Native.Views.Pages;
 public partial class ConfigCSharpCode : Page
 {
     private readonly ConfigCSharpCodeViewModel vm;
+    private readonly MainWindow mainWindow;
     private readonly ConfigService configService;
     private readonly OpenBulletSettingsService obSettingsService;
     private Config Config => configService.SelectedConfig;
 
-    public ConfigCSharpCode()
+    public ConfigCSharpCode(
+        MainWindow mainWindow,
+        ConfigService configService,
+        OpenBulletSettingsService obSettingsService,
+        ConfigCSharpCodeViewModel vm)
     {
-        vm = new ConfigCSharpCodeViewModel();
+        this.mainWindow = mainWindow;
+        this.configService = configService;
+        this.obSettingsService = obSettingsService;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
-        configService = SP.GetService<ConfigService>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
 
         HighlightSyntax(editor);
         HighlightSyntax(startupEditor);
@@ -69,7 +75,7 @@ public partial class ConfigCSharpCode : Page
         {
             // On fail, prompt it to the user and go back to the configs page
             Alert.Exception(ex);
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
         }
     }
 
@@ -94,10 +100,10 @@ public class ConfigCSharpCodeViewModel : ViewModelBase
     private readonly OpenBulletSettingsService obSettingsService;
     private Config Config => configService.SelectedConfig;
 
-    public ConfigCSharpCodeViewModel()
+    public ConfigCSharpCodeViewModel(ConfigService configService, OpenBulletSettingsService obSettingsService)
     {
-        configService = SP.GetService<ConfigService>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.configService = configService;
+        this.obSettingsService = obSettingsService;
     }
 
     public bool WordWrap => obSettingsService.Settings.CustomizationSettings.WordWrap;

@@ -7,7 +7,6 @@ using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.Helpers;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Extensions;
 using RuriLib.Services;
@@ -29,6 +28,7 @@ namespace OpenBullet2.Native.Views.Pages;
 public partial class Hits : Page
 {
     private readonly HitsViewModel vm;
+    private readonly JobsViewModel jobsViewModel;
     private readonly ConfigService configService;
     private readonly MainWindow window;
     private readonly RuriLibSettingsService rlSettingsService;
@@ -47,17 +47,23 @@ public partial class Hits : Page
         " | Date = " + hit.Date.ToLongDateString() +
         " | CapturedData = " + hit.CapturedData);
 
-    public Hits()
+    public Hits(
+        HitsViewModel vm,
+        JobsViewModel jobsViewModel,
+        ConfigService configService,
+        MainWindow window,
+        RuriLibSettingsService rlSettingsService)
     {
-        vm = SP.GetService<ViewModelsService>().Hits;
+        this.vm = vm;
+        this.jobsViewModel = jobsViewModel;
+        this.configService = configService;
+        this.window = window;
+        this.rlSettingsService = rlSettingsService;
         DataContext = vm;
         _ = vm.InitializeAsync();
 
         InitializeComponent();
-        window = SP.GetService<MainWindow>();
-        configService = SP.GetService<ConfigService>();
-        rlSettingsService = SP.GetService<RuriLibSettingsService>();
-        var env = SP.GetService<RuriLibSettingsService>().Environment;
+        var env = rlSettingsService.Environment;
 
         // HACK: Hardcoded stuff
         var menu = (ContextMenu)Resources["ItemContextMenu"];
@@ -210,8 +216,7 @@ public partial class Hits : Page
 
         await Application.Current.Dispatcher.InvokeAsync(async () =>
         {
-            var jobs = SP.GetService<ViewModelsService>().Jobs;
-            var jobVM = await jobs.CreateJobAsync(jobOptions);
+            var jobVM = await jobsViewModel.CreateJobAsync(jobOptions);
             window.DisplayJob(jobVM);
         });
     }

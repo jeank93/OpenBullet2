@@ -22,12 +22,12 @@ public partial class AddWordlistDialog : Page
     private readonly object caller;
     private readonly EnvironmentSettings env;
 
-    public AddWordlistDialog(object caller)
+    public AddWordlistDialog(object caller, RuriLibSettingsService rlSettingsService)
     {
         this.caller = caller;
         InitializeComponent();
 
-        env = SP.GetService<RuriLibSettingsService>().Environment;
+        env = rlSettingsService.Environment;
 
         typeCombobox.ItemsSource = env.WordlistTypes.Select(t => t.Name);
         typeCombobox.SelectedIndex = 0;

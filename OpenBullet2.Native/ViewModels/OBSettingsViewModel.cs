@@ -12,13 +12,15 @@ namespace OpenBullet2.Native.ViewModels;
 public class OBSettingsViewModel : ViewModelBase
 {
     private readonly OpenBulletSettingsService service;
+    private readonly MainWindow mainWindow;
     private GeneralSettings General => service.Settings.GeneralSettings;
     private RemoteSettings Remote => service.Settings.RemoteSettings;
     private CustomizationSettings Customization => service.Settings.CustomizationSettings;
 
-    public OBSettingsViewModel()
+    public OBSettingsViewModel(OpenBulletSettingsService service, MainWindow mainWindow)
     {
-        service = SP.GetService<OpenBulletSettingsService>();
+        this.service = service;
+        this.mainWindow = mainWindow;
         CreateCollections();
     }
 
@@ -430,7 +432,7 @@ public class OBSettingsViewModel : ViewModelBase
         RefreshTheme();
     }
 
-    private void RefreshTheme() => SP.GetService<MainWindow>().SetTheme(Customization);
+    private void RefreshTheme() => mainWindow.SetTheme(Customization);
 
     public void AddProxyCheckTarget() => ProxyCheckTargetsCollection.Add(new ProxyCheckTarget());
     public void RemoveProxyCheckTarget(ProxyCheckTarget target) => ProxyCheckTargetsCollection.Remove(target);

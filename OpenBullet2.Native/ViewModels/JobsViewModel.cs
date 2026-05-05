@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Jobs;
@@ -17,9 +18,9 @@ namespace OpenBullet2.Native.ViewModels;
 
 public class JobsViewModel : ViewModelBase
 {
-    private readonly IJobRepository jobRepo;
     private readonly JobManagerService jobManager;
     private readonly JobFactoryService jobFactory;
+    private readonly IServiceScopeFactory scopeFactory;
     private readonly Timer timer;
 
     private ObservableCollection<JobViewModel> jobsCollection = [];
@@ -33,11 +34,11 @@ public class JobsViewModel : ViewModelBase
         }
     }
 
-    public JobsViewModel()
+    public JobsViewModel(JobManagerService jobManager, JobFactoryService jobFactory, IServiceScopeFactory scopeFactory)
     {
-        jobRepo = SP.GetService<IJobRepository>();
-        jobManager = SP.GetService<JobManagerService>();
-        jobFactory = SP.GetService<JobFactoryService>();
+        this.jobManager = jobManager;
+        this.jobFactory = jobFactory;
+        this.scopeFactory = scopeFactory;
 
         CreateCollection();
         timer = new Timer(new TimerCallback(_ => RefreshJobs()), null, 1000, 1000);
@@ -72,7 +73,7 @@ public class JobsViewModel : ViewModelBase
             JobOptions = JsonConvert.SerializeObject(wrapper, settings)
         };
 
-        await jobRepo.AddAsync(entity);
+        await WithRepositoryAsync(repo => repo.AddAsync(entity));
 
         var job = jobFactory.FromOptions(entity.Id, 0, options);
         var jobVM = MakeViewModel(job);
@@ -90,7 +91,7 @@ public class JobsViewModel : ViewModelBase
         var wrapper = new JobOptionsWrapper { Options = options };
         entity.JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings);
 
-        await jobRepo.UpdateAsync(entity);
+        await WithRepositoryAsync(repo => repo.UpdateAsync(entity));
 
         var oldJob = jobManager.Jobs.First(j => j.Id == entity.Id);
         var newJob = jobFactory.FromOptions(entity.Id, 0, options);
@@ -114,7 +115,7 @@ public class JobsViewModel : ViewModelBase
             JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings)
         };
 
-        await jobRepo.AddAsync(entity);
+        await WithRepositoryAsync(repo => repo.AddAsync(entity));
 
         var job = jobFactory.FromOptions(entity.Id, 0, options);
         jobManager.AddJob(job);
@@ -142,7 +143,8 @@ public class JobsViewModel : ViewModelBase
         }
 
         // If admin, just purge all
-        jobRepo.Purge();
+        using var scope = scopeFactory.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IJobRepository>().Purge();
         jobManager.Clear();
         JobsCollection.Clear();
     }
@@ -154,11 +156,21 @@ public class JobsViewModel : ViewModelBase
             throw new Exception("The job is not idle, please stop/abort the job first!");
         }
 
-        var entity = await jobRepo.GetAll().FirstAsync(e => e.Id == jobVM.Id);
-        await jobRepo.DeleteAsync(entity);
+        await WithRepositoryAsync(async repo =>
+        {
+            var entity = await repo.GetAll().FirstAsync(e => e.Id == jobVM.Id);
+            await repo.DeleteAsync(entity);
+        });
         jobManager.RemoveJob(jobVM.Job);
         JobsCollection.Remove(jobVM);
         SortCollection();
+    }
+
+    private async Task WithRepositoryAsync(Func<IJobRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IJobRepository>();
+        await action(repo);
     }
 
     private static JobViewModel MakeViewModel(Job job) => job switch

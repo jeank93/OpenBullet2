@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,9 +12,9 @@ public partial class Plugins : Page
 {
     private readonly PluginsViewModel vm;
 
-    public Plugins()
+    public Plugins(PluginsViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().Plugins;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();

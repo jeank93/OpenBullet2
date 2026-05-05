@@ -12,10 +12,13 @@ namespace OpenBullet2.Native.Views.Dialogs;
 /// </summary>
 public partial class AlertDialog : Page
 {
-    public AlertDialog(AlertType type, string title, string message)
+    private readonly string? copyText;
+
+    public AlertDialog(AlertType type, string title, string message, string? copyText = null)
     {
         InitializeComponent();
 
+        this.copyText = copyText;
         this.title.Text = title;
         this.message.Text = message;
 
@@ -37,10 +40,22 @@ public partial class AlertDialog : Page
             _ => throw new NotImplementedException()
         };
 
+        copyButton.Visibility = string.IsNullOrWhiteSpace(copyText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
         okButton.Focus();
     }
 
     private void Ok(object sender, RoutedEventArgs e) => ((MainDialog)Parent).Close();
+
+    private void Copy(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(copyText))
+        {
+            Clipboard.SetText(copyText);
+        }
+    }
 
     private void PageKeyDown(object sender, KeyEventArgs e)
     {

@@ -20,14 +20,14 @@ public partial class LoliCodeBlockSettingsViewer : UserControl
     private readonly LoliCodeBlockSettingsViewerViewModel vm;
     private readonly OpenBulletSettingsService obSettingsService;
 
-    public LoliCodeBlockSettingsViewer(BlockViewModel blockVM)
+    public LoliCodeBlockSettingsViewer(BlockViewModel blockVM, OpenBulletSettingsService obSettingsService)
     {
         if (blockVM.Block is not LoliCodeBlockInstance)
         {
             throw new Exception("Wrong block type for this UC");
         }
 
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.obSettingsService = obSettingsService;
         vm = new LoliCodeBlockSettingsViewerViewModel(blockVM);
         DataContext = vm;
 

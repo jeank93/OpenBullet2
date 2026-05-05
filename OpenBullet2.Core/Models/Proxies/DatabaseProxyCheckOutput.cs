@@ -14,16 +14,15 @@ namespace OpenBullet2.Core.Models.Proxies;
 /// </summary>
 public class DatabaseProxyCheckOutput : IProxyCheckOutput, IDisposable
 {
-    private readonly IServiceScope _scope;
-    private readonly IProxyRepository _proxyRepo;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<DatabaseProxyCheckOutput> _logger;
     private readonly SemaphoreSlim _semaphore;
 
     public DatabaseProxyCheckOutput(IServiceScopeFactory scopeFactory)
     {
-        _scope = scopeFactory.CreateScope();
-        _proxyRepo = _scope.ServiceProvider.GetRequiredService<IProxyRepository>();
-        _logger = _scope.ServiceProvider.GetService<ILogger<DatabaseProxyCheckOutput>>()
+        _scopeFactory = scopeFactory;
+        using var scope = _scopeFactory.CreateScope();
+        _logger = scope.ServiceProvider.GetService<ILogger<DatabaseProxyCheckOutput>>()
             ?? NullLogger<DatabaseProxyCheckOutput>.Instance;
         _semaphore = new SemaphoreSlim(1, 1);
     }
@@ -33,24 +32,26 @@ public class DatabaseProxyCheckOutput : IProxyCheckOutput, IDisposable
     {
         try
         {
-            var entity = await _proxyRepo.GetAsync(proxy.Id);
-            if (entity is null)
-            {
-                return;
-            }
-
-            entity.Country = proxy.Country;
-            entity.LastChecked = proxy.LastChecked ?? default;
-            entity.Ping = proxy.Ping;
-            entity.Status = proxy.WorkingStatus;
-
             // Only allow updating one proxy at a time (multiple threads should
             // not use the same DbContext at the same time).
             await _semaphore.WaitAsync();
 
             try
             {
-                await _proxyRepo.UpdateAsync(entity);
+                using var scope = _scopeFactory.CreateScope();
+                var proxyRepo = scope.ServiceProvider.GetRequiredService<IProxyRepository>();
+                var entity = await proxyRepo.GetAsync(proxy.Id);
+                if (entity is null)
+                {
+                    return;
+                }
+
+                entity.Country = proxy.Country;
+                entity.LastChecked = proxy.LastChecked ?? default;
+                entity.Ping = proxy.Ping;
+                entity.Status = proxy.WorkingStatus;
+
+                await proxyRepo.UpdateAsync(entity);
             }
             finally
             {
@@ -76,7 +77,6 @@ public class DatabaseProxyCheckOutput : IProxyCheckOutput, IDisposable
     public void Dispose()
     {
         _semaphore?.Dispose();
-        _scope?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

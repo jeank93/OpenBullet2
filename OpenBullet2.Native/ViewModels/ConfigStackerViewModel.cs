@@ -29,9 +29,9 @@ public class ConfigStackerViewModel : ViewModelBase
         }
     }
 
-    public ConfigStackerViewModel()
+    public ConfigStackerViewModel(ConfigService configService)
     {
-        configService = SP.GetService<ConfigService>();
+        this.configService = configService;
         Stack = [];
     }
 

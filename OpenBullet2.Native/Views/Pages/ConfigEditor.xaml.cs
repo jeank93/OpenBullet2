@@ -24,22 +24,27 @@ public partial class ConfigEditor : Page
     private readonly ConfigCSharpCode cSharpPage;
     private readonly ConfigLoliScript loliScriptPage;
 
-    public ConfigEditor()
+    public ConfigEditor(
+        MainWindow mainWindow,
+        ConfigEditorViewModel vm,
+        Debugger debugger,
+        ConfigStacker stackerPage,
+        ConfigLoliCode loliCodePage,
+        ConfigCSharpCode cSharpPage,
+        ConfigLoliScript loliScriptPage)
     {
-        mainWindow = SP.GetService<MainWindow>();
-        vm = new ConfigEditorViewModel();
+        this.mainWindow = mainWindow;
+        this.vm = vm;
+        this.debugger = debugger;
+        this.stackerPage = stackerPage;
+        this.loliCodePage = loliCodePage;
+        this.cSharpPage = cSharpPage;
+        this.loliScriptPage = loliScriptPage;
         DataContext = vm;
 
         InitializeComponent();
 
         editorFrame.Navigated += (_, _) => UpdateButtonsVisibility();
-
-        // Create the pages
-        debugger = new();
-        stackerPage = new();
-        loliCodePage = new();
-        cSharpPage = new();
-        loliScriptPage = new();
 
         debuggerFrame.Content = debugger;
     }
@@ -137,10 +142,10 @@ public class ConfigEditorViewModel : ViewModelBase
     private readonly ConfigService configService;
     public Config Config => configService.SelectedConfig;
 
-    public ConfigEditorViewModel()
+    public ConfigEditorViewModel(IConfigRepository configRepo, ConfigService configService)
     {
-        configRepo = SP.GetService<IConfigRepository>();
-        configService = SP.GetService<ConfigService>();
+        this.configRepo = configRepo;
+        this.configService = configService;
     }
 
     public Task Save() => configRepo.SaveAsync(Config);

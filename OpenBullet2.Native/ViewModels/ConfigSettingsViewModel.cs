@@ -286,10 +286,10 @@ public class ConfigSettingsViewModel : ViewModelBase
         }
     }
 
-    public ConfigSettingsViewModel()
+    public ConfigSettingsViewModel(ConfigService configService, RuriLibSettingsService rlSettingsService)
     {
-        configService = SP.GetService<ConfigService>();
-        rlSettingsService = SP.GetService<RuriLibSettingsService>();
+        this.configService = configService;
+        this.rlSettingsService = rlSettingsService;
         TestWordlistTypeForRules = WordlistTypes.FirstOrDefault() ?? string.Empty;
     }
 

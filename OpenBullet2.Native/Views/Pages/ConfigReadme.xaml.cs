@@ -1,5 +1,4 @@
 using OpenBullet2.Native.Extensions;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using System.Windows.Controls;
 
@@ -12,9 +11,9 @@ public partial class ConfigReadme : Page
 {
     private readonly ConfigReadmeViewModel vm;
 
-    public ConfigReadme()
+    public ConfigReadme(ConfigReadmeViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().ConfigReadme;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();

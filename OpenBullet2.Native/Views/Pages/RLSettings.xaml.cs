@@ -1,5 +1,4 @@
 using OpenBullet2.Native.Helpers;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Functions.Captchas;
 using System;
@@ -16,9 +15,9 @@ public partial class RLSettings : Page
 {
     private readonly RLSettingsViewModel vm;
 
-    public RLSettings()
+    public RLSettings(RLSettingsViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().RLSettings;
+        this.vm = vm;
         vm.CaptchaServiceChanged += UpdateCaptchaTabControl;
         DataContext = vm;
 

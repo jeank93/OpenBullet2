@@ -17,12 +17,14 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class ConfigLoliScript : Page
 {
+    private readonly MainWindow mainWindow;
     private readonly ConfigService configService;
 
-    public ConfigLoliScript()
+    public ConfigLoliScript(MainWindow mainWindow, ConfigService configService)
     {
+        this.mainWindow = mainWindow;
+        this.configService = configService;
         InitializeComponent();
-        configService = SP.GetService<ConfigService>();
 
         HighlightSyntax();
     }
@@ -42,7 +44,7 @@ public partial class ConfigLoliScript : Page
         {
             // On fail, prompt it to the user and go back to the configs page
             Alert.Exception(ex);
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
         }
     }
 

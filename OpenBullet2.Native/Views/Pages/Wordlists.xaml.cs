@@ -22,6 +22,7 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class Wordlists : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly WordlistsViewModel vm;
     private readonly EnvironmentSettings env;
     private readonly MainWindow window;
@@ -30,19 +31,20 @@ public partial class Wordlists : Page
 
     private IEnumerable<WordlistEntity> SelectedWordlists => wordlistListView.SelectedItems.Cast<WordlistEntity>().ToList();
 
-    public Wordlists()
+    public Wordlists(IUiFactory uiFactory, WordlistsViewModel vm, MainWindow window, RuriLibSettingsService rlSettingsService)
     {
-        vm = SP.GetService<ViewModelsService>().Wordlists;
+        this.uiFactory = uiFactory;
+        this.vm = vm;
+        this.window = window;
+        env = rlSettingsService.Environment;
         DataContext = vm;
         _ = vm.InitializeAsync();
 
         InitializeComponent();
-        window = SP.GetService<MainWindow>();
-        env = SP.GetService<RuriLibSettingsService>().Environment;
     }
 
     private void Add(object sender, RoutedEventArgs e)
-        => new MainDialog(new AddWordlistDialog(this), "Add a wordlist").ShowDialog();
+        => new MainDialog(uiFactory.Create<AddWordlistDialog>(this), "Add a wordlist").ShowDialog();
 
     private async void DeleteSelected(object sender, RoutedEventArgs e)
     {

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Helpers;
 using OpenBullet2.Core.Repositories;
@@ -18,9 +19,8 @@ public class ProxiesViewModel : ViewModelBase
 {
     private ObservableCollection<ProxyGroupEntity> proxyGroupsCollection = [];
     private ObservableCollection<ProxyEntity> proxiesCollection = [];
-    private readonly IProxyGroupRepository proxyGroupRepo;
-    private readonly IProxyRepository proxyRepo;
     private readonly JobManagerService jobManager;
+    private readonly IServiceScopeFactory scopeFactory;
     private bool initialized;
     private ProxyGroupEntity selectedGroup;
     private readonly ProxyGroupEntity allGroup = new() { Id = -1, Name = "All" };
@@ -62,11 +62,10 @@ public class ProxiesViewModel : ViewModelBase
     public bool GroupIsValid => selectedGroup != allGroup;
     public ProxyGroupEntity SelectedGroup => selectedGroup;
 
-    public ProxiesViewModel()
+    public ProxiesViewModel(JobManagerService jobManager, IServiceScopeFactory scopeFactory)
     {
-        proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
-        proxyRepo = SP.GetService<IProxyRepository>();
-        jobManager = SP.GetService<JobManagerService>();
+        this.jobManager = jobManager;
+        this.scopeFactory = scopeFactory;
         ProxyGroupsCollection =
         [
             allGroup
@@ -88,7 +87,7 @@ public class ProxiesViewModel : ViewModelBase
     public async Task RefreshGroupsAsync()
     {
         SelectedGroupId = allGroup.Id;
-        var entities = await proxyGroupRepo.GetAll().ToListAsync();
+        var entities = await WithProxyGroupRepositoryAsync(repo => repo.GetAll().ToListAsync());
         ProxyGroupsCollection = new ObservableCollection<ProxyGroupEntity>(new ProxyGroupEntity[] { allGroup }.Concat(entities));
 
         await RefreshListAsync();
@@ -96,12 +95,12 @@ public class ProxiesViewModel : ViewModelBase
 
     public async Task RefreshListAsync()
     {
-        var items = selectedGroup == allGroup
-            ? await proxyRepo.GetAll().ToListAsync()
-            : await proxyRepo.GetAll()
+        var items = await WithProxyRepositoryAsync(repo => selectedGroup == allGroup
+            ? repo.GetAll().ToListAsync()
+            : repo.GetAll()
                 .Include(p => p.Group)
                 .Where(p => p.Group != null && p.Group.Id == selectedGroup.Id)
-                .ToListAsync();
+                .ToListAsync());
 
         ProxiesCollection = new ObservableCollection<ProxyEntity>(items);
         OnPropertyChanged(nameof(Total));
@@ -114,12 +113,12 @@ public class ProxiesViewModel : ViewModelBase
         ProxyGroupsCollection.Add(group);
         SelectedGroupId = allGroup.Id;
 
-        return proxyGroupRepo.AddAsync(group);
+        return WithProxyGroupRepositoryAsync(repo => repo.AddAsync(group));
     }
 
     public async Task EditGroupAsync(ProxyGroupEntity group)
     {
-        await proxyGroupRepo.UpdateAsync(group);
+        await WithProxyGroupRepositoryAsync(repo => repo.UpdateAsync(group));
         await RefreshGroupsAsync();
     }
 
@@ -146,7 +145,12 @@ public class ProxiesViewModel : ViewModelBase
         }
 
         // This will cascade delete all the proxies in the group
-        await proxyGroupRepo.DeleteAsync(selectedGroup);
+        await WithProxyGroupRepositoryAsync(async repo =>
+        {
+            var group = await repo.GetAsync(selectedGroup.Id)
+                ?? throw new InvalidOperationException("Selected proxy group was not found");
+            await repo.DeleteAsync(group);
+        });
 
         SelectedGroupId = allGroup.Id;
 
@@ -175,33 +179,36 @@ public class ProxiesViewModel : ViewModelBase
         }
 
         var entities = proxies.Select(ProxyEntityMapper.MapProxyToProxyEntity).ToList();
-        var currentGroup = await proxyGroupRepo.GetAsync(selectedGroup.Id)
-            ?? throw new InvalidOperationException("Selected proxy group was not found");
-        proxyRepo.Attach(currentGroup);
-        entities.ForEach(e => e.Group = currentGroup);
+        await WithRepositoriesAsync(async (proxyGroupRepo, proxyRepo) =>
+        {
+            var currentGroup = await proxyGroupRepo.GetAsync(selectedGroup.Id)
+                ?? throw new InvalidOperationException("Selected proxy group was not found");
+            proxyRepo.Attach(currentGroup);
+            entities.ForEach(e => e.Group = currentGroup);
 
-        await proxyRepo.AddAsync(entities);
-        await proxyRepo.RemoveDuplicatesAsync(currentGroup.Id);
+            await proxyRepo.AddAsync(entities);
+            await proxyRepo.RemoveDuplicatesAsync(currentGroup.Id);
+        });
         await RefreshListAsync();
     }
 
     public async Task DeleteAsync(IEnumerable<ProxyEntity> proxies)
     {
-        await proxyRepo.DeleteAsync(proxies);
+        await WithProxyRepositoryAsync(repo => repo.DeleteAsync(proxies));
         await RefreshListAsync();
     }
 
     public async Task DeleteNotWorkingAsync()
     {
         var toRemove = ProxiesCollection.Where(p => p.Status == ProxyWorkingStatus.NotWorking);
-        await proxyRepo.DeleteAsync(toRemove);
+        await WithProxyRepositoryAsync(repo => repo.DeleteAsync(toRemove));
         await RefreshListAsync();
     }
 
     public async Task DeleteUntestedAsync()
     {
         var toRemove = ProxiesCollection.Where(p => p.Status == ProxyWorkingStatus.Untested);
-        await proxyRepo.DeleteAsync(toRemove);
+        await WithProxyRepositoryAsync(repo => repo.DeleteAsync(toRemove));
         await RefreshListAsync();
     }
 
@@ -209,5 +216,41 @@ public class ProxiesViewModel : ViewModelBase
     {
         _ = RefreshListAsync();
         base.UpdateViewModel();
+    }
+
+    private async Task WithRepositoriesAsync(Func<IProxyGroupRepository, IProxyRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var proxyGroupRepo = scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>();
+        var proxyRepo = scope.ServiceProvider.GetRequiredService<IProxyRepository>();
+        await action(proxyGroupRepo, proxyRepo);
+    }
+
+    private async Task WithProxyGroupRepositoryAsync(Func<IProxyGroupRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>();
+        await action(repo);
+    }
+
+    private async Task<T> WithProxyGroupRepositoryAsync<T>(Func<IProxyGroupRepository, Task<T>> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>();
+        return await action(repo);
+    }
+
+    private async Task WithProxyRepositoryAsync(Func<IProxyRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IProxyRepository>();
+        await action(repo);
+    }
+
+    private async Task<T> WithProxyRepositoryAsync<T>(Func<IProxyRepository, Task<T>> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IProxyRepository>();
+        return await action(repo);
     }
 }

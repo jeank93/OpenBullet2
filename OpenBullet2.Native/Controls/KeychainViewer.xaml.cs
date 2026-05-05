@@ -22,9 +22,9 @@ public partial class KeychainViewer : UserControl
     public event EventHandler? OnMoveUp;
     public event EventHandler? OnMoveDown;
 
-    public KeychainViewer(Keychain keychain)
+    public KeychainViewer(Keychain keychain, RuriLibSettingsService rlSettingsService)
     {
-        vm = new KeychainViewerViewModel(keychain);
+        vm = new KeychainViewerViewModel(keychain, rlSettingsService);
         DataContext = vm;
         Keychain = keychain;
 
@@ -55,9 +55,8 @@ public partial class KeychainViewer : UserControl
     }
 }
 
-public class KeychainViewerViewModel(Keychain keychain) : ViewModelBase
+public class KeychainViewerViewModel(Keychain keychain, RuriLibSettingsService rlSettingsService) : ViewModelBase
 {
-    private readonly RuriLibSettingsService rlSettingsService = SP.GetService<RuriLibSettingsService>();
     private readonly Keychain keychain = keychain;
 
     public SolidColorBrush BorderBrush => ResultStatus switch

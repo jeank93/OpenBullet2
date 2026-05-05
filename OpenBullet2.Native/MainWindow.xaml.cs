@@ -24,6 +24,7 @@ namespace OpenBullet2.Native;
 /// </summary>
 public partial class MainWindow : MetroWindow
 {
+    private readonly IUiFactory uiFactory;
     private readonly UpdateService updateService;
     private readonly MainWindowViewModel vm;
 
@@ -52,11 +53,18 @@ public partial class MainWindow : MetroWindow
 
     public Page? CurrentPage { get; private set; }
 
-    public MainWindow()
+    public MainWindow(
+        IUiFactory uiFactory,
+        MainWindowViewModel vm,
+        UpdateService updateService,
+        OpenBulletSettingsService obSettingsService)
     {
-        vm = new MainWindowViewModel();
+        this.uiFactory = uiFactory;
+        this.vm = vm;
+        this.updateService = updateService;
         DataContext = vm;
         Closing += vm.OnWindowClosing;
+        Loaded += OnLoaded;
 
         InitializeComponent();
 
@@ -82,17 +90,20 @@ public partial class MainWindow : MetroWindow
             menuOptionWordlists
         ];
 
-        // Pages to initialize as soon as the program starts. This is done to reduce the loading time
-        // when clicking on them, as it can be frustrating for the user on specific pages.
-        configsPage = new();
-
-        updateService = SP.GetService<UpdateService>();
         Title = $"OpenBullet 2 - {updateService.CurrentVersion} [{updateService.CurrentVersionType}]";
 
         // Set the theme
-        var obSettingsService = SP.GetService<OpenBulletSettingsService>();
         var customization = obSettingsService.Settings.CustomizationSettings;
         SetTheme(customization);
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        Loaded -= OnLoaded;
+
+        // Preload heavier pages after the window is fully constructed to avoid circular resolution
+        // when those pages depend back on MainWindow.
+        configsPage ??= uiFactory.Create<Configs>();
     }
 
     public void NavigateTo(MainWindowPage page)
@@ -106,60 +117,60 @@ public partial class MainWindow : MetroWindow
         switch (page)
         {
             case MainWindowPage.Home:
-                homePage = new Home(); // We recreate the homepage each time to display updated announcements
+                homePage = uiFactory.Create<Home>(); // We recreate the homepage each time to display updated announcements
                 ChangePage(homePage, menuOptionHome);
                 break;
 
             case MainWindowPage.Jobs:
-                jobsPage ??= new();
+                jobsPage ??= uiFactory.Create<Jobs>();
                 ChangePage(jobsPage, menuOptionJobs);
                 break;
 
             case MainWindowPage.Monitor:
-                monitorPage ??= new();
+                monitorPage ??= uiFactory.Create<Monitor>();
                 ChangePage(monitorPage, menuOptionMonitor);
                 break;
 
             case MainWindowPage.Proxies:
-                proxiesPage ??= new();
+                proxiesPage ??= uiFactory.Create<Proxies>();
                 proxiesPage.UpdateViewModel();
                 ChangePage(proxiesPage, menuOptionProxies);
                 break;
 
             case MainWindowPage.Wordlists:
-                wordlistsPage ??= new();
+                wordlistsPage ??= uiFactory.Create<Wordlists>();
                 ChangePage(wordlistsPage, menuOptionWordlists);
                 break;
 
             case MainWindowPage.Configs:
-                configsPage ??= new();
+                configsPage ??= uiFactory.Create<Configs>();
                 configsPage.UpdateViewModel();
                 ChangePage(configsPage, menuOptionConfigs);
                 break;
 
             case MainWindowPage.Hits:
-                hitsPage ??= new();
+                hitsPage ??= uiFactory.Create<Hits>();
                 hitsPage.UpdateViewModel();
                 ChangePage(hitsPage, menuOptionHits);
                 break;
 
             case MainWindowPage.Plugins:
-                pluginsPage ??= new();
+                pluginsPage ??= uiFactory.Create<Plugins>();
                 ChangePage(pluginsPage, menuOptionPlugins);
                 break;
 
             case MainWindowPage.OBSettings:
-                obSettingsPage ??= new();
+                obSettingsPage ??= uiFactory.Create<OBSettings>();
                 ChangePage(obSettingsPage, menuOptionOBSettings);
                 break;
 
             case MainWindowPage.RLSettings:
-                rlSettingsPage ??= new();
+                rlSettingsPage ??= uiFactory.Create<RLSettings>();
                 ChangePage(rlSettingsPage, menuOptionRLSettings);
                 break;
 
             case MainWindowPage.About:
-                aboutPage ??= new();
+                aboutPage ??= uiFactory.Create<About>();
                 ChangePage(aboutPage, menuOptionAbout);
                 break;
 
@@ -168,14 +179,14 @@ public partial class MainWindow : MetroWindow
 
             case MainWindowPage.ConfigMetadata:
                 CloseSubmenu();
-                configMetadataPage ??= new();
+                configMetadataPage ??= uiFactory.Create<Views.Pages.ConfigMetadata>();
                 configMetadataPage.UpdateViewModel();
                 ChangePage(configMetadataPage, menuOptionMetadata);
                 break;
 
             case MainWindowPage.ConfigReadme:
                 CloseSubmenu();
-                configReadmePage ??= new();
+                configReadmePage ??= uiFactory.Create<ConfigReadme>();
                 configReadmePage.UpdateViewModel();
                 ChangePage(configReadmePage, menuOptionReadme);
                 break;
@@ -188,7 +199,7 @@ public partial class MainWindow : MetroWindow
                 }
 
                 CloseSubmenu();
-                configEditorPage ??= new();
+                configEditorPage ??= uiFactory.Create<ConfigEditor>();
                 configEditorPage.NavigateTo(ConfigEditorSection.Stacker);
                 ChangePage(configEditorPage, menuOptionStacker);
                 break;
@@ -201,14 +212,14 @@ public partial class MainWindow : MetroWindow
                 }
 
                 CloseSubmenu();
-                configEditorPage ??= new();
+                configEditorPage ??= uiFactory.Create<ConfigEditor>();
                 configEditorPage.NavigateTo(ConfigEditorSection.LoliCode);
                 ChangePage(configEditorPage, menuOptionLoliCode);
                 break;
 
             case MainWindowPage.ConfigSettings:
                 CloseSubmenu();
-                configSettingsPage ??= new();
+                configSettingsPage ??= uiFactory.Create<Views.Pages.ConfigSettings>();
                 configSettingsPage.UpdateViewModel();
                 ChangePage(configSettingsPage, menuOptionConfigSettings);
                 break;
@@ -221,7 +232,7 @@ public partial class MainWindow : MetroWindow
                 }
 
                 CloseSubmenu();
-                configEditorPage ??= new();
+                configEditorPage ??= uiFactory.Create<ConfigEditor>();
                 configEditorPage.NavigateTo(ConfigEditorSection.CSharp);
                 ChangePage(configEditorPage, menuOptionCSharpCode);
                 break;
@@ -234,7 +245,7 @@ public partial class MainWindow : MetroWindow
                 }
 
                 CloseSubmenu();
-                configEditorPage ??= new();
+                configEditorPage ??= uiFactory.Create<ConfigEditor>();
                 configEditorPage.NavigateTo(ConfigEditorSection.LoliScript);
                 ChangePage(configEditorPage, menuOptionLoliScript);
                 break;
@@ -246,13 +257,13 @@ public partial class MainWindow : MetroWindow
         switch (jobVM)
         {
             case MultiRunJobViewModel mrj:
-                multiRunJobViewerPage ??= new();
+                multiRunJobViewerPage ??= uiFactory.Create<MultiRunJobViewer>();
                 multiRunJobViewerPage.BindViewModel(mrj);
                 ChangePage(multiRunJobViewerPage, null);
                 break;
 
             case ProxyCheckJobViewModel pcj:
-                proxyCheckJobViewerPage ??= new();
+                proxyCheckJobViewerPage ??= uiFactory.Create<ProxyCheckJobViewer>();
                 proxyCheckJobViewerPage.BindViewModel(pcj);
                 ChangePage(proxyCheckJobViewerPage, null);
                 break;
@@ -401,11 +412,14 @@ public class MainWindowViewModel : ViewModelBase
 
     public bool IsConfigSelected => Config != null;
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(
+        OpenBulletSettingsService obSettingsService,
+        JobManagerService jobManagerService,
+        ConfigService configService)
     {
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
-        jobManagerService = SP.GetService<JobManagerService>();
-        configService = SP.GetService<ConfigService>();
+        this.obSettingsService = obSettingsService;
+        this.jobManagerService = jobManagerService;
+        this.configService = configService;
         configService.OnConfigSelected += (sender, config) =>
         {
             OnPropertyChanged(nameof(IsConfigSelected));

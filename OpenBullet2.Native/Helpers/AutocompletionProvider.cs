@@ -10,8 +10,10 @@ public static class AutocompletionProvider
 {
     private static List<Snippet> snippets = new();
 
-    public static void Init()
+    public static void Init(OpenBulletSettingsService settingsService)
     {
+        snippets.Clear();
+
         // Block snippets
         foreach (var id in Globals.DescriptorsRepository.Descriptors.Keys)
         {
@@ -20,7 +22,7 @@ public static class AutocompletionProvider
         }
 
         // Custom snippets
-        foreach (var snippet in SP.GetService<OpenBulletSettingsService>().Settings.GeneralSettings.CustomSnippets)
+        foreach (var snippet in settingsService.Settings.GeneralSettings.CustomSnippets)
         {
             if (!string.IsNullOrEmpty(snippet.Name))
             {

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Models.Settings;
@@ -23,10 +24,21 @@ public partial class ProxyCheckJobOptionsDialog : Page
     private readonly Func<JobOptions, Task>? onAccept;
     private readonly ProxyCheckJobOptionsViewModel vm;
 
-    public ProxyCheckJobOptionsDialog(ProxyCheckJobOptions? options = null, Func<JobOptions, Task>? onAccept = null)
+    public ProxyCheckJobOptionsDialog(
+        ProxyCheckJobOptionsViewModel vm,
+        Func<JobOptions, Task>? onAccept)
+        : this(vm, null, onAccept)
+    {
+    }
+
+    public ProxyCheckJobOptionsDialog(
+        ProxyCheckJobOptionsViewModel vm,
+        ProxyCheckJobOptions? options,
+        Func<JobOptions, Task>? onAccept)
     {
         this.onAccept = onAccept;
-        vm = new ProxyCheckJobOptionsViewModel(options);
+        this.vm = vm;
+        vm.Initialize(options);
         DataContext = vm;
 
         vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
@@ -56,10 +68,10 @@ public partial class ProxyCheckJobOptionsDialog : Page
 
 public class ProxyCheckJobOptionsViewModel : ViewModelBase
 {
-    private readonly IProxyGroupRepository proxyGroupRepo;
+    private readonly IServiceScopeFactory scopeFactory;
     private readonly JobFactoryService jobFactory;
     private readonly OpenBulletSettingsService obSettingsService;
-    public ProxyCheckJobOptions Options { get; init; }
+    public ProxyCheckJobOptions Options { get; private set; }
 
     #region Start Condition
     public event Action<StartConditionMode>? StartConditionModeChanged;
@@ -145,15 +157,24 @@ public class ProxyCheckJobOptionsViewModel : ViewModelBase
     }
     #endregion
 
-    public ProxyCheckJobOptionsViewModel(ProxyCheckJobOptions? options)
+    public ProxyCheckJobOptionsViewModel(
+        IServiceScopeFactory scopeFactory,
+        JobFactoryService jobFactory,
+        OpenBulletSettingsService obSettingsService)
+    {
+        this.scopeFactory = scopeFactory;
+        this.jobFactory = jobFactory;
+        this.obSettingsService = obSettingsService;
+        Options = null!;
+    }
+
+    public void Initialize(ProxyCheckJobOptions? options)
     {
         Options = options ?? (JobOptionsFactory.CreateNew(JobType.ProxyCheck) as ProxyCheckJobOptions
             ?? throw new InvalidOperationException("Failed to create proxy check job options"));
-        proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
-        jobFactory = SP.GetService<JobFactoryService>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
 
-        proxyGroups = proxyGroupRepo.GetAll().ToList();
+        using var scope = scopeFactory.CreateScope();
+        proxyGroups = scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>().GetAll().ToList();
 
         var proxyCheckTargets = obSettingsService.Settings.GeneralSettings.ProxyCheckTargets;
         Targets = proxyCheckTargets.Any()
@@ -164,7 +185,7 @@ public class ProxyCheckJobOptionsViewModel : ViewModelBase
         Target ??= Targets.FirstOrDefault() ?? new ProxyCheckTarget();
     }
 
-    private readonly IEnumerable<ProxyGroupEntity> proxyGroups;
+    private IEnumerable<ProxyGroupEntity> proxyGroups = [];
     public IEnumerable<string> ProxyGroupNames => new[] { "All" }.Concat(proxyGroups.Select(g => g.Name ?? string.Empty));
 
     public string ProxyGroup

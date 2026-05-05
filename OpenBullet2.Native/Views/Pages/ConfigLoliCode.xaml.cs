@@ -25,16 +25,18 @@ namespace OpenBullet2.Native.Views.Pages;
 public partial class ConfigLoliCode : Page
 {
     private readonly ConfigLoliCodeViewModel vm;
+    private readonly MainWindow mainWindow;
     private readonly ConfigService configService;
     private CompletionWindow? completionWindow;
 
-    public ConfigLoliCode()
+    public ConfigLoliCode(MainWindow mainWindow, ConfigService configService, ConfigLoliCodeViewModel vm)
     {
-        vm = new ConfigLoliCodeViewModel();
+        this.mainWindow = mainWindow;
+        this.configService = configService;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
-        configService = SP.GetService<ConfigService>();
 
         HighlightSyntax(editor);
         AddAutoCompletion(editor);
@@ -49,7 +51,7 @@ public partial class ConfigLoliCode : Page
     {
         if (configService.SelectedConfig is null)
         {
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
             return;
         }
 
@@ -71,7 +73,7 @@ public partial class ConfigLoliCode : Page
         {
             // On fail, prompt it to the user and go back to the configs page
             Alert.Exception(ex);
-            SP.GetService<MainWindow>().NavigateTo(MainWindowPage.Configs);
+            mainWindow.NavigateTo(MainWindowPage.Configs);
         }
     }
 
@@ -210,10 +212,10 @@ public class ConfigLoliCodeViewModel : ViewModelBase
     private Config Config => configService.SelectedConfig
         ?? throw new InvalidOperationException("No config selected");
 
-    public ConfigLoliCodeViewModel()
+    public ConfigLoliCodeViewModel(ConfigService configService, OpenBulletSettingsService obSettingsService)
     {
-        configService = SP.GetService<ConfigService>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.configService = configService;
+        this.obSettingsService = obSettingsService;
     }
 
     public bool WordWrap => obSettingsService.Settings.CustomizationSettings.WordWrap;

@@ -1,6 +1,7 @@
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Keycheck;
+using RuriLib.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,14 +14,16 @@ namespace OpenBullet2.Native.Controls;
 public partial class KeycheckBlockSettingsViewer : UserControl
 {
     private readonly KeycheckBlockSettingsViewerViewModel vm;
+    private readonly RuriLibSettingsService rlSettingsService;
 
-    public KeycheckBlockSettingsViewer(BlockViewModel blockVM)
+    public KeycheckBlockSettingsViewer(BlockViewModel blockVM, RuriLibSettingsService rlSettingsService)
     {
         if (blockVM.Block is not KeycheckBlockInstance)
         {
             throw new Exception("Wrong block type for this UC");
         }
 
+        this.rlSettingsService = rlSettingsService;
         vm = new KeycheckBlockSettingsViewerViewModel(blockVM);
         DataContext = vm;
 
@@ -44,7 +47,7 @@ public partial class KeycheckBlockSettingsViewer : UserControl
 
     private void SpawnKeychain(Keychain keychain)
     {
-        var view = new KeychainViewer(keychain);
+        var view = new KeychainViewer(keychain, rlSettingsService);
 
         view.OnDeleted += (s, e) =>
         {

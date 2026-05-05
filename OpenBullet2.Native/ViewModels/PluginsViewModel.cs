@@ -20,9 +20,9 @@ public class PluginsViewModel : ViewModelBase
         }
     }
 
-    public PluginsViewModel()
+    public PluginsViewModel(PluginRepository pluginRepo)
     {
-        pluginRepo = SP.GetService<PluginRepository>();
+        this.pluginRepo = pluginRepo;
         RefreshList();
     }
 

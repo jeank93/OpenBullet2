@@ -13,12 +13,12 @@ public partial class ChangeBotsDialog : Page
 {
     private readonly object caller;
 
-    public ChangeBotsDialog(object caller, int oldValue)
+    public ChangeBotsDialog(object caller, int oldValue, JobFactoryService jobFactoryService)
     {
         this.caller = caller;
 
         InitializeComponent();
-        bots.Maximum = SP.GetService<JobFactoryService>().BotLimit;
+        bots.Maximum = jobFactoryService.BotLimit;
         bots.Value = oldValue;
     }
 

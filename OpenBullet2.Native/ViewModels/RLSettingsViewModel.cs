@@ -11,12 +11,14 @@ namespace OpenBullet2.Native.ViewModels;
 
 public class RLSettingsViewModel : ViewModelBase
 {
-    private readonly RuriLibSettingsService _service = SP.GetService<RuriLibSettingsService>();
+    private readonly RuriLibSettingsService _service;
     private GeneralSettings General => _service.RuriLibSettings.GeneralSettings;
     private ProxySettings Proxy => _service.RuriLibSettings.ProxySettings;
     private CaptchaSettings Captcha => _service.RuriLibSettings.CaptchaSettings;
     private PuppeteerSettings Puppeteer => _service.RuriLibSettings.PuppeteerSettings;
     private SeleniumSettings Selenium => _service.RuriLibSettings.SeleniumSettings;
+
+    public RLSettingsViewModel(RuriLibSettingsService service) => _service = service;
 
     public event Action<CaptchaServiceType>? CaptchaServiceChanged;
 

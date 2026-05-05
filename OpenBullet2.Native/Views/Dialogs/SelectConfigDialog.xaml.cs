@@ -39,12 +39,11 @@ public partial class SelectConfigDialog : Page
         set => volatileSettings.ListViewSorting["configs"].Direction = value;
     }
 
-    public SelectConfigDialog(object caller)
+    public SelectConfigDialog(object caller, VolatileSettingsService volatileSettings, SelectConfigDialogViewModel vm)
     {
         this.caller = caller;
-        volatileSettings = SP.GetService<VolatileSettingsService>();
-
-        vm = new SelectConfigDialogViewModel();
+        this.volatileSettings = volatileSettings;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
@@ -172,13 +171,12 @@ public class SelectConfigDialogViewModel : ViewModelBase
 
     public bool IsConfigHovered => HoveredConfig != null;
 
-    public SelectConfigDialogViewModel()
+    public SelectConfigDialogViewModel(ConfigService configService, ConfigsViewModel configsViewModel)
     {
-        configService = SP.GetService<ConfigService>();
+        this.configService = configService;
         CreateCollection();
 
-        configsViewModel = SP.GetService<ViewModelsService>().Configs;
-
+        this.configsViewModel = configsViewModel;
         SearchString = configsViewModel.SearchString;
     }
 

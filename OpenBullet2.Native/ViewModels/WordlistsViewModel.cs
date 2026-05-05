@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using System;
@@ -12,7 +13,7 @@ namespace OpenBullet2.Native.ViewModels;
 
 public class WordlistsViewModel : ViewModelBase
 {
-    private readonly IWordlistRepository wordlistRepo;
+    private readonly IServiceScopeFactory scopeFactory;
     private bool initialized;
 
     private ObservableCollection<WordlistEntity> wordlistsCollection = [];
@@ -41,9 +42,9 @@ public class WordlistsViewModel : ViewModelBase
         }
     }
 
-    public WordlistsViewModel()
+    public WordlistsViewModel(IServiceScopeFactory scopeFactory)
     {
-        wordlistRepo = SP.GetService<IWordlistRepository>();
+        this.scopeFactory = scopeFactory;
         WordlistsCollection = [];
     }
 
@@ -76,29 +77,30 @@ public class WordlistsViewModel : ViewModelBase
         }
 
         WordlistsCollection.Add(wordlist);
-        return wordlistRepo.AddAsync(wordlist);
+        return WithRepositoryAsync(repo => repo.AddAsync(wordlist));
     }
 
     public async Task RefreshListAsync()
     {
-        var items = await wordlistRepo.GetAll().ToListAsync();
+        var items = await WithRepositoryAsync(repo => repo.GetAll().ToListAsync());
         WordlistsCollection = new ObservableCollection<WordlistEntity>(items);
         HookFilters();
     }
 
-    public async Task UpdateAsync(WordlistEntity wordlist) => await wordlistRepo.UpdateAsync(wordlist);
+    public async Task UpdateAsync(WordlistEntity wordlist) => await WithRepositoryAsync(repo => repo.UpdateAsync(wordlist));
 
     public async Task DeleteAsync(WordlistEntity wordlist)
     {
         WordlistsCollection.Remove(wordlist);
-        await wordlistRepo.DeleteAsync(wordlist, false);
+        await WithRepositoryAsync(repo => repo.DeleteAsync(wordlist, false));
         OnPropertyChanged(nameof(Total));
     }
 
     public void DeleteAll()
     {
         WordlistsCollection.Clear();
-        wordlistRepo.Purge();
+        using var scope = scopeFactory.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IWordlistRepository>().Purge();
         OnPropertyChanged(nameof(Total));
     }
 
@@ -119,5 +121,19 @@ public class WordlistsViewModel : ViewModelBase
         }
 
         return deleted;
+    }
+
+    private async Task WithRepositoryAsync(Func<IWordlistRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IWordlistRepository>();
+        await action(repo);
+    }
+
+    private async Task<T> WithRepositoryAsync<T>(Func<IWordlistRepository, Task<T>> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IWordlistRepository>();
+        return await action(repo);
     }
 }

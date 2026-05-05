@@ -20,8 +20,5 @@ public class ConfigReadmeViewModel : ViewModelBase
         }
     }
 
-    public ConfigReadmeViewModel()
-    {
-        configService = SP.GetService<ConfigService>();
-    }
+    public ConfigReadmeViewModel(ConfigService configService) => this.configService = configService;
 }

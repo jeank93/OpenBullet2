@@ -21,11 +21,10 @@ public partial class AddBlockDialog : Page
     private readonly AddBlockDialogViewModel vm;
     private readonly object caller;
 
-    public AddBlockDialog(object caller)
+    public AddBlockDialog(object caller, AddBlockDialogViewModel vm)
     {
         this.caller = caller;
-
-        vm = new AddBlockDialogViewModel();
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
@@ -136,9 +135,9 @@ public class AddBlockDialogViewModel : ViewModelBase
         }
     }
 
-    public AddBlockDialogViewModel()
+    public AddBlockDialogViewModel(VolatileSettingsService volatileSettings)
     {
-        volatileSettings = SP.GetService<VolatileSettingsService>();
+        this.volatileSettings = volatileSettings;
 
         var root = RuriLib.Globals.DescriptorsRepository.AsTree();
         CurrentNode = root

@@ -24,6 +24,9 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class Configs : Page
 {
+    private readonly IUiFactory uiFactory;
+    private readonly MainWindow mainWindow;
+    private readonly DebuggerViewModel debuggerViewModel;
     private readonly OpenBulletSettingsService obSettingsService;
     private readonly ConfigService configService;
     private readonly ConfigsViewModel vm;
@@ -45,12 +48,22 @@ public partial class Configs : Page
         set => volatileSettings.ListViewSorting["configs"].Direction = value;
     }
 
-    public Configs()
+    public Configs(
+        IUiFactory uiFactory,
+        MainWindow mainWindow,
+        DebuggerViewModel debuggerViewModel,
+        OpenBulletSettingsService obSettingsService,
+        ConfigService configService,
+        VolatileSettingsService volatileSettings,
+        ConfigsViewModel vm)
     {
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
-        configService = SP.GetService<ConfigService>();
-        volatileSettings = SP.GetService<VolatileSettingsService>();
-        vm = SP.GetService<ViewModelsService>().Configs;
+        this.uiFactory = uiFactory;
+        this.mainWindow = mainWindow;
+        this.debuggerViewModel = debuggerViewModel;
+        this.obSettingsService = obSettingsService;
+        this.configService = configService;
+        this.volatileSettings = volatileSettings;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
@@ -61,6 +74,7 @@ public partial class Configs : Page
     public void UpdateViewModel()
     {
         vm.SelectedConfig?.UpdateViewModel();
+        configsListView.Items.SortDescriptions.Clear();
 
         if (!string.IsNullOrEmpty(ListViewSortBy))
         {
@@ -69,7 +83,7 @@ public partial class Configs : Page
     }
 
     private void Create(object sender, RoutedEventArgs e)
-        => new MainDialog(new CreateConfigDialog(this), "Create config").ShowDialog();
+        => new MainDialog(uiFactory.Create<CreateConfigDialog>(this), "Create config").ShowDialog();
 
     public Task CreateConfigAsync(ConfigForCreationDto dto) => vm.CreateAsync(dto);
 
@@ -170,7 +184,7 @@ public partial class Configs : Page
             _ => throw new NotImplementedException(),
         };
 
-        SP.GetService<MainWindow>().NavigateTo(page);
+        mainWindow.NavigateTo(page);
     }
 
     private void UpdateSearch(object sender, KeyEventArgs e)
@@ -218,7 +232,7 @@ public partial class Configs : Page
         }
 
         vm.SelectedConfig = HoveredItem;
-        SP.GetService<ViewModelsService>().Debugger.ClearLog();
+        debuggerViewModel.ClearLog();
         NavigateToConfigSection();
     }
 

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Repositories;
 using RuriLib.Models.Data;
@@ -15,12 +16,12 @@ namespace OpenBullet2.Core.Services;
 /// </summary>
 public class DataPoolFactoryService
 {
-    private readonly IWordlistRepository _wordlistRepo;
     private readonly RuriLibSettingsService _ruriLibSettings;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public DataPoolFactoryService(IWordlistRepository wordlistRepo, RuriLibSettingsService ruriLibSettings)
+    public DataPoolFactoryService(IServiceScopeFactory scopeFactory, RuriLibSettingsService ruriLibSettings)
     {
-        _wordlistRepo = wordlistRepo;
+        _scopeFactory = scopeFactory;
         _ruriLibSettings = ruriLibSettings;
     }
 
@@ -50,7 +51,9 @@ public class DataPoolFactoryService
 
     private async Task<DataPool> MakeWordlistDataPoolAsync(WordlistDataPoolOptions options)
     {
-        var entity = await _wordlistRepo.GetAsync(options.WordlistId);
+        using var scope = _scopeFactory.CreateScope();
+        var wordlistRepo = scope.ServiceProvider.GetRequiredService<IWordlistRepository>();
+        var entity = await wordlistRepo.GetAsync(options.WordlistId);
 
         // If the entity was deleted
         if (entity == null)

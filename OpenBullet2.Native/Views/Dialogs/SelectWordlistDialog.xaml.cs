@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Native.Helpers;
@@ -28,11 +29,10 @@ public partial class SelectWordlistDialog : Page
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
 
-    public SelectWordlistDialog(object caller)
+    public SelectWordlistDialog(object caller, SelectWordlistDialogViewModel vm)
     {
         this.caller = caller;
-
-        vm = new SelectWordlistDialogViewModel();
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();
@@ -110,7 +110,7 @@ public partial class SelectWordlistDialog : Page
 public class SelectWordlistDialogViewModel : ViewModelBase
 {
     private readonly WordlistsViewModel wordlistsViewModel;
-    private readonly IWordlistRepository wordlistRepo;
+    private readonly IServiceScopeFactory scopeFactory;
 
     private ObservableCollection<WordlistEntity> wordlistsCollection = [];
     public ObservableCollection<WordlistEntity> WordlistsCollection
@@ -171,19 +171,19 @@ public class SelectWordlistDialogViewModel : ViewModelBase
         }
     }
 
-    public SelectWordlistDialogViewModel()
+    public SelectWordlistDialogViewModel(WordlistsViewModel wordlistsViewModel, IServiceScopeFactory scopeFactory)
     {
-        wordlistRepo = SP.GetService<IWordlistRepository>();
+        this.wordlistsViewModel = wordlistsViewModel;
+        this.scopeFactory = scopeFactory;
         CreateCollection();
-
-        wordlistsViewModel = SP.GetService<ViewModelsService>().Wordlists;
 
         SearchString = wordlistsViewModel.SearchString;
     }
 
     private void CreateCollection()
     {
-        var entities = wordlistRepo.GetAll().ToList();
+        using var scope = scopeFactory.CreateScope();
+        var entities = scope.ServiceProvider.GetRequiredService<IWordlistRepository>().GetAll().ToList();
         WordlistsCollection = new ObservableCollection<WordlistEntity>(entities);
         Application.Current.Dispatcher.Invoke(() => HookFilters());
     }

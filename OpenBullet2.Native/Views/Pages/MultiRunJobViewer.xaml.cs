@@ -23,8 +23,10 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class MultiRunJobViewer : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly MainWindow mainWindow;
     private readonly OpenBulletSettingsService obSettingsService;
+    private readonly OpenBullet2.Native.ViewModels.DebuggerViewModel debuggerViewModel;
     private MultiRunJobViewerViewModel? vm;
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
@@ -33,10 +35,16 @@ public partial class MultiRunJobViewer : Page
     private MultiRunJobViewerViewModel ViewModel => vm
         ?? throw new InvalidOperationException("The job viewer has not been bound yet");
 
-    public MultiRunJobViewer()
+    public MultiRunJobViewer(
+        IUiFactory uiFactory,
+        MainWindow mainWindow,
+        OpenBulletSettingsService obSettingsService,
+        OpenBullet2.Native.ViewModels.DebuggerViewModel debuggerViewModel)
     {
-        mainWindow = SP.GetService<MainWindow>();
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.uiFactory = uiFactory;
+        this.mainWindow = mainWindow;
+        this.obSettingsService = obSettingsService;
+        this.debuggerViewModel = debuggerViewModel;
         InitializeComponent();
     }
 
@@ -55,7 +63,7 @@ public partial class MultiRunJobViewer : Page
             }
         }
 
-        vm = new MultiRunJobViewerViewModel(jobVM);
+        vm = uiFactory.Create<MultiRunJobViewerViewModel>(jobVM);
         vm.NewMessage += OnResultMessage;
         DataContext = vm;
     }
@@ -147,7 +155,7 @@ public partial class MultiRunJobViewer : Page
     }
 
     private void ChangeBots(object sender, MouseButtonEventArgs e)
-        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
+        => new MainDialog(uiFactory.Create<ChangeBotsDialog>(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
 
     public Task ChangeBotsAsync(int newValue) => ViewModel.ChangeBotsAsync(newValue);
 
@@ -166,13 +174,12 @@ public partial class MultiRunJobViewer : Page
 
         if (hitVM is not null)
         {
-            var debugger = SP.GetService<ViewModelsService>().Debugger;
-            debugger.TestData = hitVM.Data;
+            debuggerViewModel.TestData = hitVM.Data;
 
             if (hitVM.Hit.Proxy is not null)
             {
-                debugger.TestProxy = hitVM.Hit.Proxy.ToString();
-                debugger.ProxyType = hitVM.Hit.Proxy.Type;
+                debuggerViewModel.TestProxy = hitVM.Hit.Proxy.ToString();
+                debuggerViewModel.ProxyType = hitVM.Hit.Proxy.Type;
             }
         }
     }
@@ -200,7 +207,7 @@ public partial class MultiRunJobViewer : Page
             return;
         }
 
-        new MainDialog(new BotLogDialog(hitVM.Hit.BotLogger), $"Bot log for {hitVM.Data}").Show();
+        new MainDialog(uiFactory.Create<BotLogDialog>(hitVM.Hit.BotLogger), $"Bot log for {hitVM.Data}").Show();
     }
 
     private void ColumnHeaderClicked(object sender, RoutedEventArgs e)

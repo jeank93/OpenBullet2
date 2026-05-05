@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenBullet2.Core;
 using OpenBullet2.Core.Repositories;
@@ -8,6 +9,10 @@ using OpenBullet2.Core.Services;
 using OpenBullet2.Logging;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
+using OpenBullet2.Native.Utils;
+using OpenBullet2.Native.ViewModels;
+using OpenBullet2.Native.Views.Dialogs;
+using OpenBullet2.Native.Views.Pages;
 using OpenBullet2.Native.Views.Pages.Shared;
 using RuriLib.Logging;
 using RuriLib.Providers.RandomNumbers;
@@ -33,49 +38,39 @@ namespace OpenBullet2.Native;
 public partial class App : Application
 {
     private const string LogsPath = "UserData/Logs/log-.txt";
-    private readonly ServiceProvider serviceProvider;
     private readonly IConfiguration config;
+    public static IHost Host { get; private set; } = null!;
 
     public App()
     {
         Dispatcher.UnhandledException += OnDispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException += OnTaskException;
 
+        Directory.SetCurrentDirectory(AppContext.BaseDirectory);
         Directory.CreateDirectory("UserData");
 
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
 
-        var serviceCollection = new ServiceCollection();
-        serviceCollection.AddTransient<IConfiguration>(_ => builder.Build());
-        ConfigureServices(serviceCollection);
-        serviceProvider = serviceCollection.BuildServiceProvider();
-        SP.Init(serviceProvider);
-
-        config = SP.GetService<IConfiguration>()
-            ?? throw new InvalidOperationException("Configuration service was not registered");
         var workerThreads = config.GetSection("Resources").GetValue("WorkerThreads", 1000);
         var ioThreads = config.GetSection("Resources").GetValue("IOThreads", 1000);
 
         ThreadPool.SetMinThreads(workerThreads, ioThreads);
 
-        // Apply DB migrations or create a DB if it doesn't exist
-        using (var serviceScope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope())
-        {
-            var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            context.Database.Migrate();
-        }
-
-        // Load the configs
-        var configService = serviceProvider.GetRequiredService<ConfigService>();
-        configService.ReloadConfigsAsync().Wait();
-
-        AutocompletionProvider.Init();
-
-        // Start the job monitor at the start of the application,
-        // otherwise it will only be started when navigating to the page
-        _ = serviceProvider.GetRequiredService<JobMonitorService>();
+        Host = new HostBuilder()
+            .ConfigureServices((_, services) =>
+            {
+                services.AddSingleton(config);
+                ConfigureServices(services);
+            })
+            .UseDefaultServiceProvider((_, options) =>
+            {
+                options.ValidateOnBuild = true;
+                options.ValidateScopes = true;
+            })
+            .Build();
     }
 
     private void ConfigureServices(IServiceCollection services)
@@ -101,30 +96,30 @@ public partial class App : Application
         });
 
         // Windows and pages
+        services.AddSingleton<IUiFactory, UiFactory>();
         services.AddSingleton<MainWindow>();
-        services.AddSingleton<Debugger>();
+        services.AddSingleton<MainWindowViewModel>();
 
         // EF
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite(config.GetConnectionString("DefaultConnection"),
-            b => b.MigrationsAssembly("OpenBullet2.Core")), ServiceLifetime.Transient);
+            b => b.MigrationsAssembly("OpenBullet2.Core")));
 
         // Repositories
-        services.AddSingleton<IProxyRepository, DbProxyRepository>();
-        services.AddSingleton<IProxyGroupRepository, DbProxyGroupRepository>();
+        services.AddScoped<IProxyRepository, DbProxyRepository>();
+        services.AddScoped<IProxyGroupRepository, DbProxyGroupRepository>();
         services.AddScoped<IHitRepository, DbHitRepository>();
-        services.AddSingleton<IJobRepository, DbJobRepository>();
-        services.AddSingleton<IRecordRepository, DbRecordRepository>();
+        services.AddScoped<IJobRepository, DbJobRepository>();
+        services.AddScoped<IRecordRepository, DbRecordRepository>();
         services.AddSingleton<IConfigRepository>(service =>
             new DiskConfigRepository(service.GetRequiredService<RuriLibSettingsService>(),
             "UserData/Configs"));
-        services.AddSingleton<IWordlistRepository>(service =>
+        services.AddScoped<IWordlistRepository>(service =>
             new HybridWordlistRepository(service.GetRequiredService<ApplicationDbContext>(),
             "UserData/Wordlists"));
 
         // Singletons
         services.AddSingleton<VolatileSettingsService>();
-        services.AddSingleton<ViewModelsService>();
         services.AddSingleton<AnnouncementService>();
         services.AddSingleton<UpdateService>();
         services.AddSingleton<ConfigService>();
@@ -146,17 +141,76 @@ public partial class App : Application
         services.AddSingleton<IJobLogger>(service =>
             new FileJobLogger(service.GetRequiredService<RuriLibSettingsService>(),
             "UserData/Logs/Jobs"));
+
+        services.AddSingleton<HomeViewModel>();
+        services.AddSingleton<JobsViewModel>();
+        services.AddSingleton<ProxiesViewModel>();
+        services.AddSingleton<WordlistsViewModel>();
+        services.AddSingleton<ConfigsViewModel>();
+        services.AddSingleton<HitsViewModel>();
+        services.AddSingleton<OBSettingsViewModel>();
+        services.AddSingleton<RLSettingsViewModel>();
+        services.AddSingleton<PluginsViewModel>();
+        services.AddSingleton<ConfigMetadataViewModel>();
+        services.AddSingleton<ConfigReadmeViewModel>();
+        services.AddSingleton<ConfigStackerViewModel>();
+        services.AddSingleton<ConfigSettingsViewModel>();
+        services.AddSingleton<DebuggerViewModel>();
+
+        services.AddTransient<ConfigEditorViewModel>();
+        services.AddTransient<ConfigLoliCodeViewModel>();
+        services.AddTransient<ConfigCSharpCodeViewModel>();
+        services.AddTransient<AddBlockDialogViewModel>();
+        services.AddTransient<SelectConfigDialogViewModel>();
+        services.AddTransient<SelectWordlistDialogViewModel>();
+        services.AddTransient<MultiRunJobOptionsViewModel>();
+        services.AddTransient<ProxyCheckJobOptionsViewModel>();
+
+        services.AddTransient<Debugger>();
+        services.AddTransient<ConfigStacker>();
+        services.AddTransient<ConfigLoliCode>();
+        services.AddTransient<ConfigCSharpCode>();
+        services.AddTransient<ConfigLoliScript>();
     }
 
-    private void OnStartup(object sender, StartupEventArgs e)
+    private async void OnStartup(object sender, StartupEventArgs e)
     {
-        var mainWindow = serviceProvider.GetRequiredService<MainWindow>();
-        mainWindow.NavigateTo(MainWindowPage.Home);
-        mainWindow.Show();
+        try
+        {
+            await Host.StartAsync();
+
+            using (var serviceScope = Host.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                context.Database.Migrate();
+            }
+
+            var configService = Host.Services.GetRequiredService<ConfigService>();
+            await configService.ReloadConfigsAsync();
+
+            AutocompletionProvider.Init(Host.Services.GetRequiredService<OpenBulletSettingsService>());
+            Suggestions.Init(
+                Host.Services.GetRequiredService<DebuggerViewModel>(),
+                Host.Services.GetRequiredService<RuriLibSettingsService>(),
+                Host.Services.GetRequiredService<ConfigService>());
+
+            _ = Host.Services.GetRequiredService<JobMonitorService>();
+
+            var mainWindow = Host.Services.GetRequiredService<MainWindow>();
+            mainWindow.NavigateTo(MainWindowPage.Home);
+            mainWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            ReportCrash(ex);
+            Shutdown(-1);
+        }
     }
 
-    protected override void OnExit(ExitEventArgs e)
+    protected override async void OnExit(ExitEventArgs e)
     {
+        await Host.StopAsync();
+        Host.Dispose();
         Log.CloseAndFlush();
         base.OnExit(e);
     }
@@ -189,11 +243,14 @@ public partial class App : Application
 
     private static void ReportCrash(Exception ex)
     {
+        var crashLogPath = Path.Combine(AppContext.BaseDirectory, "crash.log");
+        var copyText = ex.ToString();
+
         Log.Fatal(ex, "Unhandled exception");
-        File.WriteAllText("crash.log", $"Unhandled exception thrown on {DateTime.Now}\r\n{ex}");
+        File.WriteAllText(crashLogPath, $"Unhandled exception thrown on {DateTime.Now}{Environment.NewLine}{ex}");
 
         Alert.Error("Unhandled exception", $"An unhandled exception was thrown, the application will try to continue running." +
-            $" Please open the crash.log file, copy the error message inside it and open an issue on the official github repository." +
-            $" A few details about the exception: {ex.Message}");
+            " A crash log was written next to the executable." +
+            $" A few details about the exception: {ex.Message}", copyText);
     }
 }

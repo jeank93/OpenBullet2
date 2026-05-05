@@ -1,5 +1,6 @@
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Services;
+using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Settings;
@@ -12,19 +13,34 @@ namespace OpenBullet2.Native.Utils;
 
 public static class Suggestions
 {
+    private static DebuggerViewModel? debuggerViewModel;
+    private static RuriLibSettingsService? rlSettingsService;
+    private static ConfigService? configService;
+
+    public static void Init(
+        DebuggerViewModel debuggerViewModel,
+        RuriLibSettingsService rlSettingsService,
+        ConfigService configService)
+    {
+        Suggestions.debuggerViewModel = debuggerViewModel;
+        Suggestions.rlSettingsService = rlSettingsService;
+        Suggestions.configService = configService;
+    }
+
     public static IEnumerable<string> GetInputVariableSuggestions(BlockSetting setting)
     {
-        var debuggerVM = SP.GetService<ViewModelsService>().Debugger;
-        var rlSettings = SP.GetService<RuriLibSettingsService>();
-        var configService = SP.GetService<ConfigService>();
+        if (debuggerViewModel is null || rlSettingsService is null || configService is null)
+        {
+            throw new InvalidOperationException("Suggestions have not been initialized");
+        }
 
         var suggestions = new List<string> {
         "data.SOURCE", "data.ERROR", "data.ADDRESS",
         "data.HEADERS[\"name\"]", "data.COOKIES[\"name\"]",
         "data.STATUS", "data.RESPONSECODE", "data.RAWSOURCE", "data.Line.Data" };
 
-        var wordlistTypeName = debuggerVM.WordlistType;
-        var wordlistType = rlSettings.Environment.WordlistTypes.First(w => w.Name == wordlistTypeName);
+        var wordlistTypeName = debuggerViewModel.WordlistType;
+        var wordlistType = rlSettingsService.Environment.WordlistTypes.First(w => w.Name == wordlistTypeName);
         foreach (var slice in wordlistType.Slices.Concat(wordlistType.SlicesAlias).Reverse())
         {
             suggestions.Insert(0, $"input.{slice}");

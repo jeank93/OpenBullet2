@@ -1,6 +1,5 @@
 using Microsoft.Win32;
 using OpenBullet2.Native.Helpers;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using System;
 using System.Windows;
@@ -15,9 +14,9 @@ public partial class ConfigMetadata : Page
 {
     private readonly ConfigMetadataViewModel vm;
 
-    public ConfigMetadata()
+    public ConfigMetadata(ConfigMetadataViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().ConfigMetadata;
+        this.vm = vm;
         DataContext = vm;
 
         InitializeComponent();

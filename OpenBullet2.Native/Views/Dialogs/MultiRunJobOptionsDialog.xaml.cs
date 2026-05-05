@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
@@ -8,6 +9,7 @@ using OpenBullet2.Core.Models.Proxies;
 using OpenBullet2.Core.Repositories;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
+using OpenBullet2.Native.Services;
 using OpenBullet2.Native.Utils;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Configs;
@@ -31,20 +33,35 @@ namespace OpenBullet2.Native.Views.Dialogs;
 /// </summary>
 public partial class MultiRunJobOptionsDialog : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly Func<JobOptions, Task>? onAccept;
     private readonly MultiRunJobOptionsViewModel vm;
 
-    public MultiRunJobOptionsDialog(MultiRunJobOptions? options = null, Func<JobOptions, Task>? onAccept = null)
+    public MultiRunJobOptionsDialog(
+        IUiFactory uiFactory,
+        MultiRunJobOptionsViewModel vm,
+        Func<JobOptions, Task>? onAccept)
+        : this(uiFactory, vm, null, onAccept)
     {
-        this.onAccept = onAccept;
-        vm = new MultiRunJobOptionsViewModel(options);
-        DataContext = vm;
+    }
 
-        vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
+    public MultiRunJobOptionsDialog(
+        IUiFactory uiFactory,
+        MultiRunJobOptionsViewModel vm,
+        MultiRunJobOptions? options,
+        Func<JobOptions, Task>? onAccept)
+    {
+        this.uiFactory = uiFactory;
+        this.onAccept = onAccept;
+        this.vm = vm;
+        vm.Initialize(options);
+        DataContext = this.vm;
+
+        this.vm.StartConditionModeChanged += mode => startConditionTabControl.SelectedIndex = (int)mode;
 
         InitializeComponent();
 
-        startConditionTabControl.SelectedIndex = (int)vm.StartConditionMode;
+        startConditionTabControl.SelectedIndex = (int)this.vm.StartConditionMode;
     }
 
     private void AddGroupProxySource(object sender, RoutedEventArgs e) => vm.AddGroupProxySource();
@@ -90,15 +107,15 @@ public partial class MultiRunJobOptionsDialog : Page
     }
 
     private void AddWordlist(object sender, RoutedEventArgs e)
-        => new MainDialog(new AddWordlistDialog(this), "Add a wordlist").ShowDialog();
+        => new MainDialog(uiFactory.Create<AddWordlistDialog>(this), "Add a wordlist").ShowDialog();
 
     public Task AddWordlistAsync(WordlistEntity entity) => vm.AddWordlist(entity);
 
     private void SelectConfig(object sender, RoutedEventArgs e)
-        => new MainDialog(new SelectConfigDialog(this), "Select a config").ShowDialog();
+        => new MainDialog(uiFactory.Create<SelectConfigDialog>(this), "Select a config").ShowDialog();
 
     private void SelectWordlist(object sender, RoutedEventArgs e)
-        => new MainDialog(new SelectWordlistDialog(this), "Select a wordlist").ShowDialog();
+        => new MainDialog(uiFactory.Create<SelectWordlistDialog>(this), "Select a wordlist").ShowDialog();
 
     private async void Accept(object sender, RoutedEventArgs e)
     {
@@ -167,13 +184,11 @@ public partial class MultiRunJobOptionsDialog : Page
 
 public class MultiRunJobOptionsViewModel : ViewModelBase
 {
-    private readonly IRecordRepository recordRepo;
-    private readonly IWordlistRepository wordlistRepo;
     private readonly RuriLibSettingsService rlSettingsService;
     private readonly ConfigService configService;
     private readonly JobFactoryService jobFactory;
-    private readonly IProxyGroupRepository proxyGroupRepo;
-    public MultiRunJobOptions Options { get; init; }
+    private readonly IServiceScopeFactory scopeFactory;
+    public MultiRunJobOptions Options { get; private set; }
 
     #region Start Condition
     public event Action<StartConditionMode>? StartConditionModeChanged;
@@ -310,8 +325,8 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     {
         if (Options.DataPool is WordlistDataPoolOptions wdpo)
         {
-            var record = await recordRepo.GetAll()
-                .FirstOrDefaultAsync(r => r.ConfigId == Options.ConfigId && r.WordlistId == wdpo.WordlistId);
+            var record = await WithRecordRepositoryAsync(repo => repo.GetAll()
+                .FirstOrDefaultAsync(r => r.ConfigId == Options.ConfigId && r.WordlistId == wdpo.WordlistId));
 
             Skip = record?.Checkpoint ?? 0;
         }
@@ -424,22 +439,29 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     }
     #endregion
 
-    public MultiRunJobOptionsViewModel(MultiRunJobOptions? options)
+    public MultiRunJobOptionsViewModel(
+        RuriLibSettingsService rlSettingsService,
+        ConfigService configService,
+        JobFactoryService jobFactory,
+        IServiceScopeFactory scopeFactory)
+    {
+        this.rlSettingsService = rlSettingsService;
+        this.configService = configService;
+        this.jobFactory = jobFactory;
+        this.scopeFactory = scopeFactory;
+        Options = null!;
+    }
+
+    public void Initialize(MultiRunJobOptions? options)
     {
         Options = options ?? (JobOptionsFactory.CreateNew(JobType.MultiRun) as MultiRunJobOptions
             ?? throw new InvalidOperationException("Failed to create multi run job options"));
-        recordRepo = SP.GetService<IRecordRepository>();
-        wordlistRepo = SP.GetService<IWordlistRepository>();
-        rlSettingsService = SP.GetService<RuriLibSettingsService>();
-        configService = SP.GetService<ConfigService>();
-        jobFactory = SP.GetService<JobFactoryService>();
-        proxyGroupRepo = SP.GetService<IProxyGroupRepository>();
 
         SetConfigData();
 
         DataPoolOptions = Options.DataPool switch
         {
-            WordlistDataPoolOptions w => new WordlistDataPoolOptionsViewModel(w),
+            WordlistDataPoolOptions w => new WordlistDataPoolOptionsViewModel(w, scopeFactory),
             FileDataPoolOptions f => new FileDataPoolOptionsViewModel(f),
             RangeDataPoolOptions r => new RangeDataPoolOptionsViewModel(r),
             CombinationsDataPoolOptions c => new CombinationsDataPoolOptionsViewModel(c),
@@ -447,7 +469,10 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
             _ => throw new NotImplementedException()
         };
 
-        proxyGroups = proxyGroupRepo.GetAll().ToList();
+        using (var scope = scopeFactory.CreateScope())
+        {
+            proxyGroups = scope.ServiceProvider.GetRequiredService<IProxyGroupRepository>().GetAll().ToList();
+        }
         PopulateProxySources();
 
         HitOutputsCollection = new ObservableCollection<HitOutputOptions>(Options.HitOutputs);
@@ -492,7 +517,7 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     #endregion
 
     #region Proxy Sources
-    private readonly IEnumerable<ProxyGroupEntity> proxyGroups;
+    private IEnumerable<ProxyGroupEntity> proxyGroups = [];
     public IEnumerable<string> ProxyGroupNames => new[] { "All" }.Concat(proxyGroups.Select(g => g.Name ?? string.Empty));
     public IEnumerable<ProxyType> ProxyTypes => Enum.GetValues(typeof(ProxyType)).Cast<ProxyType>();
 
@@ -581,7 +606,7 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
         {
             if (value)
             {
-                DataPoolOptions = new WordlistDataPoolOptionsViewModel(new WordlistDataPoolOptions());
+                DataPoolOptions = new WordlistDataPoolOptionsViewModel(new WordlistDataPoolOptions(), scopeFactory);
             }
 
             OnPropertyChanged();
@@ -647,7 +672,21 @@ public class MultiRunJobOptionsViewModel : ViewModelBase
     public IEnumerable<string> WordlistTypes => rlSettingsService.Environment.WordlistTypes.Select(t => t.Name);
     #endregion
 
-    public Task AddWordlist(WordlistEntity entity) => wordlistRepo.AddAsync(entity);
+    public Task AddWordlist(WordlistEntity entity) => WithWordlistRepositoryAsync(repo => repo.AddAsync(entity));
+
+    private async Task WithWordlistRepositoryAsync(Func<IWordlistRepository, Task> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IWordlistRepository>();
+        await action(repo);
+    }
+
+    private async Task<T> WithRecordRepositoryAsync<T>(Func<IRecordRepository, Task<T>> action)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
+        return await action(repo);
+    }
 }
 
 public enum StartConditionMode
@@ -664,8 +703,8 @@ public class DataPoolOptionsViewModel(DataPoolOptions options) : ViewModelBase
 
 public class WordlistDataPoolOptionsViewModel : DataPoolOptionsViewModel
 {
-    private readonly IWordlistRepository wordlistRepo;
     private WordlistEntity? wordlist;
+    private readonly IServiceScopeFactory scopeFactory;
     private WordlistDataPoolOptions WordlistOptions => Options as WordlistDataPoolOptions
         ?? throw new InvalidOperationException("Invalid wordlist data pool options");
 
@@ -673,13 +712,15 @@ public class WordlistDataPoolOptionsViewModel : DataPoolOptionsViewModel
         ? "No wordlist selected"
         : $"{wordlist.Name} ({wordlist.Total} lines)";
 
-    public WordlistDataPoolOptionsViewModel(WordlistDataPoolOptions options) : base(options)
+    public WordlistDataPoolOptionsViewModel(WordlistDataPoolOptions options, IServiceScopeFactory scopeFactory) : base(options)
     {
-        wordlistRepo = SP.GetService<IWordlistRepository>();
+        this.scopeFactory = scopeFactory;
 
         if (options.WordlistId != -1)
         {
-            wordlist = wordlistRepo.GetAsync(options.WordlistId).Result;
+            using var scope = scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IWordlistRepository>();
+            wordlist = repo.GetAsync(options.WordlistId).GetAwaiter().GetResult();
         }
 
         // If the wordlist was not found (e.g. deleted)

@@ -1,6 +1,5 @@
 using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.Helpers;
-using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Logging;
 using System;
@@ -17,9 +16,9 @@ public partial class Debugger : Page
 {
     private readonly DebuggerViewModel vm;
 
-    public Debugger()
+    public Debugger(DebuggerViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().Debugger;
+        this.vm = vm;
         DataContext = vm;
 
         vm.NewLogEntry += NewLogEntry;

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Repositories;
@@ -10,6 +11,7 @@ namespace OpenBullet2.Core.Tests.Services;
 public sealed class DataPoolFactoryServiceTests : IDisposable
 {
     private readonly string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    private readonly List<ServiceProvider> serviceProviders = [];
 
     [Fact]
     public async Task FromOptionsAsync_RangeOptions_ReturnsRangeDataPool()
@@ -90,6 +92,11 @@ public sealed class DataPoolFactoryServiceTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var serviceProvider in serviceProviders)
+        {
+            serviceProvider.Dispose();
+        }
+
         if (Directory.Exists(tempDir))
         {
             Directory.Delete(tempDir, true);
@@ -97,7 +104,17 @@ public sealed class DataPoolFactoryServiceTests : IDisposable
     }
 
     private DataPoolFactoryService CreateService(IWordlistRepository? repository = null)
-        => new(repository ?? new FakeWordlistRepository(), new RuriLibSettingsService(tempDir));
+    {
+        var repo = repository ?? new FakeWordlistRepository();
+        var services = new ServiceCollection();
+        services.AddScoped<IWordlistRepository>(_ => repo);
+
+        var serviceProvider = services.BuildServiceProvider();
+        serviceProviders.Add(serviceProvider);
+
+        return new DataPoolFactoryService(serviceProvider.GetRequiredService<IServiceScopeFactory>(),
+            new RuriLibSettingsService(tempDir));
+    }
 
     private sealed class FakeWordlistRepository(params WordlistEntity[] entities) : IWordlistRepository
     {

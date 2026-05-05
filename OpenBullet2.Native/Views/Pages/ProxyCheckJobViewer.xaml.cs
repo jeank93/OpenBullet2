@@ -1,6 +1,7 @@
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Extensions;
 using OpenBullet2.Native.Helpers;
+using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
 using System;
@@ -17,14 +18,16 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class ProxyCheckJobViewer : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly OpenBulletSettingsService obSettingsService;
     private ProxyCheckJobViewerViewModel? vm;
     private ProxyCheckJobViewerViewModel ViewModel => vm
         ?? throw new InvalidOperationException("The job viewer has not been bound yet");
 
-    public ProxyCheckJobViewer()
+    public ProxyCheckJobViewer(IUiFactory uiFactory, OpenBulletSettingsService obSettingsService)
     {
-        obSettingsService = SP.GetService<OpenBulletSettingsService>();
+        this.uiFactory = uiFactory;
+        this.obSettingsService = obSettingsService;
         InitializeComponent();
     }
 
@@ -44,7 +47,7 @@ public partial class ProxyCheckJobViewer : Page
             }
         }
 
-        vm = new ProxyCheckJobViewerViewModel(jobVM);
+        vm = uiFactory.Create<ProxyCheckJobViewerViewModel>(jobVM);
         vm.NewMessage += OnResultMessage;
         DataContext = vm;
     }
@@ -124,7 +127,7 @@ public partial class ProxyCheckJobViewer : Page
     }
 
     private void ChangeBots(object sender, MouseButtonEventArgs e)
-        => new MainDialog(new ChangeBotsDialog(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
+        => new MainDialog(uiFactory.Create<ChangeBotsDialog>(this, ViewModel.Job.Bots), "Change bots").ShowDialog();
 
     public Task ChangeBotsAsync(int newValue) => ViewModel.ChangeBotsAsync(newValue);
 

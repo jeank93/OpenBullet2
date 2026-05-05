@@ -25,15 +25,17 @@ namespace OpenBullet2.Native.Views.Pages;
 /// </summary>
 public partial class Proxies : Page
 {
+    private readonly IUiFactory uiFactory;
     private readonly ProxiesViewModel vm;
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
 
     private IEnumerable<ProxyEntity> SelectedProxies => proxiesListView.SelectedItems.Cast<ProxyEntity>().ToList();
 
-    public Proxies()
+    public Proxies(IUiFactory uiFactory, ProxiesViewModel vm)
     {
-        vm = SP.GetService<ViewModelsService>().Proxies;
+        this.uiFactory = uiFactory;
+        this.vm = vm;
         DataContext = vm;
         _ = vm.InitializeAsync();
 
@@ -41,7 +43,7 @@ public partial class Proxies : Page
     }
 
     private void AddGroup(object sender, RoutedEventArgs e)
-        => new MainDialog(new AddProxyGroupDialog(this), "Add proxy group").ShowDialog();
+        => new MainDialog(uiFactory.Create<AddProxyGroupDialog>(this), "Add proxy group").ShowDialog();
 
     private void EditGroup(object sender, RoutedEventArgs e)
     {
@@ -51,7 +53,7 @@ public partial class Proxies : Page
             return;
         }
 
-        new MainDialog(new AddProxyGroupDialog(this, vm.SelectedGroup), "Edit proxy group").ShowDialog();
+        new MainDialog(uiFactory.Create<AddProxyGroupDialog>(this, vm.SelectedGroup), "Edit proxy group").ShowDialog();
     }
 
     private async void DeleteGroup(object sender, RoutedEventArgs e)
@@ -106,7 +108,7 @@ public partial class Proxies : Page
             return;
         }
 
-        new MainDialog(new ImportProxiesDialog(this), "Import proxies").ShowDialog();
+        new MainDialog(uiFactory.Create<ImportProxiesDialog>(this), "Import proxies").ShowDialog();
     }
 
     public Task AddGroupAsync(ProxyGroupEntity entity) => vm.AddGroupAsync(entity);

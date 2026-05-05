@@ -17,19 +17,23 @@ namespace OpenBullet2.Native.Views.Dialogs;
 public partial class CreateConfigDialog : Page
 {
     private readonly object caller;
+    private readonly OpenBulletSettingsService obSettingsService;
+    private readonly ConfigService configService;
 
-    public CreateConfigDialog(object caller)
+    public CreateConfigDialog(object caller, OpenBulletSettingsService obSettingsService, ConfigService configService)
     {
         InitializeComponent();
         this.caller = caller;
+        this.obSettingsService = obSettingsService;
+        this.configService = configService;
 
-        var settings = SP.GetService<OpenBulletSettingsService>().Settings;
+        var settings = obSettingsService.Settings;
         authorTextbox.Text = settings.GeneralSettings.DefaultAuthor;
         nameTextbox.Focus();
 
         categoryCombobox.Items.Add("Default");
 
-        var categories = SP.GetService<ConfigService>().Configs
+        var categories = configService.Configs
             .Select(c => c.Metadata.Category)
             .Where(category => category != "Default")
             .Distinct();

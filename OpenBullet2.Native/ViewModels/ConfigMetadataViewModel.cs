@@ -50,10 +50,7 @@ public class ConfigMetadataViewModel : ViewModelBase
         ? null
         : Images.Base64ToBitmapImage(Config.Metadata.Base64Image);
 
-    public ConfigMetadataViewModel()
-    {
-        configService = SP.GetService<ConfigService>();
-    }
+    public ConfigMetadataViewModel(ConfigService configService) => this.configService = configService;
 
     public void SetIconFromFile(string fileName)
     {

@@ -7,12 +7,16 @@ namespace OpenBullet2.Native.Tests;
 
 public sealed class WpfAppFixture : IDisposable
 {
+    private const string NativeTestModeEnvironmentVariable = "OB2_NATIVE_TEST_MODE";
     private readonly Thread thread;
     private readonly Dispatcher dispatcher;
+    private readonly string? previousNativeTestModeValue;
 
     public WpfAppFixture()
     {
         Alert.SuppressDialogs = true;
+        previousNativeTestModeValue = Environment.GetEnvironmentVariable(NativeTestModeEnvironmentVariable);
+        Environment.SetEnvironmentVariable(NativeTestModeEnvironmentVariable, "1");
 
         using var ready = new ManualResetEventSlim();
         Exception? startupException = null;
@@ -108,6 +112,7 @@ public sealed class WpfAppFixture : IDisposable
     {
         dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);
         thread.Join();
+        Environment.SetEnvironmentVariable(NativeTestModeEnvironmentVariable, previousNativeTestModeValue);
         Alert.SuppressDialogs = false;
     }
 }

@@ -43,7 +43,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mapster" Version="7.4.0" />
+        <PackageReference Include="Mapster" Version="10.0.7" />
         <PackageReference Include="FluentValidation" Version="12.1.1" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
@@ -54,7 +54,7 @@
         <PackageReference Include="nulastudio.NetBeauty" Version="2.1.5"/>
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
         <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
-        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.24.0.138807">
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.25.0.139117">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

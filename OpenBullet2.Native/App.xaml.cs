@@ -38,6 +38,7 @@ namespace OpenBullet2.Native;
 public partial class App : Application
 {
     private const string LogsPath = "UserData/Logs/log-.txt";
+    private const string NativeTestModeEnvironmentVariable = "OB2_NATIVE_TEST_MODE";
     private readonly IConfiguration config;
     public static IHost Host { get; private set; } = null!;
 
@@ -178,6 +179,11 @@ public partial class App : Application
         try
         {
             await Host.StartAsync();
+
+            if (Environment.GetEnvironmentVariable(NativeTestModeEnvironmentVariable) == "1")
+            {
+                return;
+            }
 
             using (var serviceScope = Host.Services.GetRequiredService<IServiceScopeFactory>().CreateScope())
             {

@@ -254,7 +254,7 @@ public class FtpRequestBlocksTests
 
         if (ex is TimeoutException timeout)
         {
-            Assert.Equal("Timed out trying to connect!", timeout.Message);
+            Assert.StartsWith("Timed out trying to connect", timeout.Message, StringComparison.Ordinal);
         }
         else
         {

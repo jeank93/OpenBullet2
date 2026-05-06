@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -220,6 +222,43 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var statements = new List<StatementSyntax>();
+        var outputType = Recursive ? "List<string>" : "string";
+        var defaultReturnValue = Recursive ? "new List<string>()" : "string.Empty";
+
+        if (Safe)
+        {
+            if (!context.DefinedVariables.Contains(OutputVariable)
+                && !OutputVariable.StartsWith("globals.", StringComparison.Ordinal))
+            {
+                if (!Disabled)
+                {
+                    context.DefinedVariables.Add(OutputVariable);
+                }
+
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    outputType,
+                    OutputVariable,
+                    SyntaxFactory.ParseExpression(defaultReturnValue)));
+            }
+
+            statements.Add(SyntaxFactory.TryStatement(
+                SyntaxFactory.Block(CreateExecutionStatements(context.DefinedVariables, true).ToArray()),
+                SyntaxFactory.List([BlockSyntaxFactory.CreateSafeModeCatchClause()]),
+                null));
+
+            return statements;
+        }
+
+        statements.AddRange(CreateExecutionStatements(context.DefinedVariables, false));
+        return statements;
+    }
+
     private void WriteParseMethod(StringWriter writer)
     {
         switch (Mode)
@@ -293,5 +332,96 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
         {
             writer.WriteLine($"data.MarkForCapture(nameof({OutputVariable}));");
         }
+    }
+
+    private List<StatementSyntax> CreateExecutionStatements(List<string> definedVariables, bool assignmentOnly)
+    {
+        var statements = new List<StatementSyntax>();
+        var outputType = Recursive ? "List<string>" : "string";
+        var invocation = BuildParseInvocationExpression();
+        var assignToExistingVariable = assignmentOnly
+            || definedVariables.Contains(OutputVariable)
+            || OutputVariable.StartsWith("globals.", StringComparison.Ordinal);
+
+        if (!assignToExistingVariable && !Disabled)
+        {
+            definedVariables.Add(OutputVariable);
+        }
+
+        statements.Add(BlockSyntaxFactory.CreateVariableDeclarationOrAssignment(
+            outputType,
+            OutputVariable,
+            invocation,
+            assignToExistingVariable));
+
+        statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("LogVariableAssignment", OutputVariable));
+
+        if (IsCapture)
+        {
+            statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("MarkForCapture", OutputVariable));
+        }
+
+        return statements;
+    }
+
+    private ExpressionSyntax BuildParseInvocationExpression()
+    {
+        var methodName = Mode switch
+        {
+            ParseMode.LR => "ParseBetweenStrings",
+            ParseMode.CSS => "QueryCssSelector",
+            ParseMode.XPath => "QueryXPath",
+            ParseMode.Json => "QueryJsonToken",
+            ParseMode.Regex => "MatchRegexGroups",
+            _ => throw new NotSupportedException()
+        };
+
+        if (Recursive)
+        {
+            methodName += "Recursive";
+        }
+
+        var arguments = new List<ArgumentSyntax>
+        {
+            SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+            SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["input"]))
+        };
+
+        switch (Mode)
+        {
+            case ParseMode.LR:
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["leftDelim"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["rightDelim"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["caseSensitive"])));
+                break;
+
+            case ParseMode.CSS:
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["cssSelector"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["attributeName"])));
+                break;
+
+            case ParseMode.XPath:
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["xPath"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["attributeName"])));
+                break;
+
+            case ParseMode.Json:
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["jToken"])));
+                break;
+
+            case ParseMode.Regex:
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["pattern"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["outputFormat"])));
+                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["multiLine"])));
+                break;
+        }
+
+        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["prefix"])));
+        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["suffix"])));
+        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["urlEncodeOutput"])));
+
+        return SyntaxFactory.InvocationExpression(
+            SyntaxFactory.IdentifierName(methodName),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
     }
 }

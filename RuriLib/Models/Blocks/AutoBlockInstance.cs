@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RuriLib.Exceptions;
 using RuriLib.Extensions;
 using RuriLib.Helpers;
@@ -199,6 +201,43 @@ public class AutoBlockInstance : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var statements = new List<StatementSyntax>();
+
+        if (Safe)
+        {
+            if (Descriptor.ReturnType.HasValue
+                && !context.DefinedVariables.Contains(OutputVariable)
+                && !OutputVariable.StartsWith("globals."))
+            {
+                if (!Disabled)
+                {
+                    context.DefinedVariables.Add(OutputVariable);
+                }
+
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    GetRuntimeReturnType(),
+                    OutputVariable,
+                    SyntaxFactory.ParseExpression(GetDefaultReturnValue())));
+            }
+
+            var tryStatements = CreateExecutionStatements(context.DefinedVariables, true);
+            statements.Add(SyntaxFactory.TryStatement(
+                SyntaxFactory.Block(tryStatements),
+                SyntaxFactory.List([BlockSyntaxFactory.CreateSafeModeCatchClause()]),
+                null));
+
+            return statements;
+        }
+
+        statements.AddRange(CreateExecutionStatements(context.DefinedVariables, false));
+        return statements;
+    }
+
     private void WriteMethod(StringWriter writer)
     {
         var descriptor = (Descriptor as AutoBlockDescriptor)!;
@@ -265,4 +304,64 @@ public class AutoBlockInstance : BlockInstance
         VariableType.String => "string.Empty",
         _ => throw new NotSupportedException()
     };
+
+    private List<StatementSyntax> CreateExecutionStatements(List<string> declaredVariables, bool assignmentOnly)
+    {
+        var statements = new List<StatementSyntax>();
+
+        if (Descriptor.ReturnType.HasValue)
+        {
+            var invocationExpression = BuildMethodInvocationExpression();
+            var assignToExistingVariable = assignmentOnly
+                || declaredVariables.Contains(OutputVariable)
+                || OutputVariable.StartsWith("globals.");
+
+            if (!assignToExistingVariable && !Disabled)
+            {
+                declaredVariables.Add(OutputVariable);
+            }
+
+            statements.Add(BlockSyntaxFactory.CreateVariableDeclarationOrAssignment(
+                GetRuntimeReturnType(),
+                OutputVariable,
+                invocationExpression,
+                assignToExistingVariable));
+
+            statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("LogVariableAssignment", OutputVariable));
+
+            if (IsCapture)
+            {
+                statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("MarkForCapture", OutputVariable));
+            }
+        }
+        else
+        {
+            statements.Add(SyntaxFactory.ExpressionStatement(BuildMethodInvocationExpression()));
+        }
+
+        return statements;
+    }
+
+    private ExpressionSyntax BuildMethodInvocationExpression()
+    {
+        var descriptor = (AutoBlockDescriptor)Descriptor;
+        var arguments = new List<ArgumentSyntax>
+        {
+            SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data"))
+        };
+
+        arguments.AddRange(Settings.Values.Select(setting => SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(setting))));
+
+        var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
+            ? descriptor.Id
+            : descriptor.MethodName;
+
+        ExpressionSyntax invocation = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.IdentifierName(methodName),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+
+        return descriptor.Async
+            ? BlockSyntaxFactory.CreateAwaitConfigureAwaitFalse(invocation)
+            : invocation;
+    }
 }

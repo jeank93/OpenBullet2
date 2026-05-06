@@ -1,9 +1,11 @@
-using System;
 using RuriLib.Helpers.Blocks;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
 using RuriLib.Models.Configs;
+using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RuriLib.Tests.Models.Blocks;
@@ -178,4 +180,172 @@ public class AutoBlockInstanceTests
         var expected = $"myOutput = Substring(data, $\"hello <{{name}}> and <friend>\", 3, myLength.AsInt());{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
         Assert.Equal(expected, block.ToCSharp(["myOutput"], new ConfigSettings()));
     }
+
+    [Fact]
+    public void ToSyntax_SyncReturnValue_MatchesToCSharp()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
+        block.OutputVariable = "myOutput";
+        var input = block.Settings["input"];
+        var index = block.Settings["index"];
+        var length = block.Settings["length"];
+
+        input.InputMode = SettingInputMode.Variable;
+        input.InputVariableName = "myInput";
+
+        index.InputMode = SettingInputMode.Fixed;
+        (index.FixedSetting as IntSetting)!.Value = 3;
+
+        length.InputMode = SettingInputMode.Fixed;
+        (length.FixedSetting as IntSetting)!.Value = 5;
+
+        var expected = block.ToCSharp([], new ConfigSettings());
+        Assert.Equal(expected, RenderSyntax(block, []));
+    }
+
+    [Fact]
+    public void ToSyntax_SyncReturnValueCapture_MatchesToCSharp()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
+        block.OutputVariable = "myOutput";
+        block.IsCapture = true;
+        var input = block.Settings["input"];
+        var index = block.Settings["index"];
+        var length = block.Settings["length"];
+
+        input.InputMode = SettingInputMode.Variable;
+        input.InputVariableName = "myInput";
+
+        index.InputMode = SettingInputMode.Fixed;
+        (index.FixedSetting as IntSetting)!.Value = 3;
+
+        length.InputMode = SettingInputMode.Fixed;
+        (length.FixedSetting as IntSetting)!.Value = 5;
+
+        var expected = block.ToCSharp([], new ConfigSettings());
+        Assert.Equal(expected, RenderSyntax(block, []));
+    }
+
+    [Fact]
+    public void ToSyntax_AsyncNoReturnValue_MatchesToCSharp()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("TcpConnect");
+        var url = block.Settings["host"];
+        var port = block.Settings["port"];
+        var ssl = block.Settings["useSSL"];
+        var timeout = block.Settings["timeoutMilliseconds"];
+
+        (url.FixedSetting as StringSetting)!.Value = "example.com";
+        (port.FixedSetting as IntSetting)!.Value = 80;
+        (ssl.FixedSetting as BoolSetting)!.Value = false;
+        (timeout.FixedSetting as IntSetting)!.Value = 1000;
+
+        var expected = block.ToCSharp([], new ConfigSettings());
+        Assert.Equal(expected, RenderSyntax(block, []));
+    }
+
+    [Fact]
+    public void ToSyntax_ParityMatrix_MatchesLegacyAndVariableTracking()
+    {
+        AssertParity(CreateSubstringBlock(), []);
+        AssertParity(CreateSubstringBlock(isCapture: true), []);
+        AssertParity(CreateSubstringBlock(safe: true), []);
+        AssertParity(CreateSubstringBlock(outputVariable: "globals.sharedSlice", useGlobalsInput: true), []);
+        AssertParity(CreateSubstringBlock(alreadyDeclared: true, interpolatedInput: "hello <name>"), ["myOutput"]);
+        AssertParity(CreateFileExistsBlock(), []);
+        AssertParity(CreateFileExistsBlock(safe: true, outputVariable: "globals.fileExists"), []);
+        AssertParity(CreateTcpConnectBlock(), []);
+    }
+
+    private static AutoBlockInstance CreateSubstringBlock(
+        bool safe = false,
+        bool isCapture = false,
+        bool alreadyDeclared = false,
+        string outputVariable = "myOutput",
+        bool useGlobalsInput = false,
+        string? interpolatedInput = null)
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
+        block.Safe = safe;
+        block.IsCapture = isCapture;
+        block.OutputVariable = outputVariable;
+
+        var input = block.Settings["input"];
+        var index = block.Settings["index"];
+        var length = block.Settings["length"];
+
+        if (interpolatedInput is not null)
+        {
+            input.InputMode = SettingInputMode.Interpolated;
+            input.InterpolatedSetting = new InterpolatedStringSetting { Value = interpolatedInput };
+        }
+        else
+        {
+            input.InputMode = SettingInputMode.Variable;
+            input.InputVariableName = useGlobalsInput ? "globals.inputValue" : "myInput";
+        }
+
+        index.InputMode = SettingInputMode.Fixed;
+        (index.FixedSetting as IntSetting)!.Value = 3;
+
+        if (alreadyDeclared)
+        {
+            length.InputMode = SettingInputMode.Variable;
+            length.InputVariableName = "input.length";
+        }
+        else
+        {
+            length.InputMode = SettingInputMode.Fixed;
+            (length.FixedSetting as IntSetting)!.Value = 5;
+        }
+
+        return block;
+    }
+
+    private static AutoBlockInstance CreateFileExistsBlock(bool safe = false, string outputVariable = "exists")
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("FileExists");
+        block.Safe = safe;
+        block.OutputVariable = outputVariable;
+
+        var path = block.Settings["path"];
+        path.InputMode = SettingInputMode.Variable;
+        path.InputVariableName = "globals.filePath";
+
+        return block;
+    }
+
+    private static AutoBlockInstance CreateTcpConnectBlock()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("TcpConnect");
+        var url = block.Settings["host"];
+        var port = block.Settings["port"];
+        var ssl = block.Settings["useSSL"];
+        var timeout = block.Settings["timeoutMilliseconds"];
+
+        url.InputMode = SettingInputMode.Variable;
+        url.InputVariableName = "globals.host";
+        (port.FixedSetting as IntSetting)!.Value = 80;
+        (ssl.FixedSetting as BoolSetting)!.Value = false;
+        timeout.InputMode = SettingInputMode.Variable;
+        timeout.InputVariableName = "input.timeout";
+
+        return block;
+    }
+
+    private static void AssertParity(BlockInstance block, List<string> definedVariables)
+    {
+        var legacyVariables = new List<string>(definedVariables);
+        var syntaxVariables = new List<string>(definedVariables);
+        var settings = new ConfigSettings();
+
+        var legacy = StatementSyntaxParser.ParseStatements(block.ToCSharp(legacyVariables, settings)).ToSnippet();
+        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, settings)).ToSnippet();
+
+        Assert.Equal(legacy, syntax);
+        Assert.Equal(legacyVariables, syntaxVariables);
+    }
+
+    private static string RenderSyntax(BlockInstance block, List<string> definedVariables)
+        => block.ToSyntax(new BlockSyntaxGenerationContext(definedVariables, new ConfigSettings())).ToSnippet();
 }

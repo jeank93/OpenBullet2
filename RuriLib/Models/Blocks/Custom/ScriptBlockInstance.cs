@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +12,7 @@ using RuriLib.Extensions;
 using RuriLib.Functions.Conversion;
 using RuriLib.Functions.Crypto;
 using RuriLib.Helpers;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Script;
 using RuriLib.Models.Configs;
@@ -32,7 +35,7 @@ public class ScriptBlockInstance : BlockInstance
     /// </summary>
     public List<OutputVariable> OutputVariables { get; set; } =
     [
-        new OutputVariable
+        new()
         {
             Name = "result",
             Type = VariableType.Int
@@ -310,6 +313,150 @@ public class ScriptBlockInstance : BlockInstance
         return writer.ToString();
     }
 
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var statements = new List<StatementSyntax>();
+        var resultName = "tmp_" + VariableNames.RandomName(6);
+        var engineName = "tmp_" + VariableNames.RandomName(6);
+        var scopeName = "tmp_" + VariableNames.RandomName(6);
+
+        switch (Interpreter)
+        {
+            case Interpreter.Jint:
+                var scriptPath = EnsureScriptFile(Script, Interpreter);
+
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    engineName,
+                    SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName("Engine"))
+                        .WithArgumentList(SyntaxFactory.ArgumentList())));
+
+                foreach (var input in GetInputs())
+                {
+                    statements.Add(SyntaxFactory.ExpressionStatement(
+                        BlockSyntaxFactory.CreateMemberInvocation(
+                            SyntaxFactory.IdentifierName(engineName),
+                            "SetValue",
+                            SyntaxFactory.Argument(BlockSyntaxFactory.CreateNameofExpression(input)),
+                            SyntaxFactory.Argument(SyntaxFactory.ParseExpression(input)))));
+                }
+
+                statements.Add(BlockSyntaxFactory.CreateAssignment(
+                    engineName,
+                    BlockSyntaxFactory.CreateInvocation(
+                        SyntaxFactory.IdentifierName("InvokeJint"),
+                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName(engineName)),
+                        SyntaxFactory.Argument(
+                            SyntaxFactory.LiteralExpression(
+                                SyntaxKind.StringLiteralExpression,
+                                SyntaxFactory.Literal(scriptPath))))));
+
+                foreach (var output in OutputVariables)
+                {
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildJintOutputExpression(engineName, output)));
+                }
+
+                break;
+
+            case Interpreter.NodeJS:
+                var nodeScript = $$"""
+                    module.exports = async ({{MakeInputs()}}) => {
+                        {{Script}}
+                        var noderesult = {
+                        {{MakeNodeObject()}}
+                        };
+                        return noderesult;
+                    }
+                    """;
+
+                var nodeScriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(nodeScript)));
+                var escapedScript = JsonConvert.ToString(nodeScript);
+                var nodeInvocation = BlockSyntaxFactory.CreateInvocation(
+                    SyntaxFactory.ParseExpression("InvokeNode<dynamic>"),
+                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+                    SyntaxFactory.Argument(SyntaxFactory.ParseExpression(escapedScript)),
+                    SyntaxFactory.Argument(BuildInputArrayExpression()),
+                    SyntaxFactory.Argument(
+                        SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)),
+                    SyntaxFactory.Argument(
+                        SyntaxFactory.LiteralExpression(
+                            SyntaxKind.StringLiteralExpression,
+                            SyntaxFactory.Literal(nodeScriptHash))));
+
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    resultName,
+                    SyntaxFactory.AwaitExpression(nodeInvocation)));
+
+                foreach (var output in OutputVariables)
+                {
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildNodeOutputExpression(resultName, output)));
+                }
+
+                break;
+
+            case Interpreter.IronPython:
+                scriptPath = EnsureScriptFile(Script, Interpreter);
+
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    scopeName,
+                    BlockSyntaxFactory.CreateInvocation(
+                        SyntaxFactory.IdentifierName("GetIronPyScope"),
+                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")))));
+
+                foreach (var input in GetInputs())
+                {
+                    statements.Add(SyntaxFactory.ExpressionStatement(
+                        BlockSyntaxFactory.CreateMemberInvocation(
+                            SyntaxFactory.IdentifierName(scopeName),
+                            "SetVariable",
+                            SyntaxFactory.Argument(BlockSyntaxFactory.CreateNameofExpression(input)),
+                            SyntaxFactory.Argument(SyntaxFactory.ParseExpression(input)))));
+                }
+
+                statements.Add(SyntaxFactory.ExpressionStatement(
+                    BlockSyntaxFactory.CreateInvocation(
+                        SyntaxFactory.IdentifierName("ExecuteIronPyScript"),
+                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName(scopeName)),
+                        SyntaxFactory.Argument(
+                            SyntaxFactory.LiteralExpression(
+                                SyntaxKind.StringLiteralExpression,
+                                SyntaxFactory.Literal(scriptPath))))));
+
+                foreach (var output in OutputVariables)
+                {
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildIronPythonOutputExpression(scopeName, output)));
+                }
+
+                break;
+        }
+
+        foreach (var output in OutputVariables)
+        {
+            statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("LogVariableAssignment", output.Name));
+        }
+
+        return statements;
+    }
+
+    private ExpressionSyntax BuildNodeOutputExpression(string resultName, OutputVariable output)
+        => SyntaxFactory.ParseExpression(GetNodeMethod(resultName, output));
+
     private string GetNodeMethod(string resultName, OutputVariable output)
         => output.Type switch
         {
@@ -334,6 +481,18 @@ public class ScriptBlockInstance : BlockInstance
             VariableType.String => "ToString()",
             _ => throw new NotImplementedException() // Dictionary not implemented yet
         };
+
+    private ExpressionSyntax BuildJintOutputExpression(string engineName, OutputVariable output)
+        => SyntaxFactory.ParseExpression(
+            $"{engineName}.Global.GetProperty(\"{output.Name}\").Value.{GetJintMethod(output.Type)}");
+
+    private ExpressionSyntax BuildIronPythonOutputExpression(string scopeName, OutputVariable output)
+        => SyntaxFactory.ParseExpression(output.Type switch
+        {
+            VariableType.ListOfStrings => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<string>().ToList()",
+            VariableType.ByteArray => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<byte>().ToArray()",
+            _ => $"{scopeName}.GetVariable<{ToCSharpType(output.Type)}>(\"{output.Name}\")"
+        });
 
     private string ToCSharpType(VariableType type)
         => type switch
@@ -376,4 +535,65 @@ public class ScriptBlockInstance : BlockInstance
     // Converts input.DATA into DATA
     private string SanitizeInput(string input)
         => Regex.Match(input, "[A-Za-z0-9_]+$").Value;
+
+    private static string EnsureScriptFile(string script, Interpreter interpreter)
+    {
+        var scriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(script)));
+        var scriptPath = $"Scripts/{scriptHash}.{interpreter switch
+        {
+            Interpreter.Jint => "js",
+            Interpreter.NodeJS => "js",
+            Interpreter.IronPython => "py",
+            _ => throw new NotImplementedException()
+        }}";
+
+        if (!Directory.Exists("Scripts"))
+        {
+            Directory.CreateDirectory("Scripts");
+        }
+
+        if (!File.Exists(scriptPath))
+        {
+            File.WriteAllText(scriptPath, script);
+        }
+
+        return scriptPath;
+    }
+
+    private ExpressionSyntax BuildInputArrayExpression()
+    {
+        var inputs = GetInputs()
+            .Select(input => SyntaxFactory.ParseExpression(input))
+            .ToArray();
+
+        return SyntaxFactory.ArrayCreationExpression(
+                SyntaxFactory.ArrayType(
+                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
+                    SyntaxFactory.SingletonList(
+                        SyntaxFactory.ArrayRankSpecifier(
+                            SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
+                                SyntaxFactory.OmittedArraySizeExpression())))))
+            .WithInitializer(SyntaxFactory.InitializerExpression(
+                SyntaxKind.ArrayInitializerExpression,
+                SyntaxFactory.SeparatedList(inputs)));
+    }
+
+    private StatementSyntax CreateOutputAssignmentStatement(
+        List<string> definedVariables,
+        OutputVariable output,
+        ExpressionSyntax expression)
+    {
+        var assignToExistingVariable = definedVariables.Contains(output.Name);
+
+        if (!assignToExistingVariable)
+        {
+            definedVariables.Add(output.Name);
+        }
+
+        return BlockSyntaxFactory.CreateVariableDeclarationOrAssignment(
+            ToCSharpType(output.Type),
+            output.Name,
+            expression,
+            assignToExistingVariable);
+    }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Configs;
 using Xunit;
@@ -184,6 +185,27 @@ public class LoliCodeBlockInstanceTests
     [Fact]
     public void ToCSharp_Unmark_OutputsUnmarkCapture()
         => AssertTranspilesTo("UNMARK @myVar", $"data.UnmarkCapture(nameof(myVar));{_nl}");
+
+    [Fact]
+    public void ToSyntax_TakeOne_MatchesNormalizedLegacyOutput()
+    {
+        var block = CreateBlock("TAKEONE FROM \"MyResource\" => myString");
+
+        Assert.Equal(
+            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
+            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
+    }
+
+    [Fact]
+    public void ToSyntax_MultilinePlainCSharp_PreservesWholeStatementBlock()
+    {
+        var script = $"if (a < b){_nl}{{{_nl}    return 42;{_nl}}}{_nl}";
+        var block = CreateBlock(script);
+
+        Assert.Equal(
+            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
+            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
+    }
 
     private LoliCodeBlockInstance CreateBlock(string script = "")
         => new(new LoliCodeBlockDescriptor()) { Script = script };

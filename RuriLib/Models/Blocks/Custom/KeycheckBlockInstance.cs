@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -285,4 +287,91 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
 
         return writer.ToString();
     }
+
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var statements = new List<StatementSyntax>();
+        var banIfNoMatch = Settings["banIfNoMatch"];
+        var nonEmpty = Keychains.Where(kc => kc.Keys.Count > 0).ToList();
+        var continueBan = context.Settings.GeneralSettings.ContinueStatuses.Contains("BAN");
+        var continueRetry = context.Settings.GeneralSettings.ContinueStatuses.Contains("RETRY");
+
+        if (nonEmpty.Count == 0)
+        {
+            statements.Add(SyntaxFactory.IfStatement(
+                CSharpWriter.FromSettingSyntax(banIfNoMatch),
+                BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan)));
+            statements.Add(CreateGlobalStatusCheck("CheckGlobalBanKeys", "BAN", !continueBan));
+            statements.Add(CreateGlobalStatusCheck("CheckGlobalRetryKeys", "RETRY", !continueRetry));
+            return statements;
+        }
+
+        StatementSyntax? tail = banIfNoMatch switch
+        {
+            { InputMode: SettingInputMode.Fixed, FixedSetting: BoolSetting { Value: true } }
+                => BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan),
+            { InputMode: SettingInputMode.Fixed } => null,
+            _ => SyntaxFactory.IfStatement(
+                CSharpWriter.FromSettingSyntax(banIfNoMatch),
+                BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan))
+        };
+
+        for (var i = nonEmpty.Count - 1; i >= 0; i--)
+        {
+            var keychain = nonEmpty[i];
+            var ifStatement = SyntaxFactory.IfStatement(
+                BuildKeychainCondition(keychain),
+                BlockSyntaxFactory.CreateStatusBlock(
+                    keychain.ResultStatus,
+                    !context.Settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus)));
+
+            if (tail is not null)
+            {
+                ifStatement = ifStatement.WithElse(SyntaxFactory.ElseClause(tail));
+            }
+
+            tail = ifStatement;
+        }
+
+        if (tail is not null)
+        {
+            statements.Add(tail);
+        }
+
+        statements.Add(CreateGlobalStatusCheck("CheckGlobalBanKeys", "BAN", !continueBan));
+        statements.Add(CreateGlobalStatusCheck("CheckGlobalRetryKeys", "RETRY", !continueRetry));
+        return statements;
+    }
+
+    private static ExpressionSyntax BuildKeychainCondition(Keychain keychain)
+    {
+        var conditions = keychain.Keys.Select(CSharpWriter.ConvertKeySyntax).ToList();
+        var combined = conditions[0];
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            combined = SyntaxFactory.BinaryExpression(
+                keychain.Mode switch
+                {
+                    KeychainMode.OR => SyntaxKind.LogicalOrExpression,
+                    KeychainMode.AND => SyntaxKind.LogicalAndExpression,
+                    _ => throw new InvalidOperationException("Invalid Keychain Mode")
+                },
+                combined,
+                conditions[i]);
+        }
+
+        return combined;
+    }
+
+    private static IfStatementSyntax CreateGlobalStatusCheck(string methodName, string status, bool shouldReturn)
+        => SyntaxFactory.IfStatement(
+            SyntaxFactory.InvocationExpression(
+                SyntaxFactory.IdentifierName(methodName),
+                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
+                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data"))))),
+            BlockSyntaxFactory.CreateStatusBlock(status, shouldReturn));
 }

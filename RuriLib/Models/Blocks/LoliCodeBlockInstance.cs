@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -73,6 +74,14 @@ public class LoliCodeBlockInstance : BlockInstance
         }
 
         return writer.ToString();
+    }
+
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return StatementSyntaxParser.ParseStatements(ToCSharp(context.DefinedVariables, context.Settings));
     }
 
     private string TranspileStatement(string input, List<string> definedVariables)

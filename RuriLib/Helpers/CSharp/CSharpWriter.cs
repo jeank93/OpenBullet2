@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
@@ -62,6 +64,47 @@ public class CSharpWriter
             ListOfStringsSetting x => SerializeList(x.Value),
             StringSetting x => ToPrimitive(x.Value),
             EnumSetting x => $"{x.EnumType.FullName}.{x.Value}",
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    /// <summary>
+    /// Converts a <paramref name="setting"/> to a Roslyn expression.
+    /// </summary>
+    public static ExpressionSyntax FromSettingSyntax(BlockSetting setting)
+    {
+        ArgumentNullException.ThrowIfNull(setting);
+
+        if (setting.InputMode == SettingInputMode.Variable)
+        {
+            return GetVariableExpression(setting);
+        }
+
+        if (setting.InputMode == SettingInputMode.Interpolated)
+        {
+            return setting.InterpolatedSetting switch
+            {
+                InterpolatedStringSetting x => SyntaxFactory.ParseExpression(SerializeInterpString(x.Value)),
+                InterpolatedListOfStringsSetting x => SyntaxFactory.ParseExpression(SerializeList(x.Value, true)),
+                InterpolatedDictionaryOfStringsSetting x => SyntaxFactory.ParseExpression(SerializeDictionary(x.Value, true)),
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        return setting.FixedSetting switch
+        {
+            BoolSetting x => x.Value
+                ? SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)
+                : SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression),
+            ByteArraySetting x => SyntaxFactory.ParseExpression(SerializeByteArray(x.Value)),
+            DictionaryOfStringsSetting x => SyntaxFactory.ParseExpression(SerializeDictionary(x.Value)),
+            FloatSetting x => SyntaxFactory.ParseExpression(ToPrimitive(x.Value)),
+            IntSetting x => SyntaxFactory.ParseExpression(ToPrimitive(x.Value)),
+            ListOfStringsSetting x => SyntaxFactory.ParseExpression(SerializeList(x.Value)),
+            StringSetting x => x.Value is null
+                ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+                : SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(x.Value)),
+            EnumSetting x => SyntaxFactory.ParseExpression($"{x.EnumType.FullName}.{x.Value}"),
             _ => throw new NotImplementedException()
         };
     }
@@ -226,22 +269,7 @@ public class CSharpWriter
 
     private static string GetCasting(BlockSetting setting, bool dynamic = false)
     {
-        if (setting.FixedSetting is null)
-        {
-            throw new ArgumentNullException(nameof(setting));
-        }
-
-        var method = setting.FixedSetting switch
-        {
-            BoolSetting _ => "AsBool()",
-            ByteArraySetting _ => "AsBytes()",
-            DictionaryOfStringsSetting _ => "AsDict()",
-            FloatSetting _ => "AsFloat()",
-            IntSetting _ => "AsInt()",
-            ListOfStringsSetting _ => "AsList()",
-            StringSetting _ => "AsString()",
-            _ => throw new NotImplementedException()
-        };
+        var method = $"{GetCastingMethodName(setting)}()";
 
         // E.g. .DynamicAsString() for dynamics, .AsString() for normal types
         return dynamic ? $".Dynamic{method}" : $".{method}";
@@ -254,17 +282,7 @@ public class CSharpWriter
             throw new ArgumentNullException(nameof(setting));
         }
 
-        return setting.FixedSetting switch
-        {
-            BoolSetting _ => $"ObjectExtensions.DynamicAsBool({setting.InputVariableName})",
-            ByteArraySetting _ => $"ObjectExtensions.DynamicAsBytes({setting.InputVariableName})",
-            DictionaryOfStringsSetting _ => $"ObjectExtensions.DynamicAsDict({setting.InputVariableName})",
-            FloatSetting _ => $"ObjectExtensions.DynamicAsFloat({setting.InputVariableName})",
-            IntSetting _ => $"ObjectExtensions.DynamicAsInt({setting.InputVariableName})",
-            ListOfStringsSetting _ => $"ObjectExtensions.DynamicAsList({setting.InputVariableName})",
-            StringSetting _ => $"ObjectExtensions.DynamicAsString({setting.InputVariableName})",
-            _ => throw new NotImplementedException()
-        };
+        return $"ObjectExtensions.Dynamic{GetCastingMethodName(setting)}({setting.InputVariableName})";
     }
 
     /// <summary>
@@ -287,5 +305,75 @@ public class CSharpWriter
         var right = FromSetting(key.Right);
 
         return $"CheckCondition(data, {left}, {comparison}, {right})";
+    }
+
+    /// <summary>
+    /// Converts a <paramref name="key"/> to a Roslyn expression.
+    /// </summary>
+    public static ExpressionSyntax ConvertKeySyntax(Key key)
+    {
+        var comparison = key switch
+        {
+            BoolKey x => $"BoolComparison.{x.Comparison}",
+            StringKey x => $"StrComparison.{x.Comparison}",
+            IntKey x => $"NumComparison.{x.Comparison}",
+            FloatKey x => $"NumComparison.{x.Comparison}",
+            ListKey x => $"ListComparison.{x.Comparison}",
+            DictionaryKey x => $"DictComparison.{x.Comparison}",
+            _ => throw new Exception("Unknown key type")
+        };
+
+        return SyntaxFactory.InvocationExpression(
+            SyntaxFactory.IdentifierName("CheckCondition"),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
+            [
+                SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+                SyntaxFactory.Argument(FromSettingSyntax(key.Left)),
+                SyntaxFactory.Argument(SyntaxFactory.ParseExpression(comparison)),
+                SyntaxFactory.Argument(FromSettingSyntax(key.Right))
+            ])));
+    }
+
+    private static string GetCastingMethodName(BlockSetting setting)
+    {
+        if (setting.FixedSetting is null)
+        {
+            throw new ArgumentNullException(nameof(setting));
+        }
+
+        return setting.FixedSetting switch
+        {
+            BoolSetting _ => "AsBool",
+            ByteArraySetting _ => "AsBytes",
+            DictionaryOfStringsSetting _ => "AsDict",
+            FloatSetting _ => "AsFloat",
+            IntSetting _ => "AsInt",
+            ListOfStringsSetting _ => "AsList",
+            StringSetting _ => "AsString",
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    private static ExpressionSyntax GetVariableExpression(BlockSetting setting)
+    {
+        var variableExpression = SyntaxFactory.ParseExpression(setting.InputVariableName);
+
+        // ExpandoObject members are resolved dynamically, so extension-method syntax like
+        // globals.foo.AsString() will fail at runtime. Route those conversions through the
+        // static helper instead of forcing a cast on the generated member access.
+        if (setting.InputVariableName.StartsWith("globals.") || setting.InputVariableName.StartsWith("input."))
+        {
+            return SyntaxFactory.InvocationExpression(
+                SyntaxFactory.ParseExpression($"ObjectExtensions.Dynamic{GetCastingMethodName(setting)}"),
+                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
+                    SyntaxFactory.Argument(variableExpression))));
+        }
+
+        return SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                variableExpression,
+                SyntaxFactory.IdentifierName(GetCastingMethodName(setting))),
+            SyntaxFactory.ArgumentList());
     }
 }

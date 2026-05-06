@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RuriLib.Exceptions;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Keycheck;
@@ -208,8 +209,78 @@ public class KeycheckBlockInstanceTests
         Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
     }
 
+    [Fact]
+    public void ToSyntax_NormalBlock_MatchesNormalizedLegacyOutput()
+    {
+        var block = CreateBlock();
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Variable;
+        banIfNoMatch.InputVariableName = "myBool";
+
+        block.Keychains = CreateKeychains();
+
+        Assert.Equal(RenderLegacy(block), RenderSyntax(block));
+    }
+
+    [Fact]
+    public void ToSyntax_NoKeychains_MatchesNormalizedLegacyOutput()
+    {
+        var block = CreateBlock();
+
+        var banIfNoMatch = block.Settings["banIfNoMatch"];
+        banIfNoMatch.InputMode = SettingInputMode.Variable;
+        banIfNoMatch.InputVariableName = "myBool";
+
+        Assert.Equal(RenderLegacy(block), RenderSyntax(block));
+    }
+
+    [Fact]
+    public void ToSyntax_ParityMatrix_MatchesLegacyAcrossStatusFlowVariants()
+    {
+        AssertParity(CreateVariableBanBlock(), new ConfigSettings());
+        AssertParity(CreateFixedBanBlock(true), new ConfigSettings
+        {
+            GeneralSettings = { ContinueStatuses = ["SUCCESS", "NONE", "BAN"] }
+        });
+        AssertParity(CreateFixedBanBlock(false), new ConfigSettings
+        {
+            GeneralSettings = { ContinueStatuses = ["SUCCESS", "NONE", "FAIL", "RETRY"] }
+        });
+        AssertParity(CreateNoKeychainsBlock(), new ConfigSettings
+        {
+            GeneralSettings = { ContinueStatuses = ["SUCCESS", "NONE", "BAN", "RETRY"] }
+        });
+    }
+
     private static KeycheckBlockInstance CreateBlock()
         => new(new KeycheckBlockDescriptor());
+
+    private static KeycheckBlockInstance CreateVariableBanBlock()
+    {
+        var block = CreateBlock();
+        block.Settings["banIfNoMatch"].InputMode = SettingInputMode.Variable;
+        block.Settings["banIfNoMatch"].InputVariableName = "globals.shouldBan";
+        block.Keychains = CreateParityKeychains();
+        return block;
+    }
+
+    private static KeycheckBlockInstance CreateFixedBanBlock(bool value)
+    {
+        var block = CreateBlock();
+        block.Settings["banIfNoMatch"].InputMode = SettingInputMode.Fixed;
+        (block.Settings["banIfNoMatch"].FixedSetting as BoolSetting)!.Value = value;
+        block.Keychains = CreateParityKeychains();
+        return block;
+    }
+
+    private static KeycheckBlockInstance CreateNoKeychainsBlock()
+    {
+        var block = CreateBlock();
+        block.Settings["banIfNoMatch"].InputMode = SettingInputMode.Variable;
+        block.Settings["banIfNoMatch"].InputVariableName = "myBool";
+        return block;
+    }
 
     private static List<Keychain> CreateKeychains()
         => new()
@@ -255,4 +326,63 @@ public class KeycheckBlockInstanceTests
                 ]
             }
         };
+
+    private static List<Keychain> CreateParityKeychains()
+        => new()
+        {
+            new Keychain
+            {
+                ResultStatus = "SUCCESS",
+                Mode = KeychainMode.OR,
+                Keys =
+                [
+                    new StringKey
+                    {
+                        Left = BlockSettingFactory.CreateStringSetting("", "globals.myString", SettingInputMode.Variable),
+                        Comparison = StrComparison.Contains,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    },
+                    new FloatKey
+                    {
+                        Left = BlockSettingFactory.CreateFloatSetting("", 3F),
+                        Comparison = NumComparison.GreaterThan,
+                        Right = BlockSettingFactory.CreateFloatSetting("", 1.5F)
+                    }
+                ]
+            },
+            new Keychain
+            {
+                ResultStatus = "FAIL",
+                Mode = KeychainMode.AND,
+                Keys =
+                [
+                    new ListKey
+                    {
+                        Left = BlockSettingFactory.CreateListOfStringsSetting("", "globals.myList"),
+                        Comparison = ListComparison.Contains,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    },
+                    new DictionaryKey
+                    {
+                        Left = BlockSettingFactory.CreateDictionaryOfStringsSetting("", "input.myDict"),
+                        Comparison = DictComparison.HasKey,
+                        Right = BlockSettingFactory.CreateStringSetting("", "abc", SettingInputMode.Fixed)
+                    }
+                ]
+            }
+        };
+
+    private static void AssertParity(KeycheckBlockInstance block, ConfigSettings settings)
+    {
+        var legacy = StatementSyntaxParser.ParseStatements(block.ToCSharp([], settings)).ToSnippet();
+        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext([], settings)).ToSnippet();
+
+        Assert.Equal(legacy, syntax);
+    }
+
+    private static string RenderLegacy(KeycheckBlockInstance block)
+        => StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet();
+
+    private static string RenderSyntax(KeycheckBlockInstance block)
+        => block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet();
 }

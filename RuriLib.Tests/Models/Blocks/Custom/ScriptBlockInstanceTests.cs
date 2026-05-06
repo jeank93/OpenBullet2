@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using RuriLib.Exceptions;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Script;
 using RuriLib.Models.Configs;
@@ -85,6 +87,92 @@ public class ScriptBlockInstanceTests
         Assert.Contains("result = tmp_", output);
     }
 
+    [Fact]
+    public void ToSyntax_NodeJs_MatchesNormalizedLegacyOutput()
+    {
+        var block = CreateBlock();
+        block.Interpreter = Interpreter.NodeJS;
+        block.InputVariables = "input.DATA, x";
+        block.Script = "var result = DATA + x;";
+        block.OutputVariables =
+        [
+            new OutputVariable { Name = "result", Type = VariableType.String }
+        ];
+
+        var legacy = NormalizeTempNames(
+            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet());
+        var syntax = NormalizeTempNames(
+            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
+
+        Assert.Equal(legacy, syntax);
+    }
+
+    [Fact]
+    public void ToSyntax_ParityMatrix_MatchesLegacyAndVariableTracking()
+    {
+        AssertParity(CreateNodeJsBlock(), []);
+        AssertParity(CreateNodeJsBlock(), ["result"]);
+        AssertParity(CreateJintBlock(), []);
+        AssertParity(CreateIronPythonBlock(), []);
+    }
+
     private static ScriptBlockInstance CreateBlock()
         => new(new ScriptBlockDescriptor());
+
+    private static ScriptBlockInstance CreateNodeJsBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.NodeJS,
+            InputVariables = "input.DATA, x",
+            Script = "var result = DATA + x;",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "result", Type = VariableType.String }
+            ]
+        };
+
+    private static ScriptBlockInstance CreateJintBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.Jint,
+            InputVariables = "globals.source, y",
+            Script = "var count = source.length + y;",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "count", Type = VariableType.Int }
+            ]
+        };
+
+    private static ScriptBlockInstance CreateIronPythonBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.IronPython,
+            InputVariables = "input.NAME",
+            Script = "message = NAME + '_done'",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "message", Type = VariableType.String }
+            ]
+        };
+
+    private static void AssertParity(ScriptBlockInstance block, List<string> definedVariables)
+    {
+        var legacyVariables = new List<string>(definedVariables);
+        var syntaxVariables = new List<string>(definedVariables);
+        var settings = new ConfigSettings();
+
+        var legacy = NormalizeTempNames(
+            StatementSyntaxParser.ParseStatements(block.ToCSharp(legacyVariables, settings)).ToSnippet());
+        var syntax = NormalizeTempNames(
+            block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, settings)).ToSnippet());
+
+        Assert.Equal(legacy, syntax);
+        Assert.Equal(legacyVariables, syntaxVariables);
+    }
+
+    private static string NormalizeTempNames(string input)
+        => Regex.Replace(
+            Regex.Replace(input.Replace("\\r\\n", "\\n"), "\"[a-f0-9]{32}\"", "\"HASH\""),
+            @"tmp_[A-Za-z0-9_]+",
+            "tmp_TEMP");
 }

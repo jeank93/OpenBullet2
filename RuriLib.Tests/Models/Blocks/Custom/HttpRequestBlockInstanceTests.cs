@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using RuriLib.Exceptions;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.Blocks;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.HttpRequest;
 using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
 using RuriLib.Models.Blocks.Settings;
+using RuriLib.Models.Blocks.Settings.Interpolated;
 using RuriLib.Models.Configs;
 using Xunit;
 
@@ -120,6 +123,29 @@ public class HttpRequestBlockInstanceTests
     }
 
     [Fact]
+    public void ToSyntax_MultipartPost_MatchesNormalizedLegacyOutput()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        var script = $"  url = \"https://example.com\"{_nl}  method = POST{_nl}  TYPE:MULTIPART{_nl}  @myBoundary{_nl}  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"{_nl}  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"{_nl}";
+        var lineNumber = 0;
+        block.FromLC(ref script, ref lineNumber);
+
+        Assert.Equal(
+            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
+            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
+    }
+
+    [Fact]
+    public void ToSyntax_ParityMatrix_MatchesLegacyOutput()
+    {
+        AssertParity(CreateStandardRequestBlock());
+        AssertParity(CreateStandardRequestBlock(safe: true));
+        AssertParity(CreateRawRequestBlock());
+        AssertParity(CreateBasicAuthRequestBlock());
+        AssertParity(CreateMultipartRequestBlock(safe: true));
+    }
+
+    [Fact]
     public void MultipartSettingsGroups_DefaultContentTypes_ArePreserved()
     {
         var stringContent = new StringHttpContentSettingsGroup();
@@ -130,5 +156,126 @@ public class HttpRequestBlockInstanceTests
         Assert.Equal("application/octet-stream", Assert.IsType<StringSetting>(fileContent.ContentType.FixedSetting).Value);
         Assert.Equal("application/octet-stream", Assert.IsType<StringSetting>(rawContent.ContentType.FixedSetting).Value);
         Assert.IsType<ByteArraySetting>(rawContent.Data.FixedSetting);
+    }
+
+    private static HttpRequestBlockInstance CreateStandardRequestBlock(bool safe = false)
+    {
+        var block = CreateBaseBlock(safe);
+        var content = BlockSettingFactory.CreateStringSetting("content", "name=<globals.user>", SettingInputMode.Interpolated);
+        content.InterpolatedSetting = new InterpolatedStringSetting { Value = "name=<globals.user>" };
+
+        block.RequestParams = new StandardRequestParams
+        {
+            Content = content,
+            ContentType = BlockSettingFactory.CreateStringSetting("contentType", "application/x-www-form-urlencoded")
+        };
+
+        block.Settings["urlEncodeContent"].InputMode = SettingInputMode.Variable;
+        block.Settings["urlEncodeContent"].InputVariableName = "globals.encodeContent";
+
+        return block;
+    }
+
+    private static HttpRequestBlockInstance CreateRawRequestBlock()
+    {
+        var block = CreateBaseBlock();
+        block.RequestParams = new RawRequestParams
+        {
+            Content = BlockSettingFactory.CreateByteArraySetting("content", [1, 2, 3]),
+            ContentType = BlockSettingFactory.CreateStringSetting("contentType", "application/octet-stream")
+        };
+
+        return block;
+    }
+
+    private static HttpRequestBlockInstance CreateBasicAuthRequestBlock()
+    {
+        var block = CreateBaseBlock();
+        block.RequestParams = new BasicAuthRequestParams
+        {
+            Username = BlockSettingFactory.CreateStringSetting("username", "globals.username", SettingInputMode.Variable),
+            Password = BlockSettingFactory.CreateStringSetting("password", "globals.password", SettingInputMode.Variable)
+        };
+
+        return block;
+    }
+
+    private static HttpRequestBlockInstance CreateMultipartRequestBlock(bool safe = false)
+    {
+        var block = CreateBaseBlock(safe);
+        block.RequestParams = new MultipartRequestParams
+        {
+            Boundary = BlockSettingFactory.CreateStringSetting("boundary", "globals.boundary", SettingInputMode.Variable),
+            Contents =
+            [
+                new StringHttpContentSettingsGroup
+                {
+                    Name = BlockSettingFactory.CreateStringSetting("name", "stringName"),
+                    Data = BlockSettingFactory.CreateStringSetting("data", "hello <globals.user>", SettingInputMode.Interpolated),
+                    ContentType = BlockSettingFactory.CreateStringSetting("contentType", "text/plain")
+                },
+                new RawHttpContentSettingsGroup
+                {
+                    Name = BlockSettingFactory.CreateStringSetting("name", "rawName"),
+                    Data = BlockSettingFactory.CreateByteArraySetting("data", [4, 5, 6]),
+                    ContentType = BlockSettingFactory.CreateStringSetting("contentType", "application/octet-stream")
+                },
+                new FileHttpContentSettingsGroup
+                {
+                    Name = BlockSettingFactory.CreateStringSetting("name", "fileName"),
+                    FileName = BlockSettingFactory.CreateStringSetting("fileName", "globals.uploadPath", SettingInputMode.Variable),
+                    ContentType = BlockSettingFactory.CreateStringSetting("contentType", "application/octet-stream")
+                }
+            ]
+        };
+
+        return block;
+    }
+
+    private static HttpRequestBlockInstance CreateBaseBlock(bool safe = false)
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+        block.Safe = safe;
+
+        block.Settings["url"].InputMode = SettingInputMode.Interpolated;
+        block.Settings["url"].InterpolatedSetting = new InterpolatedStringSetting
+        {
+            Value = "https://example.com/<globals.path>"
+        };
+
+        (block.Settings["method"].FixedSetting as EnumSetting)!.Value = "POST";
+        block.Settings["autoRedirect"].InputMode = SettingInputMode.Variable;
+        block.Settings["autoRedirect"].InputVariableName = "input.autoRedirect";
+        (block.Settings["maxNumberOfRedirects"].FixedSetting as IntSetting)!.Value = 5;
+        (block.Settings["readResponseContent"].FixedSetting as BoolSetting)!.Value = false;
+        (block.Settings["absoluteUriInFirstLine"].FixedSetting as BoolSetting)!.Value = true;
+        block.Settings["customCookies"].InputMode = SettingInputMode.Variable;
+        block.Settings["customCookies"].InputVariableName = "globals.cookies";
+        block.Settings["customHeaders"].InputMode = SettingInputMode.Interpolated;
+        block.Settings["customHeaders"].InterpolatedSetting = new InterpolatedDictionaryOfStringsSetting
+        {
+            Value = new Dictionary<string, string>
+            {
+                ["X-Test"] = "<globals.headerValue>"
+            }
+        };
+        block.Settings["timeoutMilliseconds"].InputMode = SettingInputMode.Variable;
+        block.Settings["timeoutMilliseconds"].InputVariableName = "input.timeout";
+        block.Settings["codePagesEncoding"].InputMode = SettingInputMode.Variable;
+        block.Settings["codePagesEncoding"].InputVariableName = "globals.encoding";
+        (block.Settings["alwaysSendContent"].FixedSetting as BoolSetting)!.Value = true;
+        (block.Settings["decodeHtml"].FixedSetting as BoolSetting)!.Value = true;
+        block.Settings["customCipherSuites"].InputMode = SettingInputMode.Variable;
+        block.Settings["customCipherSuites"].InputVariableName = "globals.cipherSuites";
+
+        return block;
+    }
+
+    private static void AssertParity(HttpRequestBlockInstance block)
+    {
+        var legacy = StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet();
+        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet();
+
+        Assert.Equal(legacy, syntax);
     }
 }

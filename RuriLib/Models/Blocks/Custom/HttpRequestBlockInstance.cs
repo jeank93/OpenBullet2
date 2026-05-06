@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -404,6 +406,27 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
         return writer.ToString();
     }
 
+    /// <inheritdoc />
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var invocationStatement = SyntaxFactory.ExpressionStatement(BuildHttpRequestInvocationExpression());
+
+        if (!Safe)
+        {
+            return [invocationStatement];
+        }
+
+        return
+        [
+            SyntaxFactory.TryStatement(
+                SyntaxFactory.Block(invocationStatement),
+                SyntaxFactory.List([BlockSyntaxFactory.CreateSafeModeCatchClause()]),
+                null)
+        ];
+    }
+
     private static string ReadRequiredLine(StringReader reader, ref int lineNumber, string errorMessage)
     {
         var line = reader.ReadLine();
@@ -429,4 +452,127 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
 
     private string GetSettingValue(string name)
         => CSharpWriter.FromSetting(Settings[name]);
+
+    private ExpressionSyntax BuildHttpRequestInvocationExpression()
+    {
+        var (methodName, optionsTypeName, requestAssignments) = RequestParams switch
+        {
+            StandardRequestParams x => (
+                "HttpRequestStandard",
+                "StandardHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    CreatePropertyAssignment("Content", CSharpWriter.FromSettingSyntax(x.Content)),
+                    CreatePropertyAssignment("ContentType", CSharpWriter.FromSettingSyntax(x.ContentType)),
+                    CreatePropertyAssignment("UrlEncodeContent", CSharpWriter.FromSettingSyntax(Settings["urlEncodeContent"]))
+                }),
+            RawRequestParams x => (
+                "HttpRequestRaw",
+                "RawHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    CreatePropertyAssignment("Content", CSharpWriter.FromSettingSyntax(x.Content)),
+                    CreatePropertyAssignment("ContentType", CSharpWriter.FromSettingSyntax(x.ContentType))
+                }),
+            BasicAuthRequestParams x => (
+                "HttpRequestBasicAuth",
+                "BasicAuthHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    CreatePropertyAssignment("Username", CSharpWriter.FromSettingSyntax(x.Username)),
+                    CreatePropertyAssignment("Password", CSharpWriter.FromSettingSyntax(x.Password))
+                }),
+            MultipartRequestParams x => (
+                "HttpRequestMultipart",
+                "MultipartHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    CreatePropertyAssignment("Boundary", CSharpWriter.FromSettingSyntax(x.Boundary)),
+                    CreatePropertyAssignment("Contents", BuildMultipartContentsExpression(x.Contents))
+                }),
+            _ => throw new NotSupportedException()
+        };
+
+        requestAssignments.AddRange(
+        [
+            CreatePropertyAssignment("Url", CSharpWriter.FromSettingSyntax(Settings["url"])),
+            CreatePropertyAssignment("Method", CSharpWriter.FromSettingSyntax(Settings["method"])),
+            CreatePropertyAssignment("AutoRedirect", CSharpWriter.FromSettingSyntax(Settings["autoRedirect"])),
+            CreatePropertyAssignment("MaxNumberOfRedirects", CSharpWriter.FromSettingSyntax(Settings["maxNumberOfRedirects"])),
+            CreatePropertyAssignment("ReadResponseContent", CSharpWriter.FromSettingSyntax(Settings["readResponseContent"])),
+            CreatePropertyAssignment("AbsoluteUriInFirstLine", CSharpWriter.FromSettingSyntax(Settings["absoluteUriInFirstLine"])),
+            CreatePropertyAssignment("HttpLibrary", CSharpWriter.FromSettingSyntax(Settings["httpLibrary"])),
+            CreatePropertyAssignment("SecurityProtocol", CSharpWriter.FromSettingSyntax(Settings["securityProtocol"])),
+            CreatePropertyAssignment("CustomCookies", CSharpWriter.FromSettingSyntax(Settings["customCookies"])),
+            CreatePropertyAssignment("CustomHeaders", CSharpWriter.FromSettingSyntax(Settings["customHeaders"])),
+            CreatePropertyAssignment("TimeoutMilliseconds", CSharpWriter.FromSettingSyntax(Settings["timeoutMilliseconds"])),
+            CreatePropertyAssignment("HttpVersion", CSharpWriter.FromSettingSyntax(Settings["httpVersion"])),
+            CreatePropertyAssignment("CodePagesEncoding", CSharpWriter.FromSettingSyntax(Settings["codePagesEncoding"])),
+            CreatePropertyAssignment("AlwaysSendContent", CSharpWriter.FromSettingSyntax(Settings["alwaysSendContent"])),
+            CreatePropertyAssignment("DecodeHtml", CSharpWriter.FromSettingSyntax(Settings["decodeHtml"])),
+            CreatePropertyAssignment("UseCustomCipherSuites", CSharpWriter.FromSettingSyntax(Settings["useCustomCipherSuites"])),
+            CreatePropertyAssignment("CustomCipherSuites", CSharpWriter.FromSettingSyntax(Settings["customCipherSuites"]))
+        ]);
+
+        var optionsObject = SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName(optionsTypeName))
+            .WithInitializer(SyntaxFactory.InitializerExpression(
+                SyntaxKind.ObjectInitializerExpression,
+                SyntaxFactory.SeparatedList(requestAssignments)));
+
+        var invocation = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.IdentifierName(methodName),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(
+            [
+                SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
+                SyntaxFactory.Argument(optionsObject)
+            ])));
+
+        return SyntaxFactory.AwaitExpression(SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                invocation,
+                SyntaxFactory.IdentifierName("ConfigureAwait")),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
+                SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
+    }
+
+    private static AssignmentExpressionSyntax CreatePropertyAssignment(string name, ExpressionSyntax value)
+        => SyntaxFactory.AssignmentExpression(
+            SyntaxKind.SimpleAssignmentExpression,
+            SyntaxFactory.IdentifierName(name),
+            value);
+
+    private static ExpressionSyntax BuildMultipartContentsExpression(List<HttpContentSettingsGroup> contents)
+        => SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName("List<MyHttpContent>"))
+            .WithInitializer(SyntaxFactory.InitializerExpression(
+                SyntaxKind.CollectionInitializerExpression,
+                SyntaxFactory.SeparatedList(contents.Select(BuildMultipartContentExpression))));
+
+    private static ExpressionSyntax BuildMultipartContentExpression(HttpContentSettingsGroup content)
+        => content switch
+        {
+            StringHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "StringHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.Data),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            RawHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "RawHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.Data),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            FileHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "FileHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.FileName),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            _ => throw new NotSupportedException()
+        };
+
+    private static ExpressionSyntax CreateMultipartContentExpression(
+        string typeName,
+        params ExpressionSyntax[] arguments)
+        => SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName(typeName))
+            .WithArgumentList(SyntaxFactory.ArgumentList(
+                SyntaxFactory.SeparatedList(arguments.Select(SyntaxFactory.Argument))));
 }

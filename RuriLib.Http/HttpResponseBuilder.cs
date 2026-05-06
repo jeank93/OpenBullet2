@@ -3,7 +3,6 @@ using RuriLib.Http.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -451,18 +450,6 @@ internal class HttpResponseBuilder
         return -1;
     }
 
-    private string GetContentEncoding()
-    {
-        var encoding = "";
-
-        if (_contentHeaders!.TryGetValue("Content-Encoding", out var values))
-        {
-            encoding = values[0];
-        }
-
-        return encoding;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private async Task<Stream> ReceiveMessageBodyChunked(CancellationToken cancellationToken)
     {
@@ -493,16 +480,11 @@ internal class HttpResponseBuilder
 
     private Stream GetZipStream(Stream stream)
     {
-        var contentEncoding = GetContentEncoding().ToLower();
-        stream.Seek(0, SeekOrigin.Begin);
-        return contentEncoding switch
+        if (!_contentHeaders!.TryGetValue("Content-Encoding", out var values))
         {
-            "gzip" => new GZipStream(stream, CompressionMode.Decompress, false),
-            "deflate" => new DeflateStream(stream, CompressionMode.Decompress, false),
-            "br" => new BrotliStream(stream, CompressionMode.Decompress, false),
-            "zstd" => new ZstdSharp.DecompressionStream(stream, leaveOpen: false),
-            "utf-8" => stream,
-            _ => throw new InvalidOperationException($"'{contentEncoding}' not supported encoding format"),
-        };
+            return stream;
+        }
+
+        return ContentEncodingHelper.GetDecodedStream(stream, values);
     }
 }

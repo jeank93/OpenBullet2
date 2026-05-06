@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,7 +17,7 @@ public static class StatementSyntaxExtensions
     public static string ToSnippet(this IEnumerable<StatementSyntax> statements)
     {
         var normalizedStatements = statements
-            .Select(statement => statement.NormalizeWhitespace().ToFullString())
+            .Select(statement => statement.NormalizeWhitespace(eol: Environment.NewLine).ToFullString())
             .ToList();
 
         return normalizedStatements.Count == 0

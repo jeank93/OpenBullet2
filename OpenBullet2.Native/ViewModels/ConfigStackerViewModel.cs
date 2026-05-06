@@ -233,6 +233,17 @@ public class ConfigStackerViewModel : ViewModelBase
         base.UpdateViewModel();
     }
 
+    public int? GetSelectedBlockIndex()
+    {
+        if (lastSelectedBlock is not null && Stack.Contains(lastSelectedBlock))
+        {
+            return Stack.IndexOf(lastSelectedBlock);
+        }
+
+        var selectedBlock = Stack.FirstOrDefault(b => b.Selected);
+        return selectedBlock is null ? null : Stack.IndexOf(selectedBlock);
+    }
+
     private void SaveStack()
     {
         var selectedConfig = configService.SelectedConfig;

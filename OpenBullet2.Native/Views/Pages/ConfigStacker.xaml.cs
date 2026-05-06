@@ -15,6 +15,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace OpenBullet2.Native.Views.Pages;
 
@@ -78,6 +79,29 @@ public partial class ConfigStacker : Page
     }
 
     public void CreateBlock(BlockDescriptor descriptor) => vm.CreateBlock(descriptor);
+
+    public int? GetSelectedBlockIndex() => vm.GetSelectedBlockIndex();
+
+    public void SelectBlockByIndex(int blockIndex)
+    {
+        if (blockIndex < 0 || blockIndex >= vm.Stack.Count)
+        {
+            return;
+        }
+
+        var block = vm.Stack[blockIndex];
+        vm.SelectBlock(block, false);
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            blocksItemsControl.UpdateLayout();
+
+            if (blocksItemsControl.ItemContainerGenerator.ContainerFromIndex(blockIndex) is FrameworkElement container)
+            {
+                container.BringIntoView();
+            }
+        }, DispatcherPriority.Loaded);
+    }
 
     private void AddBlock(object sender, RoutedEventArgs e)
         => new MainDialog(uiFactory.Create<AddBlockDialog>(this), "Add block").ShowDialog();

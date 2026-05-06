@@ -3,6 +3,7 @@ using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Pages.Shared;
+using RuriLib.Helpers.Transpilers;
 using RuriLib.Models.Configs;
 using System;
 using System.Threading.Tasks;
@@ -51,16 +52,45 @@ public partial class ConfigEditor : Page
 
     public void NavigateTo(ConfigEditorSection section)
     {
+        int? lineToFocus = null;
+        int? blockIndexToSelect = null;
+
+        if (editorFrame.Content == loliCodePage && section == ConfigEditorSection.Stacker)
+        {
+            blockIndexToSelect = StackLoliPositionMapper.GetBlockIndexAtLine(vm.Config.LoliCodeScript, loliCodePage.GetCaretLine());
+        }
+        else if (editorFrame.Content == stackerPage && section == ConfigEditorSection.LoliCode)
+        {
+            var selectedBlockIndex = stackerPage.GetSelectedBlockIndex();
+
+            if (selectedBlockIndex.HasValue)
+            {
+                lineToFocus = StackLoliPositionMapper.GetLineNumberForBlock(vm.Config.Stack, selectedBlockIndex.Value);
+            }
+        }
+
         switch (section)
         {
             case ConfigEditorSection.Stacker:
                 stackerPage.UpdateViewModel();
                 editorFrame.Content = stackerPage;
+
+                if (blockIndexToSelect.HasValue)
+                {
+                    stackerPage.SelectBlockByIndex(blockIndexToSelect.Value);
+                }
+
                 break;
 
             case ConfigEditorSection.LoliCode:
                 loliCodePage.UpdateViewModel();
                 editorFrame.Content = loliCodePage;
+
+                if (lineToFocus.HasValue)
+                {
+                    loliCodePage.MoveCaretToLine(lineToFocus.Value);
+                }
+
                 break;
 
             case ConfigEditorSection.CSharp:

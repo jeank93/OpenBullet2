@@ -92,6 +92,23 @@ public partial class ConfigLoliCode : Page
         configService.SelectedConfig.StartupLoliCodeScript = startupEditor.Text;
     }
 
+    public int GetCaretLine() => editor.TextArea.Caret.Line;
+
+    public void MoveCaretToLine(int lineNumber)
+    {
+        if (editor.Document is null)
+        {
+            return;
+        }
+
+        var targetLine = Math.Clamp(lineNumber, 1, editor.Document.LineCount);
+        var line = editor.Document.GetLineByNumber(targetLine);
+
+        editor.TextArea.Caret.Offset = line.Offset;
+        editor.ScrollToLine(targetLine);
+        editor.Focus();
+    }
+
     private void EditorLostFocus(object sender, RoutedEventArgs e)
     {
         if (configService.SelectedConfig is null)

@@ -229,6 +229,27 @@ public class JobMonitorIntegrationTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task CreateTriggeredAction_Admin_WithoutTriggersOrActions_BadRequest()
+    {
+        using var client = Factory.CreateClient();
+
+        var dto = new CreateTriggeredActionDto
+        {
+            Name = "Invalid",
+            JobId = 1,
+            Triggers = [],
+            Actions = []
+        };
+
+        var result = await PostJsonAsync<TriggeredActionDto>(
+            client, "api/v1/job-monitor/triggered-action", dto);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
+        Assert.Equal(ErrorCode.ValidationError, result.Error.Content!.ErrorCode);
+    }
+
+    [Fact]
     public async Task UpdateTriggeredAction_Admin_Success()
     {
         // Arrange
@@ -316,6 +337,38 @@ public class JobMonitorIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.False(result.IsSuccess);
         Assert.Equal(HttpStatusCode.Forbidden, result.Error.Response.StatusCode);
         Assert.Equal(ErrorCode.NotAdmin, result.Error.Content!.ErrorCode);
+    }
+
+    [Fact]
+    public async Task UpdateTriggeredAction_Admin_WithoutTriggersOrActions_BadRequest()
+    {
+        using var client = Factory.CreateClient();
+        var jobMonitorService = GetRequiredService<JobMonitorService>();
+        var triggeredAction = new TriggeredAction
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Test",
+            JobId = 1,
+            Triggers = [new JobFinishedTrigger()],
+            Actions = [new WaitAction { Seconds = 1 }]
+        };
+        jobMonitorService.TriggeredActions.Add(triggeredAction);
+
+        var dto = new UpdateTriggeredActionDto
+        {
+            Id = triggeredAction.Id,
+            Name = "Invalid",
+            JobId = 1,
+            Triggers = [],
+            Actions = []
+        };
+
+        var result = await PutJsonAsync<TriggeredActionDto>(
+            client, "api/v1/job-monitor/triggered-action", dto);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
+        Assert.Equal(ErrorCode.ValidationError, result.Error.Content!.ErrorCode);
     }
 
     [Fact]

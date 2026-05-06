@@ -350,6 +350,18 @@ public class EditTriggeredActionViewModel : ViewModelBase
             return false;
         }
 
+        if (Triggers.Count == 0)
+        {
+            message = "Please add at least one trigger";
+            return false;
+        }
+
+        if (Actions.Count == 0)
+        {
+            message = "Please add at least one action";
+            return false;
+        }
+
         var invalidJobAction = Actions
             .OfType<IJobActionEditor>()
             .FirstOrDefault(a => !availableJobs.Any(j => j.Id == a.JobId));

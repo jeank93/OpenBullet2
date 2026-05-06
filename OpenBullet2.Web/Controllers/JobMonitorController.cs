@@ -65,9 +65,13 @@ public class JobMonitorController : ApiController
     /// </summary>
     [HttpPost("triggered-action")]
     [MapToApiVersion("1.0")]
-    public ActionResult<TriggeredActionDto> Create(
-        CreateTriggeredActionDto dto)
+    public async Task<ActionResult<TriggeredActionDto>> Create(
+        CreateTriggeredActionDto dto,
+        [FromServices] IValidator<CreateTriggeredActionDto> validator,
+        CancellationToken cancellationToken)
     {
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
+
         var actions = _jobMonitorService.TriggeredActions;
 
         var newAction = _mapper.Map<TriggeredAction>(dto);

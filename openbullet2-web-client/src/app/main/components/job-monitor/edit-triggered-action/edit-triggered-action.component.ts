@@ -154,7 +154,9 @@ export class EditTriggeredActionComponent implements DeactivatableComponent {
       this.touched &&
       Object.values(this.fieldsValidity).every((v) => v) &&
       this.jobId !== null &&
-      (this.jobs?.find((j) => j.id === this.jobId) ?? false)
+      (this.jobs?.find((j) => j.id === this.jobId) ?? false) &&
+      this.triggers.length > 0 &&
+      this.actions.length > 0
     );
   }
 

@@ -2,6 +2,7 @@ using RuriLib.Proxies.Exceptions;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RuriLib.Proxies.Helpers;
@@ -18,17 +19,13 @@ internal static class HostHelper
         return array;
     }
 
-    public static async Task<byte[]> GetIpAddressBytesAsync(string destinationHost, bool preferIpv4 = true)
+    public static async Task<byte[]> GetIpAddressBytesAsync(string destinationHost, bool preferIpv4 = true,
+        CancellationToken cancellationToken = default)
     {
-        if (IPAddress.TryParse(destinationHost, out var ipAddr))
-        {
-            return ipAddr.GetAddressBytes();
-        }
+        var ips = await GetHostAddressesAsync(destinationHost, cancellationToken).ConfigureAwait(false);
 
         try
         {
-            var ips = await Dns.GetHostAddressesAsync(destinationHost).ConfigureAwait(false);
-
             if (ips.Length > 0)
             {
                 if (preferIpv4)
@@ -55,5 +52,27 @@ internal static class HostHelper
         }
 
         throw new ProxyException("Failed to get host address");
+    }
+
+    public static async Task<IPAddress[]> GetHostAddressesAsync(string host, CancellationToken cancellationToken = default)
+    {
+        if (IPAddress.TryParse(host, out var ipAddr))
+        {
+            return [ipAddr];
+        }
+
+        try
+        {
+            return await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (ex is SocketException or ArgumentException)
+            {
+                throw new ProxyException("Failed to get host address", ex);
+            }
+
+            throw;
+        }
     }
 }

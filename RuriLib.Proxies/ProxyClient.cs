@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System;
 using RuriLib.Proxies.Exceptions;
 using RuriLib.Proxies.Clients;
+using RuriLib.Proxies.Helpers;
 using System.Security;
 
 namespace RuriLib.Proxies;
@@ -60,9 +61,10 @@ public abstract class ProxyClient
         {
             using var timeoutCts = new CancellationTokenSource(Settings.ConnectTimeout);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
-            await client.ConnectAsync(host, port, linkedCts.Token).ConfigureAwait(false);
+            var addresses = await HostHelper.GetHostAddressesAsync(host, linkedCts.Token).ConfigureAwait(false);
+            await client.ConnectAsync(addresses, port, linkedCts.Token).ConfigureAwait(false);
 
-            await CreateConnectionAsync(client, destinationHost, destinationPort, cancellationToken)
+            await CreateConnectionAsync(client, destinationHost, destinationPort, linkedCts.Token)
                 .ConfigureAwait(false);
         }
         catch (Exception ex)

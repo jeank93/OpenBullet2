@@ -71,7 +71,8 @@ public class Socks4ProxyClient(ProxySettings settings) : ProxyClient(settings)
     protected virtual async Task RequestConnectionAsync(NetworkStream nStream, byte command, string destinationHost, int destinationPort,
         CancellationToken cancellationToken = default)
     {
-        var dstIp = await HostHelper.GetIpAddressBytesAsync(destinationHost);
+        var dstIp = await HostHelper.GetIpAddressBytesAsync(destinationHost, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         var dstPort = HostHelper.GetPortBytes(destinationPort);
 
         var userId = Array.Empty<byte>();

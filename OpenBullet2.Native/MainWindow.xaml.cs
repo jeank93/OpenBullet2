@@ -128,6 +128,7 @@ public partial class MainWindow : MetroWindow
 
             case MainWindowPage.Monitor:
                 monitorPage ??= uiFactory.Create<Monitor>();
+                monitorPage.UpdateViewModel();
                 ChangePage(monitorPage, menuOptionMonitor);
                 break;
 

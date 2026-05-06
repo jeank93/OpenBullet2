@@ -26,6 +26,7 @@ public class Stack2CSharpTranspiler
     {
         var declaredVariables = typeof(BotData).GetProperties()
             .Select(p => $"data.{p.Name}").ToList();
+        var syntaxContext = new BlockSyntaxGenerationContext(declaredVariables, settings);
 
         using var writer = new StringWriter();
 
@@ -36,9 +37,7 @@ public class Stack2CSharpTranspiler
             writer.WriteLine($"// BLOCK: {block.Label}");
             writer.WriteLine($"data.ExecutingBlock({CSharpWriter.SerializeString(block.Label)});");
 
-            var snippet = block.ToCSharp(declaredVariables, settings);
-            var tree = CSharpSyntaxTree.ParseText(snippet);
-            writer.WriteLine(tree.GetRoot().NormalizeWhitespace().ToFullString());
+            writer.Write(block.ToSyntax(syntaxContext).ToSnippet());
             writer.WriteLine();
 
             // If in step by step mode, and if not the last block, check if pause was requested

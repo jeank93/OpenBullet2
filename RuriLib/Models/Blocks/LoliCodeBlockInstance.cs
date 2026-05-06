@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,10 +48,16 @@ public class LoliCodeBlockInstance : BlockInstance
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return StatementSyntaxParser.ParseStatements(BuildScriptSnippet(context.DefinedVariables));
+    }
+
+    internal string BuildScriptSnippet(List<string> definedVariables)
     {
         ArgumentNullException.ThrowIfNull(definedVariables);
-        ArgumentNullException.ThrowIfNull(settings);
 
         using var reader = new StringReader(Script);
         using var writer = new StringWriter();
@@ -59,15 +66,14 @@ public class LoliCodeBlockInstance : BlockInstance
         {
             var trimmedLine = line.Trim();
 
-            // Try to read it as a LoliCode-exclusive statement
             try
             {
+                // Try to read it as a LoliCode-exclusive statement
                 writer.WriteLine(TranspileStatement(trimmedLine, definedVariables));
             }
-
-            // If it failed, we assume what is written is bare C# so we just copy it over (untrimmed)
             catch (NotSupportedException)
             {
+                // If it failed, we assume what is written is bare C# so we just copy it over (untrimmed)
                 writer.WriteLine(line);
             }
         }

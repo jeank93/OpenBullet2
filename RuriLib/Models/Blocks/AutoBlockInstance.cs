@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RuriLib.Exceptions;
 using RuriLib.Extensions;
 using RuriLib.Helpers;
@@ -10,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks;
 
@@ -128,115 +131,40 @@ public class AutoBlockInstance : BlockInstance
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> declaredVariables, ConfigSettings settings)
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
     {
-        // If disabled /* code here */
+        ArgumentNullException.ThrowIfNull(context);
 
-        /*
-         * With return type:
-         * var myVar = MethodName(data, param1, param2 ...);
-         *
-         * Async:
-         * await MethodName(data, param1, param2 ...);
-         *
-         */
+        var statements = new List<StatementSyntax>();
 
-        using var writer = new StringWriter();
-
-        // Safe mode, wrap method in try/catch but declare variable outside of it
         if (Safe)
         {
-            // If not void, initialize the variable with default value
-            // Only do this if we haven't declared the variable yet!
-            if (Descriptor.ReturnType.HasValue && !declaredVariables.Contains(OutputVariable)
+            if (Descriptor.ReturnType.HasValue
+                && !context.DefinedVariables.Contains(OutputVariable)
                 && !OutputVariable.StartsWith("globals."))
             {
                 if (!Disabled)
                 {
-                    declaredVariables.Add(OutputVariable);
+                    context.DefinedVariables.Add(OutputVariable);
                 }
 
-                writer.WriteLine($"{GetRuntimeReturnType()} {OutputVariable} = {GetDefaultReturnValue()};");
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    GetRuntimeReturnType(),
+                    OutputVariable,
+                    Expr(GetDefaultReturnValue())));
             }
 
-            writer.WriteLine("try {");
+            var tryStatements = CreateExecutionStatements(context.DefinedVariables, true);
+            statements.Add(SyntaxFactory.TryStatement(
+                SyntaxFactory.Block(tryStatements),
+                SyntaxFactory.List([BlockSyntaxFactory.CreateSafeModeCatchClause()]),
+                null));
 
-            // Here we already know the variable exists so we just do the assignment
-            if (Descriptor.ReturnType.HasValue)
-            {
-                writer.Write($"{OutputVariable} = ");
-            }
-
-            WriteMethod(writer);
-
-            writer.WriteLine("} catch (Exception safeException) {");
-            writer.WriteLine("data.ERROR = safeException.PrettyPrint();");
-            writer.WriteLine("data.Logger.Log($\"[SAFE MODE] Exception caught and saved to data.ERROR: {data.ERROR}\", LogColors.Tomato); }");
-        }
-        else
-        {
-            // If not void, do variable assignment
-            if (Descriptor.ReturnType.HasValue)
-            {
-                if (declaredVariables.Contains(OutputVariable) || OutputVariable.StartsWith("globals."))
-                {
-                    writer.Write($"{OutputVariable} = ");
-                }
-                else
-                {
-                    if (!Disabled)
-                    {
-                        declaredVariables.Add(OutputVariable);
-                    }
-
-                    writer.Write($"{GetRuntimeReturnType()} {OutputVariable} = ");
-                }
-            }
-
-            WriteMethod(writer);
+            return statements;
         }
 
-        return writer.ToString();
-    }
-
-    private void WriteMethod(StringWriter writer)
-    {
-        var descriptor = (Descriptor as AutoBlockDescriptor)!;
-
-        // If async, prepend the await keyword
-        if (descriptor.Async)
-        {
-            writer.Write("await ");
-        }
-
-        // Append MethodName(data, param1, "param2", param3);
-        List<string> parameters = ["data", .. Settings.Values.Select(CSharpWriter.FromSetting)];
-
-        var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
-            ? descriptor.Id
-            : descriptor.MethodName;
-
-        writer.Write($"{methodName}({string.Join(", ", parameters)})");
-
-        if (descriptor.Async)
-        {
-            writer.WriteLine(".ConfigureAwait(false);");
-        }
-        else
-        {
-            writer.WriteLine(";");
-        }
-
-        // If the block has a return type, log which variable was written
-        if (Descriptor.ReturnType.HasValue)
-        {
-            writer.WriteLine($"data.LogVariableAssignment(nameof({OutputVariable}));");
-
-            if (IsCapture)
-            {
-                writer.WriteLine($"data.MarkForCapture(nameof({OutputVariable}));");
-            }
-        }
+        statements.AddRange(CreateExecutionStatements(context.DefinedVariables, false));
+        return statements;
     }
 
     // This is needed otherwise when we have blocks made in other plugins they might reference
@@ -265,4 +193,59 @@ public class AutoBlockInstance : BlockInstance
         VariableType.String => "string.Empty",
         _ => throw new NotSupportedException()
     };
+
+    private List<StatementSyntax> CreateExecutionStatements(List<string> declaredVariables, bool assignmentOnly)
+    {
+        var statements = new List<StatementSyntax>();
+
+        if (Descriptor.ReturnType.HasValue)
+        {
+            var invocationExpression = BuildMethodInvocationExpression();
+            var assignToExistingVariable = assignmentOnly
+                || declaredVariables.Contains(OutputVariable)
+                || OutputVariable.StartsWith("globals.");
+
+            if (!assignToExistingVariable && !Disabled)
+            {
+                declaredVariables.Add(OutputVariable);
+            }
+
+            statements.Add(BlockSyntaxFactory.CreateVariableDeclarationOrAssignment(
+                GetRuntimeReturnType(),
+                OutputVariable,
+                invocationExpression,
+                assignToExistingVariable));
+
+            statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("LogVariableAssignment", OutputVariable));
+
+            if (IsCapture)
+            {
+                statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("MarkForCapture", OutputVariable));
+            }
+        }
+        else
+        {
+            statements.Add(BuildMethodInvocationExpression().Stmt());
+        }
+
+        return statements;
+    }
+
+    private ExpressionSyntax BuildMethodInvocationExpression()
+    {
+        var descriptor = (AutoBlockDescriptor)Descriptor;
+        var arguments = new List<ExpressionSyntax> { Id("data") };
+
+        arguments.AddRange(Settings.Values.Select(CSharpWriter.FromSettingSyntax));
+
+        var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
+            ? descriptor.Id
+            : descriptor.MethodName;
+
+        ExpressionSyntax invocation = Id(methodName).Call(arguments);
+
+        return descriptor.Async
+            ? BlockSyntaxFactory.CreateAwaitConfigureAwaitFalse(invocation)
+            : invocation;
+    }
 }

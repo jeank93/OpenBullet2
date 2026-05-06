@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +12,7 @@ using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Configs;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -146,143 +149,80 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
     {
-        /*
-         *   if (Conditions.Check(myVar, StrComparison.Contains, "hello"))
-         *     data.STATUS = "SUCCESS";
-         *
-         *   else if (Conditions.Check(myList, ListComparison.Contains, "item") || Conditions.Check(data.COOKIES, DictComparison.HasKey, "name"))
-         *     { data.STATUS = "FAIL"; return; }
-         *
-         *   else if (myBool)
-         *     { data.STATUS = "BAN"; return; }
-         */
+        ArgumentNullException.ThrowIfNull(context);
 
-        ArgumentNullException.ThrowIfNull(definedVariables);
-        ArgumentNullException.ThrowIfNull(settings);
-
-        using var writer = new StringWriter();
+        var statements = new List<StatementSyntax>();
         var banIfNoMatch = Settings["banIfNoMatch"];
         var nonEmpty = Keychains.Where(kc => kc.Keys.Count > 0).ToList();
+        var continueBan = context.Settings.GeneralSettings.ContinueStatuses.Contains("BAN");
+        var continueRetry = context.Settings.GeneralSettings.ContinueStatuses.Contains("RETRY");
 
-        // If there are no keychains
         if (nonEmpty.Count == 0)
         {
-            writer.WriteLine($"if ({CSharpWriter.FromSetting(banIfNoMatch)})");
-
-            if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-            {
-                writer.WriteLine(" { data.STATUS = \"BAN\"; }");
-                writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; }");
-            }
-            else
-            {
-                writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
-                writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; return; }");
-            }
-
-            if (settings.GeneralSettings.ContinueStatuses.Contains("RETRY"))
-            {
-                writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; }");
-            }
-            else
-            {
-                writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; return; }");
-            }
-
-            return writer.ToString();
+            statements.Add(CSharpWriter.FromSettingSyntax(banIfNoMatch)
+                .If(BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan)));
+            statements.Add(CreateGlobalStatusCheck("CheckGlobalBanKeys", "BAN", !continueBan));
+            statements.Add(CreateGlobalStatusCheck("CheckGlobalRetryKeys", "RETRY", !continueRetry));
+            return statements;
         }
 
-        // Write all the keychains
-        for (var i = 0; i < nonEmpty.Count; i++)
+        StatementSyntax? tail = banIfNoMatch switch
+        {
+            { InputMode: SettingInputMode.Fixed, FixedSetting: BoolSetting { Value: true } }
+                => BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan),
+            { InputMode: SettingInputMode.Fixed } => null,
+            _ => CSharpWriter.FromSettingSyntax(banIfNoMatch)
+                .If(BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan))
+        };
+
+        for (var i = nonEmpty.Count - 1; i >= 0; i--)
         {
             var keychain = nonEmpty[i];
+            var ifStatement = BuildKeychainCondition(keychain).If(
+                BlockSyntaxFactory.CreateStatusBlock(
+                    keychain.ResultStatus,
+                    !context.Settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus)));
 
-            if (i == 0)
+            if (tail is not null)
             {
-                writer.Write("if (");
+                ifStatement = ifStatement.WithElse(SyntaxFactory.ElseClause(tail));
             }
-            else
-            {
-                writer.Write("else if (");
-            }
 
-            var conditions = keychain.Keys.Select(CSharpWriter.ConvertKey);
+            tail = ifStatement;
+        }
 
-            var chainedCondition = keychain.Mode switch
+        if (tail is not null)
+        {
+            statements.Add(tail);
+        }
+
+        statements.Add(CreateGlobalStatusCheck("CheckGlobalBanKeys", "BAN", !continueBan));
+        statements.Add(CreateGlobalStatusCheck("CheckGlobalRetryKeys", "RETRY", !continueRetry));
+        return statements;
+    }
+
+    private static ExpressionSyntax BuildKeychainCondition(Keychain keychain)
+    {
+        var conditions = keychain.Keys.Select(CSharpWriter.ConvertKeySyntax).ToList();
+        var combined = conditions[0];
+
+        for (var i = 1; i < conditions.Count; i++)
+        {
+            combined = keychain.Mode switch
             {
-                KeychainMode.OR => string.Join(" || ", conditions),
-                KeychainMode.AND => string.Join(" && ", conditions),
+                KeychainMode.OR => combined.Or(conditions[i]),
+                KeychainMode.AND => combined.And(conditions[i]),
                 _ => throw new InvalidOperationException("Invalid Keychain Mode")
             };
-
-            writer.Write(chainedCondition);
-            writer.WriteLine(")");
-
-            // Continue on this status
-            if (settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus))
-            {
-                writer.WriteLine($" {{ data.STATUS = \"{keychain.ResultStatus}\"; }}");
-            }
-
-            // Do not continue on this status (return)
-            else
-            {
-                writer.WriteLine($"  {{ data.STATUS = \"{keychain.ResultStatus}\"; return; }}");
-            }
         }
 
-        // The whole purpose of this is to make the code a bit prettier
-        if (banIfNoMatch.InputMode == SettingInputMode.Fixed)
-        {
-            if (banIfNoMatch.FixedSetting is BoolSetting banIfNoMatchSetting && banIfNoMatchSetting.Value)
-            {
-                writer.WriteLine("else");
-
-                if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-                {
-                    writer.WriteLine(" { data.STATUS = \"BAN\"; }");
-                }
-                else
-                {
-                    writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
-                }
-            }
-        }
-        else
-        {
-            writer.WriteLine($"else if ({CSharpWriter.FromSetting(banIfNoMatch)})");
-
-            if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-            {
-                writer.WriteLine(" { data.STATUS = \"BAN\"; }");
-            }
-            else
-            {
-                writer.WriteLine("  { data.STATUS = \"BAN\"; return; }");
-            }
-        }
-
-        // Check global ban keys
-        if (settings.GeneralSettings.ContinueStatuses.Contains("BAN"))
-        {
-            writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; }");
-        }
-        else
-        {
-            writer.WriteLine("if (CheckGlobalBanKeys(data)) { data.STATUS = \"BAN\"; return; }");
-        }
-
-        if (settings.GeneralSettings.ContinueStatuses.Contains("RETRY"))
-        {
-            writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; }");
-        }
-        else
-        {
-            writer.WriteLine("if (CheckGlobalRetryKeys(data)) { data.STATUS = \"RETRY\"; return; }");
-        }
-
-        return writer.ToString();
+        return combined;
     }
+
+    private static IfStatementSyntax CreateGlobalStatusCheck(string methodName, string status, bool shouldReturn)
+        => Id(methodName)
+            .Call(Id("data"))
+            .If(BlockSyntaxFactory.CreateStatusBlock(status, shouldReturn));
 }

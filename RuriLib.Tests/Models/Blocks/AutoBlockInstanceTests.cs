@@ -1,9 +1,11 @@
-using System;
 using RuriLib.Helpers.Blocks;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
 using RuriLib.Models.Configs;
+using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace RuriLib.Tests.Models.Blocks;
@@ -59,7 +61,7 @@ public class AutoBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_SyncReturnValue_OutputScript()
+    public void ToSyntax_SyncReturnValue_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
         block.OutputVariable = "myOutput";
@@ -77,11 +79,11 @@ public class AutoBlockInstanceTests
         (length.FixedSetting as IntSetting)!.Value = 5;
 
         var expected = $"string myOutput = Substring(data, myInput.AsString(), 3, 5);{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
-        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, []));
     }
 
     [Fact]
-    public void ToCSharp_SyncReturnValueCapture_OutputScript()
+    public void ToSyntax_SyncReturnValueCapture_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
         block.OutputVariable = "myOutput";
@@ -100,11 +102,11 @@ public class AutoBlockInstanceTests
         (length.FixedSetting as IntSetting)!.Value = 5;
 
         var expected = $"string myOutput = Substring(data, myInput.AsString(), 3, 5);{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}data.MarkForCapture(nameof(myOutput));{_nl}";
-        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, []));
     }
 
     [Fact]
-    public void ToCSharp_AsyncNoReturnValue_OutputScript()
+    public void ToSyntax_AsyncNoReturnValue_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("TcpConnect");
         var url = block.Settings["host"];
@@ -118,11 +120,11 @@ public class AutoBlockInstanceTests
         (timeout.FixedSetting as IntSetting)!.Value = 1000;
 
         var expected = $"await TcpConnect(data, \"example.com\", 80, false, 1000).ConfigureAwait(false);{_nl}";
-        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, []));
     }
 
     [Fact]
-    public void ToCSharp_BlockIdOverride_UsesAsyncMethodName()
+    public void ToSyntax_BlockIdOverride_UsesAsyncMethodName()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("FileExists");
         block.OutputVariable = "exists";
@@ -132,11 +134,11 @@ public class AutoBlockInstanceTests
         (path.FixedSetting as StringSetting)!.Value = "test.txt";
 
         var expected = $"bool exists = await FileExistsAsync(data, \"test.txt\").ConfigureAwait(false);{_nl}data.LogVariableAssignment(nameof(exists));{_nl}";
-        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, []));
     }
 
     [Fact]
-    public void ToCSharp_SyncReturnValueAlreadyDeclared_OutputScript()
+    public void ToSyntax_SyncReturnValueAlreadyDeclared_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
         block.OutputVariable = "myOutput";
@@ -154,11 +156,11 @@ public class AutoBlockInstanceTests
         length.InputVariableName = "myLength";
 
         var expected = $"myOutput = Substring(data, $\"my {{interp}} string\", 3, myLength.AsInt());{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
-        Assert.Equal(expected, block.ToCSharp(["myOutput"], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, ["myOutput"]));
     }
 
     [Fact]
-    public void ToCSharp_SyncReturnValueEscapedAngleBrackets_OutputScript()
+    public void ToSyntax_SyncReturnValueEscapedAngleBrackets_OutputScript()
     {
         var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
         block.OutputVariable = "myOutput";
@@ -176,6 +178,145 @@ public class AutoBlockInstanceTests
         length.InputVariableName = "myLength";
 
         var expected = $"myOutput = Substring(data, $\"hello <{{name}}> and <friend>\", 3, myLength.AsInt());{_nl}data.LogVariableAssignment(nameof(myOutput));{_nl}";
-        Assert.Equal(expected, block.ToCSharp(["myOutput"], new ConfigSettings()));
+        Assert.Equal(expected, RenderSyntax(block, ["myOutput"]));
     }
+
+    [Fact]
+    public void ToSyntax_TracksExpectedPatternsAndVariableFlow()
+    {
+        AssertSyntax(CreateSubstringBlock(), [],
+            ["myOutput"],
+            "string myOutput = Substring(data, myInput.AsString(), 3, 5);",
+            "data.LogVariableAssignment(nameof(myOutput));");
+
+        AssertSyntax(CreateSubstringBlock(isCapture: true), [],
+            ["myOutput"],
+            "data.MarkForCapture(nameof(myOutput));");
+
+        AssertSyntax(CreateSubstringBlock(safe: true), [],
+            ["myOutput"],
+            "string myOutput = string.Empty;",
+            "try",
+            "catch (Exception safeException)");
+
+        AssertSyntax(CreateSubstringBlock(outputVariable: "globals.sharedSlice", useGlobalsInput: true), [],
+            [],
+            "globals.sharedSlice = Substring(data, ObjectExtensions.DynamicAsString(globals.inputValue), 3, 5);",
+            "data.LogVariableAssignment(nameof(globals.sharedSlice));");
+
+        AssertSyntax(CreateSubstringBlock(alreadyDeclared: true, interpolatedInput: "hello <name>"), ["myOutput"],
+            ["myOutput"],
+            "myOutput = Substring(data, $\"hello {name}\", 3, ObjectExtensions.DynamicAsInt(input.length));",
+            "data.LogVariableAssignment(nameof(myOutput));");
+
+        AssertSyntax(CreateFileExistsBlock(), [],
+            ["exists"],
+            "bool exists = await FileExistsAsync(data, ObjectExtensions.DynamicAsString(globals.filePath)).ConfigureAwait(false);");
+
+        AssertSyntax(CreateFileExistsBlock(safe: true, outputVariable: "globals.fileExists"), [],
+            [],
+            "globals.fileExists = await FileExistsAsync(data, ObjectExtensions.DynamicAsString(globals.filePath)).ConfigureAwait(false);",
+            "data.LogVariableAssignment(nameof(globals.fileExists));",
+            "catch (Exception safeException)");
+
+        AssertSyntax(CreateTcpConnectBlock(), [],
+            [],
+            "await TcpConnect(data, ObjectExtensions.DynamicAsString(globals.host), 80, false, ObjectExtensions.DynamicAsInt(input.timeout)).ConfigureAwait(false);");
+    }
+
+    private static AutoBlockInstance CreateSubstringBlock(
+        bool safe = false,
+        bool isCapture = false,
+        bool alreadyDeclared = false,
+        string outputVariable = "myOutput",
+        bool useGlobalsInput = false,
+        string? interpolatedInput = null)
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("Substring");
+        block.Safe = safe;
+        block.IsCapture = isCapture;
+        block.OutputVariable = outputVariable;
+
+        var input = block.Settings["input"];
+        var index = block.Settings["index"];
+        var length = block.Settings["length"];
+
+        if (interpolatedInput is not null)
+        {
+            input.InputMode = SettingInputMode.Interpolated;
+            input.InterpolatedSetting = new InterpolatedStringSetting { Value = interpolatedInput };
+        }
+        else
+        {
+            input.InputMode = SettingInputMode.Variable;
+            input.InputVariableName = useGlobalsInput ? "globals.inputValue" : "myInput";
+        }
+
+        index.InputMode = SettingInputMode.Fixed;
+        (index.FixedSetting as IntSetting)!.Value = 3;
+
+        if (alreadyDeclared)
+        {
+            length.InputMode = SettingInputMode.Variable;
+            length.InputVariableName = "input.length";
+        }
+        else
+        {
+            length.InputMode = SettingInputMode.Fixed;
+            (length.FixedSetting as IntSetting)!.Value = 5;
+        }
+
+        return block;
+    }
+
+    private static AutoBlockInstance CreateFileExistsBlock(bool safe = false, string outputVariable = "exists")
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("FileExists");
+        block.Safe = safe;
+        block.OutputVariable = outputVariable;
+
+        var path = block.Settings["path"];
+        path.InputMode = SettingInputMode.Variable;
+        path.InputVariableName = "globals.filePath";
+
+        return block;
+    }
+
+    private static AutoBlockInstance CreateTcpConnectBlock()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("TcpConnect");
+        var url = block.Settings["host"];
+        var port = block.Settings["port"];
+        var ssl = block.Settings["useSSL"];
+        var timeout = block.Settings["timeoutMilliseconds"];
+
+        url.InputMode = SettingInputMode.Variable;
+        url.InputVariableName = "globals.host";
+        (port.FixedSetting as IntSetting)!.Value = 80;
+        (ssl.FixedSetting as BoolSetting)!.Value = false;
+        timeout.InputMode = SettingInputMode.Variable;
+        timeout.InputVariableName = "input.timeout";
+
+        return block;
+    }
+
+    private static void AssertSyntax(
+        BlockInstance block,
+        List<string> definedVariables,
+        List<string> expectedDefinedVariables,
+        params string[] expectedFragments)
+    {
+        var syntaxVariables = new List<string>(definedVariables);
+        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, new ConfigSettings())).ToSnippet();
+
+        foreach (var expectedFragment in expectedFragments)
+        {
+            Assert.Contains(expectedFragment, syntax);
+        }
+
+        Assert.Equal(expectedDefinedVariables, syntaxVariables);
+    }
+
+    private static string RenderSyntax(BlockInstance block, List<string> definedVariables)
+        => block.ToSyntax(new BlockSyntaxGenerationContext(definedVariables, new ConfigSettings())).ToSnippet();
 }

@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,10 +12,12 @@ using RuriLib.Extensions;
 using RuriLib.Functions.Conversion;
 using RuriLib.Functions.Crypto;
 using RuriLib.Helpers;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Script;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Variables;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -32,7 +36,7 @@ public class ScriptBlockInstance : BlockInstance
     /// </summary>
     public List<OutputVariable> OutputVariables { get; set; } =
     [
-        new OutputVariable
+        new()
         {
             Name = "result",
             Type = VariableType.Int
@@ -183,12 +187,11 @@ public class ScriptBlockInstance : BlockInstance
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
     {
-        ArgumentNullException.ThrowIfNull(definedVariables);
-        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(context);
 
-        using var writer = new StringWriter();
+        var statements = new List<StatementSyntax>();
         var resultName = "tmp_" + VariableNames.RandomName(6);
         var engineName = "tmp_" + VariableNames.RandomName(6);
         var scopeName = "tmp_" + VariableNames.RandomName(6);
@@ -196,37 +199,30 @@ public class ScriptBlockInstance : BlockInstance
         switch (Interpreter)
         {
             case Interpreter.Jint:
-                var scriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(Script)));
-                var scriptPath = $"Scripts/{scriptHash}.{GetScriptFileExtension(Interpreter)}";
+                var scriptPath = EnsureScriptFile(Script, Interpreter);
 
-                if (!Directory.Exists("Scripts"))
-                {
-                    Directory.CreateDirectory("Scripts");
-                }
-
-                if (!File.Exists(scriptPath))
-                {
-                    File.WriteAllText(scriptPath, Script);
-                }
-
-                writer.WriteLine($"var {engineName} = new Engine();");
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    engineName,
+                    New("Engine")));
 
                 foreach (var input in GetInputs())
                 {
-                    writer.WriteLine($"{engineName}.SetValue(nameof({input}), {input});");
+                    statements.Add(Id(engineName).Call(
+                        "SetValue",
+                        NameOf(input),
+                        Expr(input)).Stmt());
                 }
 
-                writer.WriteLine($"{engineName} = InvokeJint(data, {engineName}, \"{scriptPath}\");");
+                statements.Add(Expr(engineName).Assign(
+                    Id("InvokeJint").Call(Id("data"), Id(engineName), Lit(scriptPath))));
 
                 foreach (var output in OutputVariables)
                 {
-                    if (!definedVariables.Contains(output.Name))
-                    {
-                        writer.Write($"{ToCSharpType(output.Type)} ");
-                        definedVariables.Add(output.Name);
-                    }
-
-                    writer.WriteLine($"{output.Name} = {engineName}.Global.GetProperty(\"{output.Name}\").Value.{GetJintMethod(output.Type)};");
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildJintOutputExpression(engineName, output)));
                 }
 
                 break;
@@ -244,59 +240,55 @@ public class ScriptBlockInstance : BlockInstance
 
                 var nodeScriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(nodeScript)));
                 var escapedScript = JsonConvert.ToString(nodeScript);
+                var nodeInvocation = Expr("InvokeNode<dynamic>").Call(
+                    Id("data"),
+                    Expr(escapedScript),
+                    BuildInputArrayExpression(),
+                    Lit(true),
+                    Lit(nodeScriptHash));
 
-                writer.WriteLine($"var {resultName} = await InvokeNode<dynamic>(data, {escapedScript}, new object[] {{ {InputVariables} }}, true, \"{nodeScriptHash}\");");
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    resultName,
+                    nodeInvocation.Await()));
 
                 foreach (var output in OutputVariables)
                 {
-                    if (!definedVariables.Contains(output.Name))
-                    {
-                        writer.Write($"{ToCSharpType(output.Type)} ");
-                        definedVariables.Add(output.Name);
-                    }
-
-                    writer.WriteLine($"{output.Name} = {GetNodeMethod(resultName, output)};");
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildNodeOutputExpression(resultName, output)));
                 }
 
                 break;
 
             case Interpreter.IronPython:
-                scriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(Script)));
-                scriptPath = $"Scripts/{scriptHash}.{GetScriptFileExtension(Interpreter)}";
+                scriptPath = EnsureScriptFile(Script, Interpreter);
 
-                if (!Directory.Exists("Scripts"))
-                {
-                    Directory.CreateDirectory("Scripts");
-                }
-
-                if (!File.Exists(scriptPath))
-                {
-                    File.WriteAllText(scriptPath, Script);
-                }
-
-                writer.WriteLine($"var {scopeName} = GetIronPyScope(data);");
+                statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
+                    "var",
+                    scopeName,
+                    Id("GetIronPyScope").Call(Id("data"))));
 
                 foreach (var input in GetInputs())
                 {
-                    writer.WriteLine($"{scopeName}.SetVariable(nameof({input}), {input});");
+                    statements.Add(Id(scopeName).Call(
+                        "SetVariable",
+                        NameOf(input),
+                        Expr(input)).Stmt());
                 }
 
-                writer.WriteLine($"ExecuteIronPyScript(data, {scopeName}, \"{scriptPath}\");");
+                statements.Add(Id("ExecuteIronPyScript").Call(
+                    Id("data"),
+                    Id(scopeName),
+                    Lit(scriptPath)).Stmt());
 
                 foreach (var output in OutputVariables)
                 {
-                    if (!definedVariables.Contains(output.Name))
-                    {
-                        writer.Write($"{ToCSharpType(output.Type)} ");
-                        definedVariables.Add(output.Name);
-                    }
-
-                    writer.WriteLine($"{output.Name} = {scopeName}" + output.Type switch
-                    {
-                        VariableType.ListOfStrings => $".GetVariable<IList<object>>(\"{output.Name}\").Cast<string>().ToList();",
-                        VariableType.ByteArray => $".GetVariable<IList<object>>(\"{output.Name}\").Cast<byte>().ToArray();",
-                        _ => $".GetVariable<{ToCSharpType(output.Type)}>(\"{output.Name}\");"
-                    });
+                    statements.Add(CreateOutputAssignmentStatement(
+                        context.DefinedVariables,
+                        output,
+                        BuildIronPythonOutputExpression(scopeName, output)));
                 }
 
                 break;
@@ -304,11 +296,14 @@ public class ScriptBlockInstance : BlockInstance
 
         foreach (var output in OutputVariables)
         {
-            writer.WriteLine($"data.LogVariableAssignment(nameof({output.Name}));");
+            statements.Add(BlockSyntaxFactory.CreateDataMethodWithNameofArgument("LogVariableAssignment", output.Name));
         }
 
-        return writer.ToString();
+        return statements;
     }
+
+    private ExpressionSyntax BuildNodeOutputExpression(string resultName, OutputVariable output)
+        => Expr(GetNodeMethod(resultName, output));
 
     private string GetNodeMethod(string resultName, OutputVariable output)
         => output.Type switch
@@ -335,7 +330,19 @@ public class ScriptBlockInstance : BlockInstance
             _ => throw new NotImplementedException() // Dictionary not implemented yet
         };
 
-    private string ToCSharpType(VariableType type)
+    private ExpressionSyntax BuildJintOutputExpression(string engineName, OutputVariable output)
+        => Expr(
+            $"{engineName}.Global.GetProperty(\"{output.Name}\").Value.{GetJintMethod(output.Type)}");
+
+    private ExpressionSyntax BuildIronPythonOutputExpression(string scopeName, OutputVariable output)
+        => Expr(output.Type switch
+        {
+            VariableType.ListOfStrings => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<string>().ToList()",
+            VariableType.ByteArray => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<byte>().ToArray()",
+            _ => $"{scopeName}.GetVariable<{GetRuntimeTypeName(output.Type)}>(\"{output.Name}\")"
+        });
+
+    private string GetRuntimeTypeName(VariableType type)
         => type switch
         {
             VariableType.Bool => "bool",
@@ -345,15 +352,6 @@ public class ScriptBlockInstance : BlockInstance
             VariableType.ListOfStrings => "List<string>",
             VariableType.String => "string",
             VariableType.DictionaryOfStrings => "Dictionary<string, string>",
-            _ => throw new NotImplementedException()
-        };
-
-    private string GetScriptFileExtension(Interpreter interpreter)
-        => interpreter switch
-        {
-            Interpreter.Jint => "js",
-            Interpreter.NodeJS => "js",
-            Interpreter.IronPython => "py",
             _ => throw new NotImplementedException()
         };
 
@@ -376,4 +374,50 @@ public class ScriptBlockInstance : BlockInstance
     // Converts input.DATA into DATA
     private string SanitizeInput(string input)
         => Regex.Match(input, "[A-Za-z0-9_]+$").Value;
+
+    private static string EnsureScriptFile(string script, Interpreter interpreter)
+    {
+        var scriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(script)));
+        var scriptPath = $"Scripts/{scriptHash}.{interpreter switch
+        {
+            Interpreter.Jint => "js",
+            Interpreter.NodeJS => "js",
+            Interpreter.IronPython => "py",
+            _ => throw new NotImplementedException()
+        }}";
+
+        if (!Directory.Exists("Scripts"))
+        {
+            Directory.CreateDirectory("Scripts");
+        }
+
+        if (!File.Exists(scriptPath))
+        {
+            File.WriteAllText(scriptPath, script);
+        }
+
+        return scriptPath;
+    }
+
+    private ExpressionSyntax BuildInputArrayExpression()
+        => ArrayOf("object", GetInputs().Select(Expr).ToArray());
+
+    private StatementSyntax CreateOutputAssignmentStatement(
+        List<string> definedVariables,
+        OutputVariable output,
+        ExpressionSyntax expression)
+    {
+        var assignToExistingVariable = definedVariables.Contains(output.Name);
+
+        if (!assignToExistingVariable)
+        {
+            definedVariables.Add(output.Name);
+        }
+
+        return BlockSyntaxFactory.CreateVariableDeclarationOrAssignment(
+            GetRuntimeTypeName(output.Type),
+            output.Name,
+            expression,
+            assignToExistingVariable);
+    }
 }

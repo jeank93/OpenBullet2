@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +14,7 @@ using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
 using RuriLib.Models.Blocks.Parameters;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Configs;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -332,76 +335,24 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> definedVariables, ConfigSettings settings)
+    public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
     {
-        ArgumentNullException.ThrowIfNull(definedVariables);
-        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(context);
 
-        using var writer = new StringWriter();
+        var invocationStatement = BuildHttpRequestInvocationExpression().Stmt();
 
-        if (Safe)
+        if (!Safe)
         {
-            writer.WriteLine("try {");
+            return [invocationStatement];
         }
 
-        writer.Write("await ");
-
-        switch (RequestParams)
-        {
-            case StandardRequestParams x:
-                writer.Write("HttpRequestStandard(data, new StandardHttpRequestOptions { ");
-                writer.Write("Content = " + CSharpWriter.FromSetting(x.Content) + ", ");
-                writer.Write("ContentType = " + CSharpWriter.FromSetting(x.ContentType) + ", ");
-                writer.Write("UrlEncodeContent = " + GetSettingValue("urlEncodeContent") + ", ");
-                break;
-
-            case RawRequestParams x:
-                writer.Write("HttpRequestRaw(data, new RawHttpRequestOptions { ");
-                writer.Write("Content = " + CSharpWriter.FromSetting(x.Content) + ", ");
-                writer.Write("ContentType = " + CSharpWriter.FromSetting(x.ContentType) + ", ");
-                break;
-
-            case BasicAuthRequestParams x:
-                writer.Write("HttpRequestBasicAuth(data, new BasicAuthHttpRequestOptions { ");
-                writer.Write("Username = " + CSharpWriter.FromSetting(x.Username) + ", ");
-                writer.Write("Password = " + CSharpWriter.FromSetting(x.Password) + ", ");
-                break;
-
-            case MultipartRequestParams x:
-                writer.Write("HttpRequestMultipart(data, new MultipartHttpRequestOptions { ");
-                writer.Write("Boundary = " + CSharpWriter.FromSetting(x.Boundary) + ", ");
-                writer.Write("Contents = " + SerializeMultipart(x.Contents) + ", ");
-                break;
-        }
-
-        writer.Write("Url = " + GetSettingValue("url") + ", ");
-        writer.Write("Method = " + GetSettingValue("method") + ", ");
-        writer.Write("AutoRedirect = " + GetSettingValue("autoRedirect") + ", ");
-        writer.Write("MaxNumberOfRedirects = " + GetSettingValue("maxNumberOfRedirects") + ", ");
-        writer.Write("ReadResponseContent = " + GetSettingValue("readResponseContent") + ", ");
-        writer.Write("AbsoluteUriInFirstLine = " + GetSettingValue("absoluteUriInFirstLine") + ", ");
-        writer.Write("HttpLibrary = " + GetSettingValue("httpLibrary") + ", ");
-        writer.Write("SecurityProtocol = " + GetSettingValue("securityProtocol") + ", ");
-        writer.Write("CustomCookies = " + GetSettingValue("customCookies") + ", ");
-        writer.Write("CustomHeaders = " + GetSettingValue("customHeaders") + ", ");
-        writer.Write("TimeoutMilliseconds = " + GetSettingValue("timeoutMilliseconds") + ", ");
-        writer.Write("HttpVersion = " + GetSettingValue("httpVersion") + ", ");
-        writer.Write("CodePagesEncoding = " + GetSettingValue("codePagesEncoding") + ", ");
-        writer.Write("AlwaysSendContent = " + GetSettingValue("alwaysSendContent") + ", ");
-        writer.Write("DecodeHtml = " + GetSettingValue("decodeHtml") + ", ");
-        writer.Write("UseCustomCipherSuites = " + GetSettingValue("useCustomCipherSuites") + ", ");
-        writer.Write("CustomCipherSuites = " + GetSettingValue("customCipherSuites") + " ");
-
-        writer.WriteLine("}).ConfigureAwait(false);");
-
-        if (Safe)
-        {
-            writer.WriteLine("} catch (Exception safeException) {");
-            writer.WriteLine("data.ERROR = safeException.PrettyPrint();");
-            writer.WriteLine("data.Logger.Log($\"[SAFE MODE] Exception caught and saved to data.ERROR: {data.ERROR}\", LogColors.Tomato); }");
-        }
-
-        return writer.ToString();
+        return
+        [
+            SyntaxFactory.TryStatement(
+                SyntaxFactory.Block(invocationStatement),
+                SyntaxFactory.List([BlockSyntaxFactory.CreateSafeModeCatchClause()]),
+                null)
+        ];
     }
 
     private static string ReadRequiredLine(StringReader reader, ref int lineNumber, string errorMessage)
@@ -412,21 +363,100 @@ public class HttpRequestBlockInstance(HttpRequestBlockDescriptor descriptor) : B
         return line ?? throw new LoliCodeParsingException(lineNumber, errorMessage);
     }
 
-    private string SerializeMultipart(List<HttpContentSettingsGroup> contents)
-        => $"new List<MyHttpContent> {{ {string.Join(", ", contents.Select(SerializeContent))} }}";
-
-    private string SerializeContent(HttpContentSettingsGroup content)
-        => content switch
+    private ExpressionSyntax BuildHttpRequestInvocationExpression()
+    {
+        var (methodName, optionsTypeName, requestAssignments) = RequestParams switch
         {
-            StringHttpContentSettingsGroup x =>
-                $"new StringHttpContent({CSharpWriter.FromSetting(x.Name)}, {CSharpWriter.FromSetting(x.Data)}, {CSharpWriter.FromSetting(x.ContentType)})",
-            RawHttpContentSettingsGroup x =>
-                $"new RawHttpContent({CSharpWriter.FromSetting(x.Name)}, {CSharpWriter.FromSetting(x.Data)}, {CSharpWriter.FromSetting(x.ContentType)})",
-            FileHttpContentSettingsGroup x =>
-                $"new FileHttpContent({CSharpWriter.FromSetting(x.Name)}, {CSharpWriter.FromSetting(x.FileName)}, {CSharpWriter.FromSetting(x.ContentType)})",
-            _ => throw new NotImplementedException()
+            StandardRequestParams x => (
+                "HttpRequestStandard",
+                "StandardHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    Prop("Content", CSharpWriter.FromSettingSyntax(x.Content)),
+                    Prop("ContentType", CSharpWriter.FromSettingSyntax(x.ContentType)),
+                    Prop("UrlEncodeContent", CSharpWriter.FromSettingSyntax(Settings["urlEncodeContent"]))
+                }),
+            RawRequestParams x => (
+                "HttpRequestRaw",
+                "RawHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    Prop("Content", CSharpWriter.FromSettingSyntax(x.Content)),
+                    Prop("ContentType", CSharpWriter.FromSettingSyntax(x.ContentType))
+                }),
+            BasicAuthRequestParams x => (
+                "HttpRequestBasicAuth",
+                "BasicAuthHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    Prop("Username", CSharpWriter.FromSettingSyntax(x.Username)),
+                    Prop("Password", CSharpWriter.FromSettingSyntax(x.Password))
+                }),
+            MultipartRequestParams x => (
+                "HttpRequestMultipart",
+                "MultipartHttpRequestOptions",
+                new List<ExpressionSyntax>
+                {
+                    Prop("Boundary", CSharpWriter.FromSettingSyntax(x.Boundary)),
+                    Prop("Contents", BuildMultipartContentsExpression(x.Contents))
+                }),
+            _ => throw new NotSupportedException()
         };
 
-    private string GetSettingValue(string name)
-        => CSharpWriter.FromSetting(Settings[name]);
+        requestAssignments.AddRange(
+        [
+            Prop("Url", CSharpWriter.FromSettingSyntax(Settings["url"])),
+            Prop("Method", CSharpWriter.FromSettingSyntax(Settings["method"])),
+            Prop("AutoRedirect", CSharpWriter.FromSettingSyntax(Settings["autoRedirect"])),
+            Prop("MaxNumberOfRedirects", CSharpWriter.FromSettingSyntax(Settings["maxNumberOfRedirects"])),
+            Prop("ReadResponseContent", CSharpWriter.FromSettingSyntax(Settings["readResponseContent"])),
+            Prop("AbsoluteUriInFirstLine", CSharpWriter.FromSettingSyntax(Settings["absoluteUriInFirstLine"])),
+            Prop("HttpLibrary", CSharpWriter.FromSettingSyntax(Settings["httpLibrary"])),
+            Prop("SecurityProtocol", CSharpWriter.FromSettingSyntax(Settings["securityProtocol"])),
+            Prop("CustomCookies", CSharpWriter.FromSettingSyntax(Settings["customCookies"])),
+            Prop("CustomHeaders", CSharpWriter.FromSettingSyntax(Settings["customHeaders"])),
+            Prop("TimeoutMilliseconds", CSharpWriter.FromSettingSyntax(Settings["timeoutMilliseconds"])),
+            Prop("HttpVersion", CSharpWriter.FromSettingSyntax(Settings["httpVersion"])),
+            Prop("CodePagesEncoding", CSharpWriter.FromSettingSyntax(Settings["codePagesEncoding"])),
+            Prop("AlwaysSendContent", CSharpWriter.FromSettingSyntax(Settings["alwaysSendContent"])),
+            Prop("DecodeHtml", CSharpWriter.FromSettingSyntax(Settings["decodeHtml"])),
+            Prop("UseCustomCipherSuites", CSharpWriter.FromSettingSyntax(Settings["useCustomCipherSuites"])),
+            Prop("CustomCipherSuites", CSharpWriter.FromSettingSyntax(Settings["customCipherSuites"]))
+        ]);
+
+        var optionsObject = New(optionsTypeName).InitObject(requestAssignments.ToArray());
+
+        return Id(methodName)
+            .Call(Id("data"), optionsObject)
+            .AwaitNoCapture();
+    }
+
+    private static ExpressionSyntax BuildMultipartContentsExpression(List<HttpContentSettingsGroup> contents)
+        => New("List<MyHttpContent>").InitCollection(contents.Select(BuildMultipartContentExpression).ToArray());
+
+    private static ExpressionSyntax BuildMultipartContentExpression(HttpContentSettingsGroup content)
+        => content switch
+        {
+            StringHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "StringHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.Data),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            RawHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "RawHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.Data),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            FileHttpContentSettingsGroup x => CreateMultipartContentExpression(
+                "FileHttpContent",
+                CSharpWriter.FromSettingSyntax(x.Name),
+                CSharpWriter.FromSettingSyntax(x.FileName),
+                CSharpWriter.FromSettingSyntax(x.ContentType)),
+            _ => throw new NotSupportedException()
+        };
+
+    private static ExpressionSyntax CreateMultipartContentExpression(
+        string typeName,
+        params ExpressionSyntax[] arguments)
+        => New(typeName, arguments);
 }

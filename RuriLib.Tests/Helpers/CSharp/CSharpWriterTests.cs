@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks.Settings;
 using Xunit;
@@ -121,5 +122,37 @@ public class CSharpWriterTests
         };
 
         Assert.Equal("myVar.AsString()", CSharpWriter.FromSetting(setting));
+    }
+
+    [Fact]
+    public void FromSettingSyntax_GlobalVariable_UsesDynamicHelperCall()
+    {
+        var setting = new BlockSetting
+        {
+            InputMode = SettingInputMode.Variable,
+            InputVariableName = "globals.myVar",
+            FixedSetting = new StringSetting()
+        };
+
+        Assert.Equal(
+            "ObjectExtensions.DynamicAsString(globals.myVar)",
+            CSharpWriter.FromSettingSyntax(setting).NormalizeWhitespace().ToFullString());
+    }
+
+    [Fact]
+    public void FromSettingSyntax_InterpolatedString_UsesInterpolatedExpression()
+    {
+        var setting = new BlockSetting
+        {
+            InputMode = SettingInputMode.Interpolated,
+            InterpolatedSetting = new RuriLib.Models.Blocks.Settings.Interpolated.InterpolatedStringSetting
+            {
+                Value = "hello <<<name>>> and <<friend>>"
+            }
+        };
+
+        Assert.Equal(
+            "$\"hello <{name}> and <friend>\"",
+            CSharpWriter.FromSettingSyntax(setting).NormalizeWhitespace().ToFullString());
     }
 }

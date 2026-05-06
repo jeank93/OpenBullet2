@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using RuriLib.Exceptions;
+using RuriLib.Helpers.CSharp;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.Script;
 using RuriLib.Models.Configs;
@@ -51,7 +53,7 @@ public class ScriptBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_NodeJs_DeclaresOutputsAndSanitizesInputs()
+    public void ToSyntax_NodeJs_DeclaresOutputsAndSanitizesInputs()
     {
         var block = CreateBlock();
         block.Interpreter = Interpreter.NodeJS;
@@ -63,7 +65,7 @@ public class ScriptBlockInstanceTests
         ];
 
         var definedVariables = new List<string>();
-        var output = block.ToCSharp(definedVariables, new ConfigSettings());
+        var output = RenderSyntax(block, definedVariables);
 
         Assert.Contains("module.exports = async (DATA,x) => {", output);
         Assert.Contains("new object[] { input.DATA, x }", output);
@@ -74,17 +76,129 @@ public class ScriptBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_NodeJs_ReusesExistingOutputVariable()
+    public void ToSyntax_NodeJs_ReusesExistingOutputVariable()
     {
         var block = CreateBlock();
         block.Interpreter = Interpreter.NodeJS;
 
-        var output = block.ToCSharp(["result"], new ConfigSettings());
+        var output = RenderSyntax(block, ["result"]);
 
         Assert.DoesNotContain("string result =", output);
         Assert.Contains("result = tmp_", output);
     }
 
+    [Fact]
+    public void ToSyntax_NodeJs_UsesStableGeneratedShape()
+    {
+        var block = CreateBlock();
+        block.Interpreter = Interpreter.NodeJS;
+        block.InputVariables = "input.DATA, x";
+        block.Script = "var result = DATA + x;";
+        block.OutputVariables =
+        [
+            new OutputVariable { Name = "result", Type = VariableType.String }
+        ];
+
+        var syntax = NormalizeTempNames(
+            RenderSyntax(block, []));
+
+        Assert.Contains("var tmp_TEMP = await InvokeNode<dynamic>(data,", syntax);
+        Assert.Contains("new object[] { input.DATA, x }", syntax);
+        Assert.Contains("string result = tmp_TEMP.GetProperty(\"result\").ToString();", syntax);
+    }
+
+    [Fact]
+    public void ToSyntax_TracksExpectedInterpreterShapesAndVariableFlow()
+    {
+        AssertSyntax(CreateNodeJsBlock(), [],
+            ["result"],
+            "InvokeNode<dynamic>(data,",
+            "new object[] { input.DATA, x }",
+            "string result = tmp_");
+
+        AssertSyntax(CreateNodeJsBlock(), ["result"],
+            ["result"],
+            "result = tmp_",
+            "data.LogVariableAssignment(nameof(result));");
+
+        AssertSyntax(CreateJintBlock(), [],
+            ["count"],
+            "new Engine()",
+            "SetValue(nameof(globals.source), globals.source);",
+            ".SetValue(nameof(y), y);",
+            "InvokeJint(data, tmp_",
+            "int count = ");
+
+        AssertSyntax(CreateIronPythonBlock(), [],
+            ["message"],
+            "GetIronPyScope(data);",
+            "SetVariable(nameof(input.NAME), input.NAME);",
+            "ExecuteIronPyScript(data,",
+            "string message = ");
+    }
+
     private static ScriptBlockInstance CreateBlock()
         => new(new ScriptBlockDescriptor());
+
+    private static ScriptBlockInstance CreateNodeJsBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.NodeJS,
+            InputVariables = "input.DATA, x",
+            Script = "var result = DATA + x;",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "result", Type = VariableType.String }
+            ]
+        };
+
+    private static ScriptBlockInstance CreateJintBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.Jint,
+            InputVariables = "globals.source, y",
+            Script = "var count = source.length + y;",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "count", Type = VariableType.Int }
+            ]
+        };
+
+    private static ScriptBlockInstance CreateIronPythonBlock()
+        => new(new ScriptBlockDescriptor())
+        {
+            Interpreter = Interpreter.IronPython,
+            InputVariables = "input.NAME",
+            Script = "message = NAME + '_done'",
+            OutputVariables =
+            [
+                new OutputVariable { Name = "message", Type = VariableType.String }
+            ]
+        };
+
+    private static void AssertSyntax(
+        ScriptBlockInstance block,
+        List<string> definedVariables,
+        List<string> expectedDefinedVariables,
+        params string[] expectedFragments)
+    {
+        var syntaxVariables = new List<string>(definedVariables);
+        var syntax = NormalizeTempNames(RenderSyntax(block, syntaxVariables));
+
+        foreach (var expectedFragment in expectedFragments)
+        {
+            Assert.Contains(expectedFragment, syntax);
+        }
+
+        Assert.Equal(expectedDefinedVariables, syntaxVariables);
+    }
+
+    private static string RenderSyntax(ScriptBlockInstance block, List<string> definedVariables)
+        => block.ToSyntax(new BlockSyntaxGenerationContext(definedVariables, new ConfigSettings())).ToSnippet();
+
+    private static string NormalizeTempNames(string input)
+        => Regex.Replace(
+            Regex.Replace(input.Replace("\\r\\n", "\\n"), "\"[a-f0-9]{32}\"", "\"HASH\""),
+            @"tmp_[A-Za-z0-9_]+",
+            "tmp_TEMP");
 }

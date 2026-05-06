@@ -87,13 +87,19 @@ public class JobsViewModel : ViewModelBase
 
     public async Task<JobViewModel> EditJobAsync(JobEntity entity, JobOptions options)
     {
+        var oldJob = jobManager.Jobs.First(j => j.Id == entity.Id);
+
+        if (oldJob.Status != JobStatus.Idle)
+        {
+            throw new InvalidOperationException("Stop or abort the job before editing it.");
+        }
+
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
         var wrapper = new JobOptionsWrapper { Options = options };
         entity.JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings);
 
         await WithRepositoryAsync(repo => repo.UpdateAsync(entity));
 
-        var oldJob = jobManager.Jobs.First(j => j.Id == entity.Id);
         var newJob = jobFactory.FromOptions(entity.Id, 0, options);
 
         jobManager.RemoveJob(oldJob);

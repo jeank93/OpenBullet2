@@ -6,6 +6,7 @@ using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
+using RuriLib.Models.Jobs;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -68,6 +69,12 @@ public partial class Jobs : Page
 
     public async Task EditJobAsync(JobViewModel jobVM)
     {
+        if (jobVM.Status != JobStatus.Idle)
+        {
+            Alert.Warning("Cannot edit job", "Stop or abort the job before editing it.");
+            return;
+        }
+
         var entity = await GetJobEntityAsync(jobVM.Id);
         var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions ?? string.Empty, JsonSettings)?.Options
             ?? throw new InvalidOperationException("Could not deserialize job options");

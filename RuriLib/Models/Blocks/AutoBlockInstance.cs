@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks;
 
@@ -222,7 +223,7 @@ public class AutoBlockInstance : BlockInstance
                 statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
                     GetRuntimeReturnType(),
                     OutputVariable,
-                    SyntaxFactory.ParseExpression(GetDefaultReturnValue())));
+                    Expr(GetDefaultReturnValue())));
             }
 
             var tryStatements = CreateExecutionStatements(context.DefinedVariables, true);
@@ -336,7 +337,7 @@ public class AutoBlockInstance : BlockInstance
         }
         else
         {
-            statements.Add(SyntaxFactory.ExpressionStatement(BuildMethodInvocationExpression()));
+            statements.Add(BuildMethodInvocationExpression().Stmt());
         }
 
         return statements;
@@ -345,20 +346,15 @@ public class AutoBlockInstance : BlockInstance
     private ExpressionSyntax BuildMethodInvocationExpression()
     {
         var descriptor = (AutoBlockDescriptor)Descriptor;
-        var arguments = new List<ArgumentSyntax>
-        {
-            SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data"))
-        };
+        var arguments = new List<ExpressionSyntax> { Id("data") };
 
-        arguments.AddRange(Settings.Values.Select(setting => SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(setting))));
+        arguments.AddRange(Settings.Values.Select(CSharpWriter.FromSettingSyntax));
 
         var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
             ? descriptor.Id
             : descriptor.MethodName;
 
-        ExpressionSyntax invocation = SyntaxFactory.InvocationExpression(
-            SyntaxFactory.IdentifierName(methodName),
-            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+        ExpressionSyntax invocation = Id(methodName).Call(arguments);
 
         return descriptor.Async
             ? BlockSyntaxFactory.CreateAwaitConfigureAwaitFalse(invocation)

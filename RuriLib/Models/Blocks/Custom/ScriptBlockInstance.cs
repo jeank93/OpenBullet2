@@ -17,6 +17,7 @@ using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Script;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Variables;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -331,29 +332,18 @@ public class ScriptBlockInstance : BlockInstance
                 statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
                     "var",
                     engineName,
-                    SyntaxFactory.ObjectCreationExpression(SyntaxFactory.ParseTypeName("Engine"))
-                        .WithArgumentList(SyntaxFactory.ArgumentList())));
+                    New("Engine")));
 
                 foreach (var input in GetInputs())
                 {
-                    statements.Add(SyntaxFactory.ExpressionStatement(
-                        BlockSyntaxFactory.CreateMemberInvocation(
-                            SyntaxFactory.IdentifierName(engineName),
-                            "SetValue",
-                            SyntaxFactory.Argument(BlockSyntaxFactory.CreateNameofExpression(input)),
-                            SyntaxFactory.Argument(SyntaxFactory.ParseExpression(input)))));
+                    statements.Add(Id(engineName).Call(
+                        "SetValue",
+                        NameOf(input),
+                        Expr(input)).Stmt());
                 }
 
-                statements.Add(BlockSyntaxFactory.CreateAssignment(
-                    engineName,
-                    BlockSyntaxFactory.CreateInvocation(
-                        SyntaxFactory.IdentifierName("InvokeJint"),
-                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
-                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName(engineName)),
-                        SyntaxFactory.Argument(
-                            SyntaxFactory.LiteralExpression(
-                                SyntaxKind.StringLiteralExpression,
-                                SyntaxFactory.Literal(scriptPath))))));
+                statements.Add(Expr(engineName).Assign(
+                    Id("InvokeJint").Call(Id("data"), Id(engineName), Lit(scriptPath))));
 
                 foreach (var output in OutputVariables)
                 {
@@ -378,22 +368,17 @@ public class ScriptBlockInstance : BlockInstance
 
                 var nodeScriptHash = HexConverter.ToHexString(Crypto.MD5(Encoding.UTF8.GetBytes(nodeScript)));
                 var escapedScript = JsonConvert.ToString(nodeScript);
-                var nodeInvocation = BlockSyntaxFactory.CreateInvocation(
-                    SyntaxFactory.ParseExpression("InvokeNode<dynamic>"),
-                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
-                    SyntaxFactory.Argument(SyntaxFactory.ParseExpression(escapedScript)),
-                    SyntaxFactory.Argument(BuildInputArrayExpression()),
-                    SyntaxFactory.Argument(
-                        SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)),
-                    SyntaxFactory.Argument(
-                        SyntaxFactory.LiteralExpression(
-                            SyntaxKind.StringLiteralExpression,
-                            SyntaxFactory.Literal(nodeScriptHash))));
+                var nodeInvocation = Expr("InvokeNode<dynamic>").Call(
+                    Id("data"),
+                    Expr(escapedScript),
+                    BuildInputArrayExpression(),
+                    Lit(true),
+                    Lit(nodeScriptHash));
 
                 statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
                     "var",
                     resultName,
-                    SyntaxFactory.AwaitExpression(nodeInvocation)));
+                    nodeInvocation.Await()));
 
                 foreach (var output in OutputVariables)
                 {
@@ -411,29 +396,20 @@ public class ScriptBlockInstance : BlockInstance
                 statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
                     "var",
                     scopeName,
-                    BlockSyntaxFactory.CreateInvocation(
-                        SyntaxFactory.IdentifierName("GetIronPyScope"),
-                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")))));
+                    Id("GetIronPyScope").Call(Id("data"))));
 
                 foreach (var input in GetInputs())
                 {
-                    statements.Add(SyntaxFactory.ExpressionStatement(
-                        BlockSyntaxFactory.CreateMemberInvocation(
-                            SyntaxFactory.IdentifierName(scopeName),
-                            "SetVariable",
-                            SyntaxFactory.Argument(BlockSyntaxFactory.CreateNameofExpression(input)),
-                            SyntaxFactory.Argument(SyntaxFactory.ParseExpression(input)))));
+                    statements.Add(Id(scopeName).Call(
+                        "SetVariable",
+                        NameOf(input),
+                        Expr(input)).Stmt());
                 }
 
-                statements.Add(SyntaxFactory.ExpressionStatement(
-                    BlockSyntaxFactory.CreateInvocation(
-                        SyntaxFactory.IdentifierName("ExecuteIronPyScript"),
-                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
-                        SyntaxFactory.Argument(SyntaxFactory.IdentifierName(scopeName)),
-                        SyntaxFactory.Argument(
-                            SyntaxFactory.LiteralExpression(
-                                SyntaxKind.StringLiteralExpression,
-                                SyntaxFactory.Literal(scriptPath))))));
+                statements.Add(Id("ExecuteIronPyScript").Call(
+                    Id("data"),
+                    Id(scopeName),
+                    Lit(scriptPath)).Stmt());
 
                 foreach (var output in OutputVariables)
                 {
@@ -455,7 +431,7 @@ public class ScriptBlockInstance : BlockInstance
     }
 
     private ExpressionSyntax BuildNodeOutputExpression(string resultName, OutputVariable output)
-        => SyntaxFactory.ParseExpression(GetNodeMethod(resultName, output));
+        => Expr(GetNodeMethod(resultName, output));
 
     private string GetNodeMethod(string resultName, OutputVariable output)
         => output.Type switch
@@ -483,11 +459,11 @@ public class ScriptBlockInstance : BlockInstance
         };
 
     private ExpressionSyntax BuildJintOutputExpression(string engineName, OutputVariable output)
-        => SyntaxFactory.ParseExpression(
+        => Expr(
             $"{engineName}.Global.GetProperty(\"{output.Name}\").Value.{GetJintMethod(output.Type)}");
 
     private ExpressionSyntax BuildIronPythonOutputExpression(string scopeName, OutputVariable output)
-        => SyntaxFactory.ParseExpression(output.Type switch
+        => Expr(output.Type switch
         {
             VariableType.ListOfStrings => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<string>().ToList()",
             VariableType.ByteArray => $"{scopeName}.GetVariable<IList<object>>(\"{output.Name}\").Cast<byte>().ToArray()",
@@ -561,22 +537,7 @@ public class ScriptBlockInstance : BlockInstance
     }
 
     private ExpressionSyntax BuildInputArrayExpression()
-    {
-        var inputs = GetInputs()
-            .Select(input => SyntaxFactory.ParseExpression(input))
-            .ToArray();
-
-        return SyntaxFactory.ArrayCreationExpression(
-                SyntaxFactory.ArrayType(
-                    SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)),
-                    SyntaxFactory.SingletonList(
-                        SyntaxFactory.ArrayRankSpecifier(
-                            SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
-                                SyntaxFactory.OmittedArraySizeExpression())))))
-            .WithInitializer(SyntaxFactory.InitializerExpression(
-                SyntaxKind.ArrayInitializerExpression,
-                SyntaxFactory.SeparatedList(inputs)));
-    }
+        => ArrayOf("object", GetInputs().Select(Expr).ToArray());
 
     private StatementSyntax CreateOutputAssignmentStatement(
         List<string> definedVariables,

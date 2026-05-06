@@ -12,6 +12,7 @@ using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Keycheck;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Configs;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -301,9 +302,8 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
 
         if (nonEmpty.Count == 0)
         {
-            statements.Add(SyntaxFactory.IfStatement(
-                CSharpWriter.FromSettingSyntax(banIfNoMatch),
-                BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan)));
+            statements.Add(CSharpWriter.FromSettingSyntax(banIfNoMatch)
+                .If(BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan)));
             statements.Add(CreateGlobalStatusCheck("CheckGlobalBanKeys", "BAN", !continueBan));
             statements.Add(CreateGlobalStatusCheck("CheckGlobalRetryKeys", "RETRY", !continueRetry));
             return statements;
@@ -314,16 +314,14 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
             { InputMode: SettingInputMode.Fixed, FixedSetting: BoolSetting { Value: true } }
                 => BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan),
             { InputMode: SettingInputMode.Fixed } => null,
-            _ => SyntaxFactory.IfStatement(
-                CSharpWriter.FromSettingSyntax(banIfNoMatch),
-                BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan))
+            _ => CSharpWriter.FromSettingSyntax(banIfNoMatch)
+                .If(BlockSyntaxFactory.CreateStatusBlock("BAN", !continueBan))
         };
 
         for (var i = nonEmpty.Count - 1; i >= 0; i--)
         {
             var keychain = nonEmpty[i];
-            var ifStatement = SyntaxFactory.IfStatement(
-                BuildKeychainCondition(keychain),
+            var ifStatement = BuildKeychainCondition(keychain).If(
                 BlockSyntaxFactory.CreateStatusBlock(
                     keychain.ResultStatus,
                     !context.Settings.GeneralSettings.ContinueStatuses.Contains(keychain.ResultStatus)));
@@ -353,25 +351,19 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
 
         for (var i = 1; i < conditions.Count; i++)
         {
-            combined = SyntaxFactory.BinaryExpression(
-                keychain.Mode switch
-                {
-                    KeychainMode.OR => SyntaxKind.LogicalOrExpression,
-                    KeychainMode.AND => SyntaxKind.LogicalAndExpression,
-                    _ => throw new InvalidOperationException("Invalid Keychain Mode")
-                },
-                combined,
-                conditions[i]);
+            combined = keychain.Mode switch
+            {
+                KeychainMode.OR => combined.Or(conditions[i]),
+                KeychainMode.AND => combined.And(conditions[i]),
+                _ => throw new InvalidOperationException("Invalid Keychain Mode")
+            };
         }
 
         return combined;
     }
 
     private static IfStatementSyntax CreateGlobalStatusCheck(string methodName, string status, bool shouldReturn)
-        => SyntaxFactory.IfStatement(
-            SyntaxFactory.InvocationExpression(
-                SyntaxFactory.IdentifierName(methodName),
-                SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
-                    SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data"))))),
-            BlockSyntaxFactory.CreateStatusBlock(status, shouldReturn));
+        => Id(methodName)
+            .Call(Id("data"))
+            .If(BlockSyntaxFactory.CreateStatusBlock(status, shouldReturn));
 }

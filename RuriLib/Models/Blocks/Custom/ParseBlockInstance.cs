@@ -11,6 +11,7 @@ using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
 using RuriLib.Models.Blocks.Custom.Parse;
 using RuriLib.Models.Configs;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Models.Blocks.Custom;
 
@@ -244,7 +245,7 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
                 statements.Add(BlockSyntaxFactory.CreateVariableDeclaration(
                     outputType,
                     OutputVariable,
-                    SyntaxFactory.ParseExpression(defaultReturnValue)));
+                    Expr(defaultReturnValue)));
             }
 
             statements.Add(SyntaxFactory.TryStatement(
@@ -381,47 +382,45 @@ public class ParseBlockInstance(ParseBlockDescriptor descriptor) : BlockInstance
             methodName += "Recursive";
         }
 
-        var arguments = new List<ArgumentSyntax>
+        var arguments = new List<ExpressionSyntax>
         {
-            SyntaxFactory.Argument(SyntaxFactory.IdentifierName("data")),
-            SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["input"]))
+            Id("data"),
+            CSharpWriter.FromSettingSyntax(Settings["input"])
         };
 
         switch (Mode)
         {
             case ParseMode.LR:
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["leftDelim"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["rightDelim"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["caseSensitive"])));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["leftDelim"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["rightDelim"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["caseSensitive"]));
                 break;
 
             case ParseMode.CSS:
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["cssSelector"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["attributeName"])));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["cssSelector"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["attributeName"]));
                 break;
 
             case ParseMode.XPath:
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["xPath"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["attributeName"])));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["xPath"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["attributeName"]));
                 break;
 
             case ParseMode.Json:
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["jToken"])));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["jToken"]));
                 break;
 
             case ParseMode.Regex:
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["pattern"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["outputFormat"])));
-                arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["multiLine"])));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["pattern"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["outputFormat"]));
+                arguments.Add(CSharpWriter.FromSettingSyntax(Settings["multiLine"]));
                 break;
         }
 
-        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["prefix"])));
-        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["suffix"])));
-        arguments.Add(SyntaxFactory.Argument(CSharpWriter.FromSettingSyntax(Settings["urlEncodeOutput"])));
+        arguments.Add(CSharpWriter.FromSettingSyntax(Settings["prefix"]));
+        arguments.Add(CSharpWriter.FromSettingSyntax(Settings["suffix"]));
+        arguments.Add(CSharpWriter.FromSettingSyntax(Settings["urlEncodeOutput"]));
 
-        return SyntaxFactory.InvocationExpression(
-            SyntaxFactory.IdentifierName(methodName),
-            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(arguments)));
+        return Id(methodName).Call(arguments);
     }
 }

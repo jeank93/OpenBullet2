@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static RuriLib.Helpers.CSharp.SyntaxDsl;
 
 namespace RuriLib.Helpers.CSharp;
 
@@ -15,7 +16,7 @@ public static class BlockSyntaxFactory
     /// Creates a <c>nameof(...)</c> expression.
     /// </summary>
     public static ExpressionSyntax CreateNameofExpression(string variableName)
-        => SyntaxFactory.ParseExpression($"nameof({variableName})");
+        => NameOf(variableName);
 
     /// <summary>
     /// Creates a local declaration statement.
@@ -26,7 +27,7 @@ public static class BlockSyntaxFactory
         ExpressionSyntax initializer)
         => SyntaxFactory.LocalDeclarationStatement(
             SyntaxFactory.VariableDeclaration(
-                SyntaxFactory.ParseTypeName(typeName),
+                Type(typeName),
                 SyntaxFactory.SingletonSeparatedList(
                     SyntaxFactory.VariableDeclarator(SyntaxFactory.Identifier(variableName))
                         .WithInitializer(SyntaxFactory.EqualsValueClause(initializer)))));
@@ -49,7 +50,7 @@ public static class BlockSyntaxFactory
     public static ExpressionStatementSyntax CreateAssignment(
         string leftExpression,
         ExpressionSyntax rightExpression)
-        => CreateAssignment(SyntaxFactory.ParseExpression(leftExpression), rightExpression);
+        => CreateAssignment(Expr(leftExpression), rightExpression);
 
     /// <summary>
     /// Creates a simple assignment statement.
@@ -111,10 +112,10 @@ public static class BlockSyntaxFactory
     public static ExpressionStatementSyntax CreateDataMethodWithNameofArgument(
         string methodName,
         string variableName)
-        => SyntaxFactory.ExpressionStatement(CreateMemberInvocation(
-            SyntaxFactory.IdentifierName("data"),
+        => CreateMemberInvocation(
+            Id("data"),
             methodName,
-            SyntaxFactory.Argument(CreateNameofExpression(variableName))));
+            Arg(CreateNameofExpression(variableName))).Stmt();
 
     /// <summary>
     /// Creates the standard safe-mode catch clause used by generated blocks.
@@ -122,18 +123,13 @@ public static class BlockSyntaxFactory
     public static CatchClauseSyntax CreateSafeModeCatchClause()
         => SyntaxFactory.CatchClause(
             declaration: SyntaxFactory.CatchDeclaration(
-                SyntaxFactory.ParseTypeName("Exception"),
+                Type("Exception"),
                 SyntaxFactory.Identifier("safeException")),
             filter: null,
             block: SyntaxFactory.Block(
                 CreateAssignment(
                     "data.ERROR",
-                    SyntaxFactory.InvocationExpression(
-                        SyntaxFactory.MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            SyntaxFactory.IdentifierName("safeException"),
-                            SyntaxFactory.IdentifierName("PrettyPrint")),
-                        SyntaxFactory.ArgumentList())),
+                    SyntaxFactory.InvocationExpression(Id("safeException").Member("PrettyPrint"))),
                 CreateSafeModeLogStatement()));
 
     /// <summary>
@@ -145,9 +141,7 @@ public static class BlockSyntaxFactory
         {
             CreateAssignment(
                 "data.STATUS",
-                SyntaxFactory.LiteralExpression(
-                    SyntaxKind.StringLiteralExpression,
-                    SyntaxFactory.Literal(status)))
+                Lit(status))
         };
 
         if (shouldReturn)
@@ -159,11 +153,11 @@ public static class BlockSyntaxFactory
     }
 
     private static StatementSyntax CreateSafeModeLogStatement()
-        => SyntaxFactory.ExpressionStatement(CreateMemberInvocation(
-            SyntaxFactory.ParseExpression("data.Logger"),
+        => CreateMemberInvocation(
+            Expr("data.Logger"),
             "Log",
             [
-                SyntaxFactory.Argument(SyntaxFactory.ParseExpression("$\"[SAFE MODE] Exception caught and saved to data.ERROR: {data.ERROR}\"")),
-                SyntaxFactory.Argument(SyntaxFactory.ParseExpression("LogColors.Tomato"))
-            ]));
+                Arg(Expr("$\"[SAFE MODE] Exception caught and saved to data.ERROR: {data.ERROR}\"")),
+                Arg(Expr("LogColors.Tomato"))
+            ]).Stmt();
 }

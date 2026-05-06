@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace RuriLib.Functions.Http;
 
@@ -84,7 +85,9 @@ public class HttpFactory
 
         return new HttpClient(handler)
         {
-            Timeout = options.ReadWriteTimeout
+            // The block-level timeout is enforced by the request handler via CancellationTokenSource.
+            // Using the proxy read/write timeout here caps all System.Net requests to that value.
+            Timeout = Timeout.InfiniteTimeSpan
         };
     }
 

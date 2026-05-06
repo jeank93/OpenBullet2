@@ -7,9 +7,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     # Only run if the commit message contains the string [build]
     if: contains(github.event.head_commit.message, '[build]')
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
     - uses: actions/checkout@v4
     - name: Setup .NET 10
@@ -17,11 +23,13 @@ jobs:
       with:
         dotnet-version: 10.0.x
     - name: Unit and integration tests
+      shell: pwsh
       run: |
-        find . -name '*.Tests.csproj' ! -path './OpenBullet2.Native.Tests/*' -print0 |
-        while IFS= read -r -d '' project; do
-          dotnet test "$project"
-        done
+        Get-ChildItem -Path . -Recurse -Filter *.Tests.csproj |
+          Where-Object { $_.FullName -notlike '*OpenBullet2.Native.Tests*' } |
+          ForEach-Object {
+            dotnet test $_.FullName
+          }
 
   build:
     runs-on: ubuntu-latest

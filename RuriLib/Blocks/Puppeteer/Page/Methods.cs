@@ -375,12 +375,12 @@ public static class Methods
         data.ADDRESS = response.Url;
         data.RESPONSECODE = (int)response.Status;
         data.HEADERS = response.Headers;
+        data.SOURCE = string.Empty;
+        data.RAWSOURCE = [];
 
-        // On 3xx puppeteer returns a body missing exception
-        if ((int)response.Status / 100 != 3)
+        if (ResponseCanHaveBody(response))
         {
-            data.SOURCE = await response.TextAsync();
-            data.RAWSOURCE = await response.BufferAsync();
+            await TryPopulateResponseBody(data, response);
         }
 
         data.Logger.Log($"Address: {data.ADDRESS}", LogColors.DodgerBlue);
@@ -413,6 +413,41 @@ public static class Methods
         return string.Equals(actualUri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.Unescaped),
                              expectedUri.GetComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery, UriFormat.Unescaped),
                              StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ResponseCanHaveBody(IResponse response)
+    {
+        var statusCode = (int)response.Status;
+        return statusCode is not (>= 100 and < 200 or 204 or 205 or 304) &&
+               statusCode / 100 != 3;
+    }
+
+    private static async Task TryPopulateResponseBody(BotData data, IResponse response)
+    {
+        try
+        {
+            data.SOURCE = await response.TextAsync();
+            data.RAWSOURCE = await response.BufferAsync();
+        }
+        catch (Exception ex) when (IsMissingResponseBodyException(ex))
+        {
+            data.SOURCE = string.Empty;
+            data.RAWSOURCE = [];
+            data.Logger.Log("Response body is not available", LogColors.Orange);
+        }
+    }
+
+    private static bool IsMissingResponseBodyException(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current.Message.Contains("Unable to get response body", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string SerializeJavaScriptResult(object value)

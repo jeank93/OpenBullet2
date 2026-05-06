@@ -148,6 +148,15 @@ public class PuppeteerBrowserBlockIntegrationTests
             Assert.Contains("wait=response", data.ADDRESS);
             Assert.Contains("\"method\": \"GET\"", data.SOURCE);
 
+            var noBodyUrl = connection.BuildTargetUrl("status/204?wait=no-body");
+            var waitForNoBodyResponse = PuppeteerPageMethods.PuppeteerWaitForResponse(data, noBodyUrl, 5000);
+            await page.EvaluateExpressionAsync($"fetch('{noBodyUrl}')");
+            await waitForNoBodyResponse;
+            Assert.Equal(204, data.RESPONSECODE);
+            Assert.Contains("status/204", data.ADDRESS);
+            Assert.Equal(string.Empty, data.SOURCE);
+            Assert.Empty(data.RAWSOURCE);
+
             await PuppeteerPageMethods.PuppeteerNavigateTo(data, BuildDataUrl(PageBlocksHtml()), timeout: 20000);
             await PuppeteerElementMethods.PuppeteerSwitchToFrame(data, FindElementBy.Id, "inner-frame", 0);
             await PuppeteerElementMethods.PuppeteerWaitForElement(data, FindElementBy.Id, "inside", timeout: 5000);

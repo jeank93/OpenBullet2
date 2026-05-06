@@ -22,15 +22,17 @@ public static class JsonParser
         ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(path);
 
-        if (string.IsNullOrEmpty(json))
+        var normalizedJson = json.TrimStart('\uFEFF', ' ', '\t', '\r', '\n');
+
+        if (string.IsNullOrEmpty(normalizedJson))
         {
             throw new ArgumentException("The provided json is not a valid object or array", nameof(json));
         }
 
-        JContainer container = json[0] switch
+        JContainer container = normalizedJson[0] switch
         {
-            '{' => JObject.Parse(json),
-            '[' => JArray.Parse(json),
+            '{' => JObject.Parse(normalizedJson),
+            '[' => JArray.Parse(normalizedJson),
             _ => throw new ArgumentException("The provided json is not a valid object or array", nameof(json)),
         };
 

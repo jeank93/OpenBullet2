@@ -42,6 +42,32 @@ public class ParsingBlocksTests
     }
 
     [Fact]
+    public void QueryJsonToken_IntegerValue_ReturnsStringValue()
+    {
+        var data = NewBotData();
+
+        var parsed = ParsingMethods.QueryJsonToken(
+            data,
+            "{\"user_id\":123,\"username\":\"alice\"}",
+            "user_id");
+
+        Assert.Equal("123", parsed);
+    }
+
+    [Fact]
+    public void QueryJsonToken_LeadingWhitespaceJson_ReturnsValue()
+    {
+        var data = NewBotData();
+
+        var parsed = ParsingMethods.QueryJsonToken(
+            data,
+            " \r\n\t{\"user_id\":123,\"username\":\"alice\"}",
+            "user_id");
+
+        Assert.Equal("123", parsed);
+    }
+
+    [Fact]
     public void MatchRegexGroupsRecursive_UrlEncodeOutput_EncodesValues()
     {
         var data = NewBotData();

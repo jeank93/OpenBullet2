@@ -58,4 +58,21 @@ public partial class ConfigMetadata : Page
             Alert.Exception(ex);
         }
     }
+
+    private void PasteIcon(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!Clipboard.ContainsImage())
+            {
+                throw new InvalidOperationException("The clipboard does not contain an image");
+            }
+
+            vm.SetIconFromClipboard(Clipboard.GetImage());
+        }
+        catch (Exception ex)
+        {
+            Alert.Exception(ex);
+        }
+    }
 }

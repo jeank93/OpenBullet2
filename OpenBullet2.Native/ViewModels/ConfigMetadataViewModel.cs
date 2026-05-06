@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace OpenBullet2.Native.ViewModels;
@@ -67,6 +68,20 @@ public class ConfigMetadataViewModel : ViewModelBase
         using var response = await client.GetAsync(url);
         var bytes = ImageEditor.ToCompatibleFormat(await response.Content.ReadAsByteArrayAsync());
 
+        var base64 = Convert.ToBase64String(bytes);
+        Config.Metadata.Base64Image = base64;
+        OnPropertyChanged(nameof(Icon));
+    }
+
+    public void SetIconFromClipboard(BitmapSource image)
+    {
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(image));
+
+        using var ms = new MemoryStream();
+        encoder.Save(ms);
+
+        var bytes = ImageEditor.ToCompatibleFormat(ms.ToArray());
         var base64 = Convert.ToBase64String(bytes);
         Config.Metadata.Base64Image = base64;
         OnPropertyChanged(nameof(Icon));

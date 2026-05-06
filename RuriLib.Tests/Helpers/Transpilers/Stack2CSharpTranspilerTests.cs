@@ -1,7 +1,4 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using RuriLib.Helpers.Blocks;
-using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.Transpilers;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Custom;
@@ -13,7 +10,6 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Conditions.Comparisons;
 using RuriLib.Models.Bots;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -22,7 +18,7 @@ namespace RuriLib.Tests.Helpers.Transpilers;
 public class Stack2CSharpTranspilerTests
 {
     [Fact]
-    public void Transpile_MixedBlocks_MatchesLegacyRendering()
+    public void Transpile_MixedBlocks_RendersExpectedBlocksAndVariableFlow()
     {
         var settings = new ConfigSettings
         {
@@ -37,13 +33,24 @@ public class Stack2CSharpTranspilerTests
             CreateHttpRequestBlock()
         };
 
-        Assert.Equal(
-            NormalizeGeneratedScript(RenderLegacyTranspilerOutput(blocks, settings)),
-            NormalizeGeneratedScript(Stack2CSharpTranspiler.Transpile(blocks, settings)));
+        var script = NormalizeGeneratedScript(Stack2CSharpTranspiler.Transpile(blocks, settings));
+
+        Assert.Contains("// BLOCK: Substring", script);
+        Assert.Contains("data.ExecutingBlock(\"Substring\");", script);
+        Assert.Contains("string sharedValue = Substring(data, ObjectExtensions.DynamicAsString(globals.inputValue), 1, 4);", script);
+        Assert.Contains("// BLOCK: Parse", script);
+        Assert.Contains("sharedValue = MatchRegexGroups(data, sharedValue.AsString(), \"(.*)\", \"$1\", false, null, null, false);", script);
+        Assert.Contains("// BLOCK: Keycheck", script);
+        Assert.Contains("if (CheckCondition(data, sharedValue.AsString(), StrComparison.Contains, \"ok\"))", script);
+        Assert.Contains("// BLOCK: HttpRequest", script);
+        Assert.Contains("try", script);
+        Assert.Contains("await HttpRequestBasicAuth(data, new BasicAuthHttpRequestOptions", script);
+        Assert.Contains("Username = ObjectExtensions.DynamicAsString(globals.username)", script);
+        Assert.DoesNotContain("string sharedValue = MatchRegexGroups", script);
     }
 
     [Fact]
-    public void Transpile_StepByStepAndDisabledBlocks_MatchesLegacyRendering()
+    public void Transpile_StepByStepAndDisabledBlocks_SkipsDisabledAndInsertsStepper()
     {
         var settings = new ConfigSettings();
         var disabledBlock = CreateAutoBlock();
@@ -56,9 +63,12 @@ public class Stack2CSharpTranspilerTests
             CreateParseBlock()
         };
 
-        Assert.Equal(
-            NormalizeGeneratedScript(RenderLegacyTranspilerOutput(blocks, settings, stepByStep: true)),
-            NormalizeGeneratedScript(Stack2CSharpTranspiler.Transpile(blocks, settings, stepByStep: true)));
+        var script = NormalizeGeneratedScript(Stack2CSharpTranspiler.Transpile(blocks, settings, stepByStep: true));
+
+        Assert.Equal(1, script.Split("// BLOCK:").Count(segment => segment.Contains("Substring")));
+        Assert.DoesNotContain("data.ExecutingBlock(\"\");", script);
+        Assert.Contains("// BLOCK: Parse", script);
+        Assert.Equal(1, script.Split("await data.Stepper.WaitForStepAsync(data.CancellationToken);").Length - 1);
     }
 
     private static AutoBlockInstance CreateAutoBlock()
@@ -137,35 +147,6 @@ public class Stack2CSharpTranspilerTests
         (block.Settings["url"].FixedSetting as StringSetting)!.Value = "https://example.com";
 
         return block;
-    }
-
-    private static string RenderLegacyTranspilerOutput(List<BlockInstance> blocks, ConfigSettings settings,
-        bool stepByStep = false)
-    {
-        var declaredVariables = typeof(BotData).GetProperties()
-            .Select(p => $"data.{p.Name}")
-            .ToList();
-
-        using var writer = new StringWriter();
-        var validBlocks = blocks.Where(b => !b.Disabled).ToList();
-
-        foreach (var block in validBlocks)
-        {
-            writer.WriteLine($"// BLOCK: {block.Label}");
-            writer.WriteLine($"data.ExecutingBlock({CSharpWriter.SerializeString(block.Label)});");
-
-            var snippet = block.ToCSharp(declaredVariables, settings);
-            var tree = CSharpSyntaxTree.ParseText(snippet);
-            writer.WriteLine(tree.GetRoot().NormalizeWhitespace().ToFullString());
-            writer.WriteLine();
-
-            if (stepByStep && block != validBlocks.Last())
-            {
-                writer.WriteLine("await data.Stepper.WaitForStepAsync(data.CancellationToken);");
-            }
-        }
-
-        return writer.ToString();
     }
 
     private static string NormalizeGeneratedScript(string script)

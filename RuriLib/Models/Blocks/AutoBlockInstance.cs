@@ -131,78 +131,6 @@ public class AutoBlockInstance : BlockInstance
     }
 
     /// <inheritdoc />
-    public override string ToCSharp(List<string> declaredVariables, ConfigSettings settings)
-    {
-        // If disabled /* code here */
-
-        /*
-         * With return type:
-         * var myVar = MethodName(data, param1, param2 ...);
-         *
-         * Async:
-         * await MethodName(data, param1, param2 ...);
-         *
-         */
-
-        using var writer = new StringWriter();
-
-        // Safe mode, wrap method in try/catch but declare variable outside of it
-        if (Safe)
-        {
-            // If not void, initialize the variable with default value
-            // Only do this if we haven't declared the variable yet!
-            if (Descriptor.ReturnType.HasValue && !declaredVariables.Contains(OutputVariable)
-                && !OutputVariable.StartsWith("globals."))
-            {
-                if (!Disabled)
-                {
-                    declaredVariables.Add(OutputVariable);
-                }
-
-                writer.WriteLine($"{GetRuntimeReturnType()} {OutputVariable} = {GetDefaultReturnValue()};");
-            }
-
-            writer.WriteLine("try {");
-
-            // Here we already know the variable exists so we just do the assignment
-            if (Descriptor.ReturnType.HasValue)
-            {
-                writer.Write($"{OutputVariable} = ");
-            }
-
-            WriteMethod(writer);
-
-            writer.WriteLine("} catch (Exception safeException) {");
-            writer.WriteLine("data.ERROR = safeException.PrettyPrint();");
-            writer.WriteLine("data.Logger.Log($\"[SAFE MODE] Exception caught and saved to data.ERROR: {data.ERROR}\", LogColors.Tomato); }");
-        }
-        else
-        {
-            // If not void, do variable assignment
-            if (Descriptor.ReturnType.HasValue)
-            {
-                if (declaredVariables.Contains(OutputVariable) || OutputVariable.StartsWith("globals."))
-                {
-                    writer.Write($"{OutputVariable} = ");
-                }
-                else
-                {
-                    if (!Disabled)
-                    {
-                        declaredVariables.Add(OutputVariable);
-                    }
-
-                    writer.Write($"{GetRuntimeReturnType()} {OutputVariable} = ");
-                }
-            }
-
-            WriteMethod(writer);
-        }
-
-        return writer.ToString();
-    }
-
-    /// <inheritdoc />
     public override IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -237,46 +165,6 @@ public class AutoBlockInstance : BlockInstance
 
         statements.AddRange(CreateExecutionStatements(context.DefinedVariables, false));
         return statements;
-    }
-
-    private void WriteMethod(StringWriter writer)
-    {
-        var descriptor = (Descriptor as AutoBlockDescriptor)!;
-
-        // If async, prepend the await keyword
-        if (descriptor.Async)
-        {
-            writer.Write("await ");
-        }
-
-        // Append MethodName(data, param1, "param2", param3);
-        List<string> parameters = ["data", .. Settings.Values.Select(CSharpWriter.FromSetting)];
-
-        var methodName = string.IsNullOrWhiteSpace(descriptor.MethodName)
-            ? descriptor.Id
-            : descriptor.MethodName;
-
-        writer.Write($"{methodName}({string.Join(", ", parameters)})");
-
-        if (descriptor.Async)
-        {
-            writer.WriteLine(".ConfigureAwait(false);");
-        }
-        else
-        {
-            writer.WriteLine(";");
-        }
-
-        // If the block has a return type, log which variable was written
-        if (Descriptor.ReturnType.HasValue)
-        {
-            writer.WriteLine($"data.LogVariableAssignment(nameof({OutputVariable}));");
-
-            if (IsCapture)
-            {
-                writer.WriteLine($"data.MarkForCapture(nameof({OutputVariable}));");
-            }
-        }
     }
 
     // This is needed otherwise when we have blocks made in other plugins they might reference

@@ -34,38 +34,38 @@ public class LoliCodeBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_UnsupportedStatement_PreservesRawLine()
+    public void BuildScriptSnippet_UnsupportedStatement_PreservesRawLine()
         => AssertTranspilesTo("return 42;", $"return 42;{_nl}");
 
     [Fact]
-    public void ToCSharp_TakeOne_DeclaresVariable()
+    public void BuildScriptSnippet_TakeOne_DeclaresVariable()
         => AssertTranspilesTo("TAKEONE FROM \"MyResource\" => myString",
             $"string myString = globals.Resources[\"MyResource\"].TakeOne();{_nl}");
 
     [Fact]
-    public void ToCSharp_TakeOne_AssignsExistingVariable()
+    public void BuildScriptSnippet_TakeOne_AssignsExistingVariable()
         => AssertTranspilesTo("TAKEONE FROM \"MyResource\" => myString",
             $"myString = globals.Resources[\"MyResource\"].TakeOne();{_nl}", ["myString"]);
 
     [Fact]
-    public void ToCSharp_Take_DeclaresVariable()
+    public void BuildScriptSnippet_Take_DeclaresVariable()
         => AssertTranspilesTo("TAKE 5 FROM \"MyResource\" => myList",
             $"List<string> myList = globals.Resources[\"MyResource\"].Take(5);{_nl}");
 
     [Fact]
-    public void ToCSharp_CodeLabel_OutputsLabel()
+    public void BuildScriptSnippet_CodeLabel_OutputsLabel()
         => AssertTranspilesTo("#MYLABEL", $"MYLABEL:{_nl}");
 
     [Fact]
-    public void ToCSharp_Jump_OutputsGoto()
+    public void BuildScriptSnippet_Jump_OutputsGoto()
         => AssertTranspilesTo("JUMP #MYLABEL", $"goto MYLABEL;{_nl}");
 
     [Fact]
-    public void ToCSharp_End_ClosesBlock()
+    public void BuildScriptSnippet_End_ClosesBlock()
         => AssertTranspilesTo("END", $"}}{_nl}");
 
     [Fact]
-    public void ToCSharp_Repeat_OutputsForLoop()
+    public void BuildScriptSnippet_Repeat_OutputsForLoop()
     {
         var output = Transpile("REPEAT 10");
 
@@ -74,116 +74,116 @@ public class LoliCodeBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_Foreach_OutputsLoop()
+    public void BuildScriptSnippet_Foreach_OutputsLoop()
         => AssertTranspilesTo("FOREACH item IN items",
             $"foreach (var item in items){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Log_OutputsLogObject()
+    public void BuildScriptSnippet_Log_OutputsLogObject()
         => AssertTranspilesTo("LOG myVar", $"data.Logger.LogObject(myVar);{_nl}");
 
     [Fact]
-    public void ToCSharp_CLog_OutputsColoredLogObject()
+    public void BuildScriptSnippet_CLog_OutputsColoredLogObject()
         => AssertTranspilesTo("CLOG Tomato \"hello\"",
             $"data.Logger.LogObject(\"hello\", LogColors.Tomato);{_nl}");
 
     [Fact]
-    public void ToCSharp_While_OutputsLoop()
+    public void BuildScriptSnippet_While_OutputsLoop()
         => AssertTranspilesTo("WHILE a < b", $"while (a < b){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_WhileKey_OutputsConditionCheck()
+    public void BuildScriptSnippet_WhileKey_OutputsConditionCheck()
         => AssertTranspilesTo("WHILE STRINGKEY @left Contains \"abc\"",
             $"while (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_If_OutputsCondition()
+    public void BuildScriptSnippet_If_OutputsCondition()
         => AssertTranspilesTo("IF a < b", $"if (a < b){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_IfKey_OutputsConditionCheck()
+    public void BuildScriptSnippet_IfKey_OutputsConditionCheck()
         => AssertTranspilesTo("IF STRINGKEY @left Contains \"abc\"",
             $"if (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Else_OutputsBranch()
+    public void BuildScriptSnippet_Else_OutputsBranch()
         => AssertTranspilesTo("ELSE", $"}}{_nl}else{_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_ElseIf_OutputsBranch()
+    public void BuildScriptSnippet_ElseIf_OutputsBranch()
         => AssertTranspilesTo("ELSE IF a < b", $"}}{_nl}else if (a < b){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_ElseIfKey_OutputsConditionCheck()
+    public void BuildScriptSnippet_ElseIfKey_OutputsConditionCheck()
         => AssertTranspilesTo("ELSE IF STRINGKEY @left Contains \"abc\"",
             $"}}{_nl}else if (CheckCondition(data, left.AsString(), StrComparison.Contains, \"abc\")){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Try_OutputsTryBlock()
+    public void BuildScriptSnippet_Try_OutputsTryBlock()
         => AssertTranspilesTo("TRY", $"try{_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Catch_OutputsCatchBlock()
+    public void BuildScriptSnippet_Catch_OutputsCatchBlock()
         => AssertTranspilesTo("CATCH", $"}}{_nl}catch{_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Finally_OutputsFinallyBlock()
+    public void BuildScriptSnippet_Finally_OutputsFinallyBlock()
         => AssertTranspilesTo("FINALLY", $"}}{_nl}finally{_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_Lock_OutputsLockBlock()
+    public void BuildScriptSnippet_Lock_OutputsLockBlock()
         => AssertTranspilesTo("LOCK globals", $"lock(globals){_nl}{{{_nl}");
 
     [Fact]
-    public void ToCSharp_AcquireLock_OutputsAsyncLockerCall()
+    public void BuildScriptSnippet_AcquireLock_OutputsAsyncLockerCall()
         => AssertTranspilesTo("ACQUIRELOCK globals",
             $"await data.AsyncLocker.Acquire(nameof(globals), data.CancellationToken);{_nl}");
 
     [Fact]
-    public void ToCSharp_ReleaseLock_OutputsAsyncLockerCall()
+    public void BuildScriptSnippet_ReleaseLock_OutputsAsyncLockerCall()
         => AssertTranspilesTo("RELEASELOCK globals",
             $"data.AsyncLocker.Release(nameof(globals));{_nl}");
 
     [Fact]
-    public void ToCSharp_SetVar_DeclaresVariable()
+    public void BuildScriptSnippet_SetVar_DeclaresVariable()
         => AssertTranspilesTo("SET VAR myString \"hello\"",
             $"string myString = \"hello\";{_nl}");
 
     [Fact]
-    public void ToCSharp_SetVar_AssignsExistingVariable()
+    public void BuildScriptSnippet_SetVar_AssignsExistingVariable()
         => AssertTranspilesTo("SET VAR myString \"hello\"",
             $"myString = \"hello\";{_nl}", ["myString"]);
 
     [Fact]
-    public void ToCSharp_SetCap_DeclaresAndMarksVariable()
+    public void BuildScriptSnippet_SetCap_DeclaresAndMarksVariable()
         => AssertTranspilesTo("SET CAP myCapture \"hello\"",
             $"string myCapture = \"hello\";{_nl}data.MarkForCapture(nameof(myCapture));{_nl}");
 
     [Fact]
-    public void ToCSharp_SetCap_AssignsAndMarksExistingVariable()
+    public void BuildScriptSnippet_SetCap_AssignsAndMarksExistingVariable()
         => AssertTranspilesTo("SET CAP myCapture \"hello\"",
             $"myCapture = \"hello\";{_nl}data.MarkForCapture(nameof(myCapture));{_nl}", ["myCapture"]);
 
     [Fact]
-    public void ToCSharp_SetUseProxy_LowercasesBoolean()
+    public void BuildScriptSnippet_SetUseProxy_LowercasesBoolean()
         => AssertTranspilesTo("SET USEPROXY TRUE", $"data.UseProxy = true;{_nl}");
 
     [Fact]
-    public void ToCSharp_SetProxy_WithoutAuth_OutputsProxyCtor()
+    public void BuildScriptSnippet_SetProxy_WithoutAuth_OutputsProxyCtor()
         => AssertTranspilesTo("SET PROXY \"127.0.0.1\" 9050 SOCKS5",
             $"data.Proxy = new Proxy(\"127.0.0.1\", 9050, ProxyType.Socks5);{_nl}");
 
     [Fact]
-    public void ToCSharp_SetProxy_WithAuth_OutputsProxyCtor()
+    public void BuildScriptSnippet_SetProxy_WithAuth_OutputsProxyCtor()
         => AssertTranspilesTo("SET PROXY \"127.0.0.1\" 9050 SOCKS5 \"user\" \"pass\"",
             $"data.Proxy = new Proxy(\"127.0.0.1\", 9050, ProxyType.Socks5, \"user\", \"pass\");{_nl}");
 
     [Fact]
-    public void ToCSharp_Mark_OutputsMarkForCapture()
+    public void BuildScriptSnippet_Mark_OutputsMarkForCapture()
         => AssertTranspilesTo("MARK @myVar", $"data.MarkForCapture(nameof(myVar));{_nl}");
 
     [Fact]
-    public void ToCSharp_Unmark_OutputsUnmarkCapture()
+    public void BuildScriptSnippet_Unmark_OutputsUnmarkCapture()
         => AssertTranspilesTo("UNMARK @myVar", $"data.UnmarkCapture(nameof(myVar));{_nl}");
 
     [Fact]
@@ -192,7 +192,7 @@ public class LoliCodeBlockInstanceTests
         var block = CreateBlock("TAKEONE FROM \"MyResource\" => myString");
 
         Assert.Equal(
-            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
+            $"string myString = globals.Resources[\"MyResource\"].TakeOne();{_nl}",
             block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
     }
 
@@ -203,7 +203,7 @@ public class LoliCodeBlockInstanceTests
         var block = CreateBlock(script);
 
         Assert.Equal(
-            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
+            $"if (a < b){_nl}{{{_nl}    return 42;{_nl}}}{_nl}",
             block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
     }
 
@@ -214,7 +214,7 @@ public class LoliCodeBlockInstanceTests
         => Transpile(script, []);
 
     private string Transpile(string script, List<string> definedVariables)
-        => CreateBlock(script).ToCSharp(definedVariables, new ConfigSettings());
+        => CreateBlock(script).BuildScriptSnippet(definedVariables);
 
     private void AssertTranspilesTo(string script, string expected)
         => Assert.Equal(expected, Transpile(script));

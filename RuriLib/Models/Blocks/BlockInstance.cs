@@ -1,4 +1,3 @@
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.LoliCode;
@@ -140,24 +139,11 @@ public abstract class BlockInstance
     }
 
     /// <summary>
-    /// Transpiles the block instance to C#.
-    /// </summary>
-    /// <param name="definedVariables">The variables already declared in the generated script.</param>
-    /// <param name="settings">The config settings used during transpilation.</param>
-    /// <returns>The generated C# code.</returns>
-    public virtual string ToCSharp(List<string> definedVariables, ConfigSettings settings) => throw new NotImplementedException();
-
-    /// <summary>
     /// Transpiles the block instance to Roslyn statements.
     /// </summary>
     /// <param name="context">The state required during syntax generation.</param>
     /// <returns>The generated Roslyn statements.</returns>
-    public virtual IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        return StatementSyntaxParser.ParseStatements(ToCSharp(context.DefinedVariables, context.Settings));
-    }
+    public abstract IEnumerable<StatementSyntax> ToSyntax(BlockSyntaxGenerationContext context);
 
     /// <summary>
     /// Gets a fixed setting cast to the requested type.

@@ -53,7 +53,7 @@ public class ScriptBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_NodeJs_DeclaresOutputsAndSanitizesInputs()
+    public void ToSyntax_NodeJs_DeclaresOutputsAndSanitizesInputs()
     {
         var block = CreateBlock();
         block.Interpreter = Interpreter.NodeJS;
@@ -65,7 +65,7 @@ public class ScriptBlockInstanceTests
         ];
 
         var definedVariables = new List<string>();
-        var output = block.ToCSharp(definedVariables, new ConfigSettings());
+        var output = RenderSyntax(block, definedVariables);
 
         Assert.Contains("module.exports = async (DATA,x) => {", output);
         Assert.Contains("new object[] { input.DATA, x }", output);
@@ -76,19 +76,19 @@ public class ScriptBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_NodeJs_ReusesExistingOutputVariable()
+    public void ToSyntax_NodeJs_ReusesExistingOutputVariable()
     {
         var block = CreateBlock();
         block.Interpreter = Interpreter.NodeJS;
 
-        var output = block.ToCSharp(["result"], new ConfigSettings());
+        var output = RenderSyntax(block, ["result"]);
 
         Assert.DoesNotContain("string result =", output);
         Assert.Contains("result = tmp_", output);
     }
 
     [Fact]
-    public void ToSyntax_NodeJs_MatchesNormalizedLegacyOutput()
+    public void ToSyntax_NodeJs_UsesStableGeneratedShape()
     {
         var block = CreateBlock();
         block.Interpreter = Interpreter.NodeJS;
@@ -99,21 +99,42 @@ public class ScriptBlockInstanceTests
             new OutputVariable { Name = "result", Type = VariableType.String }
         ];
 
-        var legacy = NormalizeTempNames(
-            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet());
         var syntax = NormalizeTempNames(
-            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
+            RenderSyntax(block, []));
 
-        Assert.Equal(legacy, syntax);
+        Assert.Contains("var tmp_TEMP = await InvokeNode<dynamic>(data,", syntax);
+        Assert.Contains("new object[] { input.DATA, x }", syntax);
+        Assert.Contains("string result = tmp_TEMP.GetProperty(\"result\").ToString();", syntax);
     }
 
     [Fact]
-    public void ToSyntax_ParityMatrix_MatchesLegacyAndVariableTracking()
+    public void ToSyntax_TracksExpectedInterpreterShapesAndVariableFlow()
     {
-        AssertParity(CreateNodeJsBlock(), []);
-        AssertParity(CreateNodeJsBlock(), ["result"]);
-        AssertParity(CreateJintBlock(), []);
-        AssertParity(CreateIronPythonBlock(), []);
+        AssertSyntax(CreateNodeJsBlock(), [],
+            ["result"],
+            "InvokeNode<dynamic>(data,",
+            "new object[] { input.DATA, x }",
+            "string result = tmp_");
+
+        AssertSyntax(CreateNodeJsBlock(), ["result"],
+            ["result"],
+            "result = tmp_",
+            "data.LogVariableAssignment(nameof(result));");
+
+        AssertSyntax(CreateJintBlock(), [],
+            ["count"],
+            "new Engine()",
+            "SetValue(nameof(globals.source), globals.source);",
+            ".SetValue(nameof(y), y);",
+            "InvokeJint(data, tmp_",
+            "int count = ");
+
+        AssertSyntax(CreateIronPythonBlock(), [],
+            ["message"],
+            "GetIronPyScope(data);",
+            "SetVariable(nameof(input.NAME), input.NAME);",
+            "ExecuteIronPyScript(data,",
+            "string message = ");
     }
 
     private static ScriptBlockInstance CreateBlock()
@@ -155,20 +176,25 @@ public class ScriptBlockInstanceTests
             ]
         };
 
-    private static void AssertParity(ScriptBlockInstance block, List<string> definedVariables)
+    private static void AssertSyntax(
+        ScriptBlockInstance block,
+        List<string> definedVariables,
+        List<string> expectedDefinedVariables,
+        params string[] expectedFragments)
     {
-        var legacyVariables = new List<string>(definedVariables);
         var syntaxVariables = new List<string>(definedVariables);
-        var settings = new ConfigSettings();
+        var syntax = NormalizeTempNames(RenderSyntax(block, syntaxVariables));
 
-        var legacy = NormalizeTempNames(
-            StatementSyntaxParser.ParseStatements(block.ToCSharp(legacyVariables, settings)).ToSnippet());
-        var syntax = NormalizeTempNames(
-            block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, settings)).ToSnippet());
+        foreach (var expectedFragment in expectedFragments)
+        {
+            Assert.Contains(expectedFragment, syntax);
+        }
 
-        Assert.Equal(legacy, syntax);
-        Assert.Equal(legacyVariables, syntaxVariables);
+        Assert.Equal(expectedDefinedVariables, syntaxVariables);
     }
+
+    private static string RenderSyntax(ScriptBlockInstance block, List<string> definedVariables)
+        => block.ToSyntax(new BlockSyntaxGenerationContext(definedVariables, new ConfigSettings())).ToSnippet();
 
     private static string NormalizeTempNames(string input)
         => Regex.Replace(

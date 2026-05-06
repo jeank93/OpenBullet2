@@ -104,14 +104,14 @@ public class HttpRequestBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_MultipartPost_OutputScript()
+    public void ToSyntax_MultipartPost_OutputScript()
     {
         var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
         var script = $"  url = \"https://example.com\"{_nl}  method = POST{_nl}  TYPE:MULTIPART{_nl}  @myBoundary{_nl}  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"{_nl}  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"{_nl}";
         var lineNumber = 0;
         block.FromLC(ref script, ref lineNumber);
 
-        var output = block.ToCSharp([], new ConfigSettings());
+        var output = RenderSyntax(block);
 
         Assert.Contains("await HttpRequestMultipart(data, new MultipartHttpRequestOptions {", output);
         Assert.Contains("Boundary = myBoundary.AsString()", output);
@@ -123,26 +123,37 @@ public class HttpRequestBlockInstanceTests
     }
 
     [Fact]
-    public void ToSyntax_MultipartPost_MatchesNormalizedLegacyOutput()
+    public void ToSyntax_TracksExpectedRequestShapes()
     {
-        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
-        var script = $"  url = \"https://example.com\"{_nl}  method = POST{_nl}  TYPE:MULTIPART{_nl}  @myBoundary{_nl}  CONTENT:STRING \"stringName\" \"stringContent\" \"stringContentType\"{_nl}  CONTENT:FILE \"fileName\" \"file.txt\" \"fileContentType\"{_nl}";
-        var lineNumber = 0;
-        block.FromLC(ref script, ref lineNumber);
+        AssertSyntax(CreateStandardRequestBlock(),
+            "await HttpRequestStandard(data, new StandardHttpRequestOptions",
+            "Url = $\"https://example.com/{globals.path}\"",
+            "Content = $\"name={globals.user}\"",
+            "UrlEncodeContent = ObjectExtensions.DynamicAsBool(globals.encodeContent)");
 
-        Assert.Equal(
-            StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet(),
-            block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet());
-    }
+        AssertSyntax(CreateStandardRequestBlock(safe: true),
+            "try",
+            "await HttpRequestStandard(data, new StandardHttpRequestOptions",
+            "catch (Exception safeException)");
 
-    [Fact]
-    public void ToSyntax_ParityMatrix_MatchesLegacyOutput()
-    {
-        AssertParity(CreateStandardRequestBlock());
-        AssertParity(CreateStandardRequestBlock(safe: true));
-        AssertParity(CreateRawRequestBlock());
-        AssertParity(CreateBasicAuthRequestBlock());
-        AssertParity(CreateMultipartRequestBlock(safe: true));
+        AssertSyntax(CreateRawRequestBlock(),
+            "await HttpRequestRaw(data, new RawHttpRequestOptions",
+            "Content = new byte[]",
+            "ContentType = \"application/octet-stream\"");
+
+        AssertSyntax(CreateBasicAuthRequestBlock(),
+            "await HttpRequestBasicAuth(data, new BasicAuthHttpRequestOptions",
+            "Username = ObjectExtensions.DynamicAsString(globals.username)",
+            "Password = ObjectExtensions.DynamicAsString(globals.password)");
+
+        AssertSyntax(CreateMultipartRequestBlock(safe: true),
+            "try",
+            "await HttpRequestMultipart(data, new MultipartHttpRequestOptions",
+            "Boundary = ObjectExtensions.DynamicAsString(globals.boundary)",
+            "new StringHttpContent(\"stringName\", $\"hello {globals.user}\", \"text/plain\")",
+            "new RawHttpContent(\"rawName\", new byte[]",
+            "new FileHttpContent(\"fileName\", ObjectExtensions.DynamicAsString(globals.uploadPath), \"application/octet-stream\")",
+            "catch (Exception safeException)");
     }
 
     [Fact]
@@ -271,11 +282,16 @@ public class HttpRequestBlockInstanceTests
         return block;
     }
 
-    private static void AssertParity(HttpRequestBlockInstance block)
+    private static void AssertSyntax(HttpRequestBlockInstance block, params string[] expectedFragments)
     {
-        var legacy = StatementSyntaxParser.ParseStatements(block.ToCSharp([], new ConfigSettings())).ToSnippet();
-        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet();
+        var syntax = RenderSyntax(block);
 
-        Assert.Equal(legacy, syntax);
+        foreach (var expectedFragment in expectedFragments)
+        {
+            Assert.Contains(expectedFragment, syntax);
+        }
     }
+
+    private static string RenderSyntax(HttpRequestBlockInstance block)
+        => block.ToSyntax(new BlockSyntaxGenerationContext([], new ConfigSettings())).ToSnippet();
 }

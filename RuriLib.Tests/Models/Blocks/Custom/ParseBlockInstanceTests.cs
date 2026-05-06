@@ -72,7 +72,7 @@ public class ParseBlockInstanceTests
     }
 
     [Fact]
-    public void ToCSharp_SafeRegexCapture_WritesExpectedCode()
+    public void ToSyntax_SafeRegexCapture_WritesExpectedCode()
     {
         var block = CreateBlock();
         block.Safe = true;
@@ -97,45 +97,39 @@ public class ParseBlockInstanceTests
         (multiLine.FixedSetting as BoolSetting)!.Value = true;
 
         var expected = $"string parsedOutput = string.Empty;{_nl}try {{{_nl}parsedOutput = MatchRegexGroups(data, data.SOURCE.AsString(), \"abc(.*)\", \"$1\", true, null, null, false);{_nl}data.LogVariableAssignment(nameof(parsedOutput));{_nl}data.MarkForCapture(nameof(parsedOutput));{_nl}}} catch (Exception safeException) {{{_nl}data.ERROR = safeException.PrettyPrint();{_nl}data.Logger.Log($\"[SAFE MODE] Exception caught and saved to data.ERROR: {{data.ERROR}}\", LogColors.Tomato); }}{_nl}";
-        Assert.Equal(expected, block.ToCSharp([], new ConfigSettings()));
+        Assert.Equal(NormalizeSnippet(expected), RenderSyntax(block, []));
     }
 
     [Fact]
-    public void ToSyntax_SafeRegexCapture_MatchesNormalizedLegacyOutput()
+    public void ToSyntax_TracksExpectedPatternsAndVariableFlow()
     {
-        var block = CreateBlock();
-        block.Safe = true;
-        block.Mode = ParseMode.Regex;
-        block.IsCapture = true;
-        block.OutputVariable = "parsedOutput";
+        AssertSyntax(CreateLrBlock(), [],
+            ["parsedOutput"],
+            "string parsedOutput = ParseBetweenStrings(data, ObjectExtensions.DynamicAsString(globals.source), \"left\", \"right\", true, \"pre-\", \"-post\", true);",
+            "data.LogVariableAssignment(nameof(parsedOutput));");
 
-        var input = block.Settings["input"];
-        input.InputMode = SettingInputMode.Variable;
-        input.InputVariableName = "data.SOURCE";
+        AssertSyntax(CreateCssBlock(alreadyDeclared: true), ["parsedOutput"],
+            ["parsedOutput"],
+            "parsedOutput = QueryCssSelector(data, data.SOURCE.AsString(), \".item\", \"href\",",
+            "ObjectExtensions.DynamicAsString(globals.prefix)",
+            "data.LogVariableAssignment(nameof(parsedOutput));");
 
-        var pattern = block.Settings["pattern"];
-        pattern.InputMode = SettingInputMode.Fixed;
-        (pattern.FixedSetting as StringSetting)!.Value = "abc(.*)";
+        AssertSyntax(CreateXPathBlock(outputVariable: "globals.foundValue"), [],
+            [],
+            "globals.foundValue = QueryXPath(data, ObjectExtensions.DynamicAsString(input.html), \"//a\", \"title\",",
+            "data.LogVariableAssignment(nameof(globals.foundValue));");
 
-        var outputFormat = block.Settings["outputFormat"];
-        outputFormat.InputMode = SettingInputMode.Fixed;
-        (outputFormat.FixedSetting as StringSetting)!.Value = "$1";
+        AssertSyntax(CreateJsonBlock(safe: true), [],
+            ["parsedJson"],
+            "List<string> parsedJson = new List<string>();",
+            "try",
+            "parsedJson = QueryJsonTokenRecursive(data, ObjectExtensions.DynamicAsString(globals.payload), \"$.items[*].name\", \"[\", \"]\", false);",
+            "catch (Exception safeException)");
 
-        var multiLine = block.Settings["multiLine"];
-        multiLine.InputMode = SettingInputMode.Fixed;
-        (multiLine.FixedSetting as BoolSetting)!.Value = true;
-
-        Assert.Equal(RenderLegacy(block, []), RenderSyntax(block, []));
-    }
-
-    [Fact]
-    public void ToSyntax_ParityMatrix_MatchesLegacyAndVariableTracking()
-    {
-        AssertParity(CreateLrBlock(), []);
-        AssertParity(CreateCssBlock(alreadyDeclared: true), ["parsedOutput"]);
-        AssertParity(CreateXPathBlock(outputVariable: "globals.foundValue"), []);
-        AssertParity(CreateJsonBlock(safe: true), []);
-        AssertParity(CreateRegexBlock(safe: true, isCapture: true), []);
+        AssertSyntax(CreateRegexBlock(safe: true, isCapture: true), [],
+            ["parsedOutput"],
+            "data.MarkForCapture(nameof(parsedOutput));",
+            "catch (Exception safeException)");
     }
 
     private static ParseBlockInstance CreateBlock()
@@ -227,22 +221,26 @@ public class ParseBlockInstanceTests
         return block;
     }
 
-    private static void AssertParity(ParseBlockInstance block, List<string> definedVariables)
+    private static void AssertSyntax(
+        ParseBlockInstance block,
+        List<string> definedVariables,
+        List<string> expectedDefinedVariables,
+        params string[] expectedFragments)
     {
-        var legacyVariables = new List<string>(definedVariables);
         var syntaxVariables = new List<string>(definedVariables);
-        var settings = new ConfigSettings();
+        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, new ConfigSettings())).ToSnippet();
 
-        var legacy = StatementSyntaxParser.ParseStatements(block.ToCSharp(legacyVariables, settings)).ToSnippet();
-        var syntax = block.ToSyntax(new BlockSyntaxGenerationContext(syntaxVariables, settings)).ToSnippet();
+        foreach (var expectedFragment in expectedFragments)
+        {
+            Assert.Contains(expectedFragment, syntax);
+        }
 
-        Assert.Equal(legacy, syntax);
-        Assert.Equal(legacyVariables, syntaxVariables);
+        Assert.Equal(expectedDefinedVariables, syntaxVariables);
     }
-
-    private static string RenderLegacy(ParseBlockInstance block, List<string> definedVariables)
-        => StatementSyntaxParser.ParseStatements(block.ToCSharp(definedVariables, new ConfigSettings())).ToSnippet();
 
     private static string RenderSyntax(ParseBlockInstance block, List<string> definedVariables)
         => block.ToSyntax(new BlockSyntaxGenerationContext(definedVariables, new ConfigSettings())).ToSnippet();
+
+    private static string NormalizeSnippet(string snippet)
+        => StatementSyntaxParser.ParseStatements(snippet).ToSnippet();
 }

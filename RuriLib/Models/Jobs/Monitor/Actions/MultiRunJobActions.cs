@@ -16,11 +16,15 @@ public class MultiRunJobAction : Action
     /// <inheritdoc />
     public override Task Execute(int currentJobId, IEnumerable<Job> jobs)
     {
-        var job = jobs.FirstOrDefault(j => j.Id == TargetJobId) as MultiRunJob;
+        // Older monitor actions, including ones created through the web UI,
+        // do not persist an explicit target job id. In that case the action
+        // must operate on the monitored job itself.
+        var targetJobId = TargetJobId > 0 ? TargetJobId : currentJobId;
+        var job = jobs.FirstOrDefault(j => j.Id == targetJobId) as MultiRunJob;
 
         if (job is null)
         {
-            throw new InvalidOperationException($"The job with id {TargetJobId} is not a MultiRunJob");
+            throw new InvalidOperationException($"The job with id {targetJobId} is not a MultiRunJob");
         }
 
         return Execute(job);

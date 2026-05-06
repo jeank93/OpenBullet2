@@ -3,6 +3,7 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Debugger;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -77,12 +78,36 @@ public class ConfigDebuggerTests
         Assert.Contains(nameof(ConfigDebugger.PluginRepo), exception.Message, StringComparison.Ordinal);
     }
 
-    private static ConfigDebugger CreateDebugger()
+    [Fact]
+    public async Task Run_WithInvalidProxy_ResetsStatusToIdle()
+    {
+        using var debugger = CreateDebugger(new DebuggerOptions
+        {
+            TestData = "test",
+            WordlistType = "Default",
+            UseProxy = true,
+            TestProxy = "http://test:8000:user:pass"
+        });
+
+        debugger.RuriLibSettings = CreateSettingsService();
+        debugger.RNGProvider = new global::RuriLib.Providers.RandomNumbers.DefaultRNGProvider();
+        debugger.PluginRepo = CreatePluginRepository();
+
+        await Assert.ThrowsAsync<FormatException>(() => debugger.Run());
+
+        Assert.Equal(ConfigDebuggerStatus.Idle, debugger.Status);
+    }
+
+    private static ConfigDebugger CreateDebugger(DebuggerOptions? options = null)
         => new(new Config
         {
             Id = "test"
-        }, new DebuggerOptions(), new BotLogger());
+        }, options ?? new DebuggerOptions(), new BotLogger());
 
     private static global::RuriLib.Services.RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-config-debugger-tests-{Guid.NewGuid():N}"));
+
+    private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
+        => (global::RuriLib.Services.PluginRepository)RuntimeHelpers
+            .GetUninitializedObject(typeof(global::RuriLib.Services.PluginRepository));
 }

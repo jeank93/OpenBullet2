@@ -183,126 +183,124 @@ public class ConfigDebugger : IDisposable
         }
 
         Options.Variables.Clear();
-        Status = ConfigDebuggerStatus.Running;
         cts = new CancellationTokenSource();
         var sw = new Stopwatch();
-
-        var wordlistType = RuriLibSettings.Environment.WordlistTypes.First(w => w.Name == Options.WordlistType);
-        var dataLine = new DataLine(Options.TestData, wordlistType);
-        var proxy = Options.UseProxy ? Proxy.Parse(Options.TestProxy, Options.ProxyType) : null;
-
-        var providers = new Bots.Providers(RuriLibSettings)
-        {
-            RNG = RNGProvider
-        };
-
-        if (!RuriLibSettings.RuriLibSettings.GeneralSettings.UseCustomUserAgentsList
-            && RandomUAProvider is not null)
-        {
-            providers.RandomUA = RandomUAProvider;
-        }
-
-        // Unregister the previous event if there was an existing stepper
-        if (stepper != null)
-        {
-            stepper.WaitingForStep -= OnWaitingForStep;
-        }
-
-        stepper = new Stepper();
-        stepper.WaitingForStep += OnWaitingForStep;
-
-        // Build the BotData
-        data = new BotData(providers, Config.Settings, Logger, dataLine, proxy, Options.UseProxy)
-        {
-            CancellationToken = cts.Token,
-            Stepper = stepper
-        };
-        using var httpClient = new HttpClient();
-        data.SetObject("httpClient", httpClient);
-        var runtime = Python.CreateRuntime();
-        var pyengine = runtime.GetEngine("py");
-        var pco = (PythonCompilerOptions)pyengine.GetCompilerOptions();
-        pco.Module &= ~ModuleOptions.Optimized;
-        data.SetObject("ironPyEngine", pyengine);
-        data.AsyncLocker = new();
-
-        dynamic globals = new ExpandoObject();
-
-        var script = new ScriptBuilder()
-            .Build(Config.CSharpScript, Config.Settings.ScriptSettings, PluginRepo);
-
-        var startupScript = new ScriptBuilder().Build(Config.StartupCSharpScript, Config.Settings.ScriptSettings, PluginRepo);
-
-        Logger.Log($"Sliced {dataLine.Data} into:");
-        foreach (var slice in dataLine.GetVariables())
-        {
-            var sliceValue = data.ConfigSettings.DataSettings.UrlEncodeDataAfterSlicing
-                ? Uri.EscapeDataString(slice.AsString())
-                : slice.AsString();
-
-            Logger.Log($"{slice.Name}: {sliceValue}");
-        }
-
-        // Initialize resources
         Dictionary<string, ConfigResource> resources = new();
 
-        // Resources will need to be disposed of
-        foreach (var opt in Config.Settings.DataSettings.Resources)
+        try
         {
-            try
+            var wordlistType = RuriLibSettings.Environment.WordlistTypes.First(w => w.Name == Options.WordlistType);
+            var dataLine = new DataLine(Options.TestData, wordlistType);
+            var proxy = Options.UseProxy ? Proxy.Parse(Options.TestProxy, Options.ProxyType) : null;
+
+            var providers = new Bots.Providers(RuriLibSettings)
             {
-                resources[opt.Name] = opt switch
-                {
-                    LinesFromFileResourceOptions x => new LinesFromFileResource(x),
-                    RandomLinesFromFileResourceOptions x => new RandomLinesFromFileResource(x),
-                    _ => throw new NotImplementedException()
-                };
-            }
-            catch
+                RNG = RNGProvider
+            };
+
+            if (!RuriLibSettings.RuriLibSettings.GeneralSettings.UseCustomUserAgentsList
+                && RandomUAProvider is not null)
             {
-                Logger.Log($"Could not create resource {opt.Name}", LogColors.Tomato);
+                providers.RandomUA = RandomUAProvider;
             }
-        }
 
-        // Add resources to global variables
-        globals.Resources = resources;
-        globals.OwnerId = 0;
-        globals.JobId = 0;
-        var scriptGlobals = new ScriptGlobals(data, globals);
+            // Unregister the previous event if there was an existing stepper
+            if (stepper != null)
+            {
+                stepper.WaitingForStep -= OnWaitingForStep;
+            }
 
-        // Set custom inputs
-        foreach (var input in Config.Settings.InputSettings.CustomInputs)
-        {
-            (scriptGlobals.input as IDictionary<string, object?>)!.Add(input.VariableName, input.DefaultAnswer);
-        }
+            stepper = new Stepper();
+            stepper.WaitingForStep += OnWaitingForStep;
 
-        // [LEGACY] Set up the VariablesList
-        if (Config.Mode == ConfigMode.Legacy)
-        {
-            var slices = new List<Variable>();
+            // Build the BotData
+            data = new BotData(providers, Config.Settings, Logger, dataLine, proxy, Options.UseProxy)
+            {
+                CancellationToken = cts.Token,
+                Stepper = stepper
+            };
+            using var httpClient = new HttpClient();
+            data.SetObject("httpClient", httpClient);
+            var runtime = Python.CreateRuntime();
+            var pyengine = runtime.GetEngine("py");
+            var pco = (PythonCompilerOptions)pyengine.GetCompilerOptions();
+            pco.Module &= ~ModuleOptions.Optimized;
+            data.SetObject("ironPyEngine", pyengine);
+            data.AsyncLocker = new();
 
+            dynamic globals = new ExpandoObject();
+
+            var script = new ScriptBuilder()
+                .Build(Config.CSharpScript, Config.Settings.ScriptSettings, PluginRepo);
+
+            var startupScript = new ScriptBuilder().Build(Config.StartupCSharpScript, Config.Settings.ScriptSettings, PluginRepo);
+
+            Logger.Log($"Sliced {dataLine.Data} into:");
             foreach (var slice in dataLine.GetVariables())
             {
                 var sliceValue = data.ConfigSettings.DataSettings.UrlEncodeDataAfterSlicing
                     ? Uri.EscapeDataString(slice.AsString())
                     : slice.AsString();
 
-                slices.Add(new StringVariable(sliceValue) { Name = slice.Name });
+                Logger.Log($"{slice.Name}: {sliceValue}");
             }
 
-            var legacyVariables = new VariablesList(slices);
+            // Resources will need to be disposed of
+            foreach (var opt in Config.Settings.DataSettings.Resources)
+            {
+                try
+                {
+                    resources[opt.Name] = opt switch
+                    {
+                        LinesFromFileResourceOptions x => new LinesFromFileResource(x),
+                        RandomLinesFromFileResourceOptions x => new RandomLinesFromFileResource(x),
+                        _ => throw new NotImplementedException()
+                    };
+                }
+                catch
+                {
+                    Logger.Log($"Could not create resource {opt.Name}", LogColors.Tomato);
+                }
+            }
 
+            // Add resources to global variables
+            globals.Resources = resources;
+            globals.OwnerId = 0;
+            globals.JobId = 0;
+            var scriptGlobals = new ScriptGlobals(data, globals);
+
+            // Set custom inputs
             foreach (var input in Config.Settings.InputSettings.CustomInputs)
             {
-                legacyVariables.Set(new StringVariable(input.DefaultAnswer) { Name = input.VariableName });
+                (scriptGlobals.input as IDictionary<string, object?>)!.Add(input.VariableName, input.DefaultAnswer);
             }
 
-            data.SetObject("legacyVariables", legacyVariables);
-        }
+            // [LEGACY] Set up the VariablesList
+            if (Config.Mode == ConfigMode.Legacy)
+            {
+                var slices = new List<Variable>();
 
-        try
-        {
+                foreach (var slice in dataLine.GetVariables())
+                {
+                    var sliceValue = data.ConfigSettings.DataSettings.UrlEncodeDataAfterSlicing
+                        ? Uri.EscapeDataString(slice.AsString())
+                        : slice.AsString();
+
+                    slices.Add(new StringVariable(sliceValue) { Name = slice.Name });
+                }
+
+                var legacyVariables = new VariablesList(slices);
+
+                foreach (var input in Config.Settings.InputSettings.CustomInputs)
+                {
+                    legacyVariables.Set(new StringVariable(input.DefaultAnswer) { Name = input.VariableName });
+                }
+
+                data.SetObject("legacyVariables", legacyVariables);
+            }
+
             sw.Start();
+            Status = ConfigDebuggerStatus.Running;
             StatusChanged?.Invoke(this, ConfigDebuggerStatus.Running);
 
             if (Config.Mode != ConfigMode.Legacy)
@@ -377,33 +375,48 @@ public class ConfigDebugger : IDisposable
         }
         catch (OperationCanceledException)
         {
-            data.STATUS = "ERROR";
+            if (data is not null)
+            {
+                data.STATUS = "ERROR";
+            }
+
             Logger.Log("Operation canceled", LogColors.Tomato);
         }
         catch (Exception ex)
         {
-            data.STATUS = "ERROR";
+            if (data is not null)
+            {
+                data.STATUS = "ERROR";
+            }
 
             var logErrorMessage = RuriLibSettings.RuriLibSettings.GeneralSettings.VerboseMode
                 ? ex.ToString()
                 : ex.Message;
 
-            Logger.Log($"[{data.ExecutionInfo}] {ex.GetType().Name}: {logErrorMessage}", LogColors.Tomato);
-            Status = ConfigDebuggerStatus.Idle;
+            var executionInfo = data?.ExecutionInfo ?? "Debugger setup";
+            Logger.Log($"[{executionInfo}] {ex.GetType().Name}: {logErrorMessage}", LogColors.Tomato);
             throw;
         }
         finally
         {
             sw.Stop();
 
-            Logger.Log($"BOT ENDED AFTER {sw.ElapsedMilliseconds} ms WITH STATUS: {data.STATUS}");
+            if (data is not null)
+            {
+                Logger.Log($"BOT ENDED AFTER {sw.ElapsedMilliseconds} ms WITH STATUS: {data.STATUS}");
 
-            // Save the browsers for later use
-            lastPuppeteerBrowser = data.TryGetObject<Browser>("puppeteer");
-            lastSeleniumBrowser = data.TryGetObject<OpenQA.Selenium.WebDriver>("selenium");
+                // Save the browsers for later use
+                lastPuppeteerBrowser = data.TryGetObject<Browser>("puppeteer");
+                lastSeleniumBrowser = data.TryGetObject<OpenQA.Selenium.WebDriver>("selenium");
 
-            // Dispose stuff in data.Objects
-            data.DisposeObjectsExcept(new[] { "puppeteer", "puppeteerPage", "puppeteerFrame", "selenium" });
+                // Dispose stuff in data.Objects
+                data.DisposeObjectsExcept(new[] { "puppeteer", "puppeteerPage", "puppeteerFrame", "selenium" });
+                data.AsyncLocker?.Dispose();
+            }
+            else
+            {
+                Logger.Log($"BOT ENDED AFTER {sw.ElapsedMilliseconds} ms WITH STATUS: ERROR");
+            }
 
             // Dispose resources
             foreach (var resource in resources.Where(r => r.Value is IDisposable)
@@ -411,8 +424,6 @@ public class ConfigDebugger : IDisposable
             {
                 resource.Dispose();
             }
-
-            data.AsyncLocker.Dispose();
 
             Status = ConfigDebuggerStatus.Idle;
             StatusChanged?.Invoke(this, ConfigDebuggerStatus.Idle);

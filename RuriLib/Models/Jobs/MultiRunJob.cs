@@ -746,7 +746,10 @@ public class MultiRunJob : Job
             parallelizer.Error += PropagateError;
             parallelizer.NewResult += PropagateResult;
             parallelizer.Completed += PropagateCompleted;
-            parallelizer.Completed += (s, e) => { Skip += DataTested; };
+            parallelizer.Completed += (s, e) =>
+            {
+                Skip = MultiRunJobCheckpoint.GetNextSkip(Skip, DataTested, dataPool.Size);
+            };
 
             ResetStats();
             StartTimers();

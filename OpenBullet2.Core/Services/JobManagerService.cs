@@ -130,7 +130,7 @@ public class JobManagerService : IDisposable
                     .FirstOrDefaultAsync(r => r.ConfigId == job.Config.Id && r.WordlistId == pool.Wordlist.Id);
 
             var checkpoint = job.Status == JobStatus.Idle
-                ? job.Skip
+                ? MultiRunJobCheckpoint.GetNextSkip(job.Skip, job.DataTested, pool.Size)
                 : job.Skip + job.DataTested;
 
             if (record == null)
@@ -210,7 +210,7 @@ public class JobManagerService : IDisposable
 
             // Update the skip (if not idle, also add the currently tested ones) and the bots
             options.Skip = job.Status == JobStatus.Idle
-                ? job.Skip
+                ? MultiRunJobCheckpoint.GetNextSkip(job.Skip, job.DataTested, job.DataPool?.Size ?? 0)
                 : job.Skip + job.DataTested;
 
             options.Bots = job.Bots;

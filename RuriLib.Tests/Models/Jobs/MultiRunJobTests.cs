@@ -118,6 +118,47 @@ public class MultiRunJobTests
         Assert.Equal(0, job.DataInvalid);
     }
 
+    [Theory]
+    [InlineData(0, 2, 5, 2)]
+    [InlineData(2, 1, 5, 3)]
+    [InlineData(2, 3, 5, 0)]
+    [InlineData(0, 5, 5, 0)]
+    public void GetNextSkip_NormalizesCompletedRuns(int currentSkip, int processed, int total, int expected)
+    {
+        var nextSkip = MultiRunJobCheckpoint.GetNextSkip(currentSkip, processed, total);
+
+        Assert.Equal(expected, nextSkip);
+    }
+
+    [Fact]
+    public async Task Start_AfterCompletedRun_RestartsFromBeginning()
+    {
+        var settings = CreateSettingsService();
+        var job = new MultiRunJob(settings, CreatePluginRepository())
+        {
+            Bots = 1,
+            Providers = new global::RuriLib.Models.Bots.Providers(settings),
+            StartCondition = new ImmediateStartCondition(),
+            Config = new Config
+            {
+                Id = "test",
+                Mode = ConfigMode.Legacy,
+                Settings = new ConfigSettings()
+            },
+            DataPool = new TestDataPool(["data"], settings.Environment.WordlistTypes[0].Name)
+        };
+
+        await job.Start(TestCancellationToken);
+        await WaitUntilIdleAsync(job);
+        Assert.Equal(0, job.Skip);
+
+        var exception = await Record.ExceptionAsync(() => job.Start(TestCancellationToken));
+        await WaitUntilIdleAsync(job);
+
+        Assert.Null(exception);
+        Assert.Equal(0, job.Skip);
+    }
+
     private static MultiRunJob CreateJob()
         => new(CreateSettingsService(), CreatePluginRepository());
 
@@ -127,6 +168,16 @@ public class MultiRunJobTests
     private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
         => (global::RuriLib.Services.PluginRepository)RuntimeHelpers
             .GetUninitializedObject(typeof(global::RuriLib.Services.PluginRepository));
+
+    private static async Task WaitUntilIdleAsync(MultiRunJob job)
+    {
+        for (var i = 0; i < 50 && job.Status != JobStatus.Idle; i++)
+        {
+            await Task.Delay(20, TestCancellationToken);
+        }
+
+        Assert.Equal(JobStatus.Idle, job.Status);
+    }
 
     private sealed class TestDataPool : DataPool
     {

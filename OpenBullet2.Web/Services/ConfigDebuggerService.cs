@@ -33,6 +33,7 @@ public sealed class ConfigDebuggerService : IDisposable
     // Event handlers
     private readonly EventHandler<BotLoggerEntry> _onNewLog;
     private readonly EventHandler<ConfigDebuggerStatus> _onStatusChanged;
+    private readonly EventHandler _onVariablesChanged;
     private readonly PluginRepository _pluginRepo;
     private readonly IRandomUAProvider _randomUAProvider;
     private readonly RuriLibSettingsService _rlSettingsService;
@@ -62,6 +63,11 @@ public sealed class ConfigDebuggerService : IDisposable
             OnStatusChangedAsync,
             SendError
         );
+
+        _onVariablesChanged = EventHandlers.TryAsync(
+            OnVariablesChangedAsync,
+            SendError
+        );
     }
 
     /// <inheritdoc />
@@ -88,6 +94,7 @@ public sealed class ConfigDebuggerService : IDisposable
             // Hook the event handlers to the newly created debugger
             debugger.NewLogEntry += _onNewLog;
             debugger.StatusChanged += _onStatusChanged;
+            debugger.VariablesChanged += _onVariablesChanged;
         }
 
         // Add the connection to the list
@@ -129,13 +136,15 @@ public sealed class ConfigDebuggerService : IDisposable
 
         await _hub.Clients.Clients(_connections[debugger!]).SendAsync(
             ConfigDebuggerMethods.StatusChanged, message);
+    }
 
-        // Right now, only when the status goes back to idle, we
-        // update the variables.
-        // TODO: In the future it would be nice to update them more often.
+    private async Task OnVariablesChangedAsync(object? sender, EventArgs e)
+    {
+        var debugger = sender as ConfigDebugger;
+
         var varMessage = new DbgVariablesChangedMessage
         {
-            Variables = (sender as ConfigDebugger)!.Options.Variables.Select(MapVariable)
+            Variables = debugger!.Options.Variables.Select(MapVariable)
         };
 
         await _hub.Clients.Clients(_connections[debugger!]).SendAsync(
@@ -274,6 +283,7 @@ public sealed class ConfigDebuggerService : IDisposable
         // Hook the events to the newly created debugger
         debugger.NewLogEntry += _onNewLog;
         debugger.StatusChanged += _onStatusChanged;
+        debugger.VariablesChanged += _onVariablesChanged;
 
         return debugger;
     }

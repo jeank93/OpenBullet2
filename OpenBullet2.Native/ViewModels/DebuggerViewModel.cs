@@ -214,6 +214,7 @@ public class DebuggerViewModel : ViewModelBase
 
         debugger.StatusChanged += OnStatusChanged;
         debugger.NewLogEntry += OnNewLogEntry;
+        debugger.VariablesChanged += OnVariablesChanged;
 
         try
         {
@@ -225,6 +226,7 @@ public class DebuggerViewModel : ViewModelBase
 
             debugger.StatusChanged -= OnStatusChanged;
             debugger.NewLogEntry -= OnNewLogEntry;
+            debugger.VariablesChanged -= OnVariablesChanged;
         }
     }
 
@@ -240,4 +242,5 @@ public class DebuggerViewModel : ViewModelBase
 
     private void OnStatusChanged(object? sender, ConfigDebuggerStatus status) => Status = status;
     private void OnNewLogEntry(object? sender, BotLoggerEntry e) => NewLogEntry?.Invoke(this, e);
+    private void OnVariablesChanged(object? sender, EventArgs e) => OnPropertyChanged(nameof(Variables));
 }

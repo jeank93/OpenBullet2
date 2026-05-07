@@ -43,10 +43,29 @@ public class Stack2CSharpTranspiler
             // If in step by step mode, and if not the last block, check if pause was requested
             if (stepByStep && block != validBlocks.Last())
             {
+                WriteDebuggerVariableSnapshot(writer, syntaxContext.DefinedVariables);
                 writer.WriteLine("await data.Stepper.WaitForStepAsync(data.CancellationToken);");
             }
         }
 
         return writer.ToString();
+    }
+
+    private static void WriteDebuggerVariableSnapshot(StringWriter writer, IEnumerable<string> definedVariables)
+    {
+        var snapshotVariables = definedVariables
+            .Where(v => !v.Contains('.'))
+            .Distinct()
+            .ToList();
+
+        writer.WriteLine("global::RuriLib.Models.Debugger.DebuggerVariableSnapshot.Store(data, new global::RuriLib.Models.Debugger.DebuggerVariableSnapshotEntry[]");
+        writer.WriteLine("{");
+
+        foreach (var variable in snapshotVariables)
+        {
+            writer.WriteLine($"    global::RuriLib.Models.Debugger.DebuggerVariableSnapshotEntry.Create(nameof({variable}), {variable}),");
+        }
+
+        writer.WriteLine("});");
     }
 }

@@ -1,6 +1,7 @@
 using IronPython.Compiler;
 using IronPython.Hosting;
 using IronPython.Runtime;
+using Microsoft.CodeAnalysis.Scripting;
 using PuppeteerSharp;
 using RuriLib.Exceptions;
 using RuriLib.Helpers;
@@ -107,6 +108,11 @@ public class ConfigDebugger : IDisposable
     /// </summary>
     public event EventHandler<BotLoggerEntry>? NewLogEntry;
 
+    /// <summary>
+    /// Raised when the debugger variables snapshot changes.
+    /// </summary>
+    public event EventHandler? VariablesChanged;
+
     private BotData? data;
     private Stepper? stepper;
     private CancellationTokenSource? cts;
@@ -182,7 +188,7 @@ public class ConfigDebugger : IDisposable
             lastSeleniumBrowser.Dispose();
         }
 
-        Options.Variables.Clear();
+        SetVariables([]);
         cts = new CancellationTokenSource();
         var sw = new Stopwatch();
         Dictionary<string, ConfigResource> resources = new();
@@ -326,26 +332,7 @@ public class ConfigDebugger : IDisposable
                 }
 
                 var state = await script.RunAsync(scriptGlobals, null, cts.Token).ConfigureAwait(false);
-
-                foreach (var scriptVar in state.Variables)
-                {
-                    try
-                    {
-                        var type = DescriptorsRepository.ToVariableType(scriptVar.Type);
-
-                        if (type.HasValue && !scriptVar.Name.StartsWith("tmp_"))
-                        {
-                            var variable = DescriptorsRepository.ToVariable(scriptVar.Name, scriptVar.Type, scriptVar.Value);
-                            variable.MarkedForCapture = data.MarkedForCapture.Contains(scriptVar.Name);
-                            Options.Variables.Add(variable);
-                        }
-                    }
-                    catch
-                    {
-                        // The type is not supported, e.g. it was generated using custom C# code and not blocks
-                        // so we just disregard it
-                    }
-                }
+                UpdateVariablesFromScriptState(state);
             }
             else
             {
@@ -362,13 +349,7 @@ public class ConfigDebugger : IDisposable
 
                     await loliScript.TakeStep(lsGlobals).ConfigureAwait(false);
 
-                    Options.Variables.Clear();
-                    var legacyVariables = data.TryGetObject<VariablesList>("legacyVariables");
-                    if (legacyVariables is not null)
-                    {
-                        Options.Variables.AddRange(legacyVariables.Variables);
-                    }
-                    Options.Variables.AddRange(lsGlobals.Globals.Variables);
+                    UpdateVariablesFromLegacyState(lsGlobals);
 
                     if (Options.StepByStep && loliScript.CanProceed)
                     {
@@ -458,8 +439,141 @@ public class ConfigDebugger : IDisposable
     private void OnNewEntry(object? sender, BotLoggerEntry entry) => NewLogEntry?.Invoke(this, entry);
     private void OnWaitingForStep(object? sender, EventArgs e)
     {
+        if (Config.Mode != ConfigMode.Legacy)
+        {
+            UpdateVariablesFromSnapshot();
+        }
+
         Status = ConfigDebuggerStatus.WaitingForStep;
         StatusChanged?.Invoke(this, ConfigDebuggerStatus.WaitingForStep);
+    }
+
+    private void UpdateVariablesFromLegacyState(LSGlobals lsGlobals)
+    {
+        ArgumentNullException.ThrowIfNull(lsGlobals);
+
+        var updatedVariables = new List<Variable>();
+        var legacyVariables = data?.TryGetObject<VariablesList>("legacyVariables");
+
+        if (legacyVariables is not null)
+        {
+            updatedVariables.AddRange(legacyVariables.Variables);
+        }
+
+        updatedVariables.AddRange(lsGlobals.Globals.Variables);
+        SetVariables(updatedVariables);
+    }
+
+    private void UpdateVariablesFromScriptState(ScriptState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+
+        var updatedVariables = new List<Variable>();
+
+        foreach (var scriptVar in state.Variables)
+        {
+            try
+            {
+                var type = DescriptorsRepository.ToVariableType(scriptVar.Type);
+
+                if (type.HasValue && !scriptVar.Name.StartsWith("tmp_"))
+                {
+                    var variable = DescriptorsRepository.ToVariable(scriptVar.Name, scriptVar.Type, scriptVar.Value);
+                    variable.MarkedForCapture = data?.MarkedForCapture.Contains(scriptVar.Name) == true;
+                    updatedVariables.Add(variable);
+                }
+            }
+            catch
+            {
+                // The type is not supported, e.g. it was generated using custom C# code and not blocks
+                // so we just disregard it
+            }
+        }
+
+        SetVariables(updatedVariables);
+    }
+
+    private void UpdateVariablesFromSnapshot()
+    {
+        if (data is null)
+        {
+            return;
+        }
+
+        var updatedVariables = new List<Variable>();
+
+        foreach (var snapshot in DebuggerVariableSnapshot.Get(data))
+        {
+            var variable = TryCreateVariable(snapshot);
+
+            if (variable is not null)
+            {
+                updatedVariables.Add(variable);
+            }
+        }
+
+        SetVariables(updatedVariables);
+    }
+
+    private Variable? TryCreateVariable(DebuggerVariableSnapshotEntry snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        if (snapshot.Name.StartsWith("tmp_", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var type = Nullable.GetUnderlyingType(snapshot.Type) ?? snapshot.Type;
+
+        Variable? variable = null;
+
+        if (type == typeof(string) && snapshot.Value is string stringValue)
+        {
+            variable = new StringVariable(stringValue);
+        }
+        else if (type == typeof(int) && snapshot.Value is int intValue)
+        {
+            variable = new IntVariable(intValue);
+        }
+        else if (type == typeof(float) && snapshot.Value is float floatValue)
+        {
+            variable = new FloatVariable(floatValue);
+        }
+        else if (type == typeof(bool) && snapshot.Value is bool boolValue)
+        {
+            variable = new BoolVariable(boolValue);
+        }
+        else if (type == typeof(List<string>))
+        {
+            variable = new ListOfStringsVariable(snapshot.Value as List<string>);
+        }
+        else if (type == typeof(Dictionary<string, string>))
+        {
+            variable = new DictionaryOfStringsVariable(snapshot.Value as Dictionary<string, string>);
+        }
+        else if (type == typeof(byte[]))
+        {
+            variable = new ByteArrayVariable(snapshot.Value as byte[]);
+        }
+
+        if (variable is null)
+        {
+            return null;
+        }
+
+        variable.Name = snapshot.Name;
+        variable.MarkedForCapture = data?.MarkedForCapture.Contains(snapshot.Name) == true;
+        return variable;
+    }
+
+    private void SetVariables(IEnumerable<Variable> variables)
+    {
+        ArgumentNullException.ThrowIfNull(variables);
+
+        Options.Variables.Clear();
+        Options.Variables.AddRange(variables);
+        VariablesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <inheritdoc/>

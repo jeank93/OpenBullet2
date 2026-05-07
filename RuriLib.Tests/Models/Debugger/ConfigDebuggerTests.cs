@@ -142,6 +142,57 @@ public class ConfigDebuggerTests
         Assert.Contains(debugger.Logger.Entries, e => e.Message == "\"second\"");
     }
 
+    [Fact]
+    public async Task Run_LoliCodeConfigInStepByStepMode_UpdatesVariablesBeforeNextStep()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        using var debugger = CreateDebugger(new Config
+        {
+            Id = "lolicode-test",
+            Mode = ConfigMode.LoliCode,
+            LoliCodeScript = """
+                SET VAR myVar "first"
+                BLOCK:ConstantString
+                value = "second"
+                => VAR @secondVar
+                ENDBLOCK
+                """
+        }, new DebuggerOptions
+        {
+            TestData = "test",
+            WordlistType = "Default",
+            StepByStep = true
+        });
+
+        debugger.RuriLibSettings = CreateSettingsService();
+        debugger.RNGProvider = new global::RuriLib.Providers.RandomNumbers.DefaultRNGProvider();
+        debugger.PluginRepo = CreatePluginRepository();
+
+        var waitingForStep = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        debugger.StatusChanged += (_, status) =>
+        {
+            if (status == ConfigDebuggerStatus.WaitingForStep)
+            {
+                waitingForStep.TrySetResult();
+            }
+        };
+
+        var runTask = debugger.Run();
+
+        await waitingForStep.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        Assert.Equal(ConfigDebuggerStatus.WaitingForStep, debugger.Status);
+        Assert.Contains(debugger.Options.Variables, v => v.Name == "myVar" && v.AsString() == "first");
+        Assert.DoesNotContain(debugger.Options.Variables, v => v.Name == "secondVar");
+        Assert.True(debugger.TryTakeStep());
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        Assert.Equal(ConfigDebuggerStatus.Idle, debugger.Status);
+        Assert.Contains(debugger.Options.Variables, v => v.Name == "secondVar" && v.AsString() == "second");
+    }
+
     private static ConfigDebugger CreateDebugger(DebuggerOptions? options = null)
         => CreateDebugger(new Config { Id = "test" }, options);
 

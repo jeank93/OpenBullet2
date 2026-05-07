@@ -4,6 +4,7 @@ using OpenBullet2.Native.ViewModels;
 using RuriLib.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,6 +24,7 @@ public partial class Debugger : Page
 
         vm.NewLogEntry += NewLogEntry;
         vm.LogCleared += ClearLog;
+        vm.PropertyChanged += OnViewModelPropertyChanged;
 
         InitializeComponent();
         tabControl.SelectedIndex = 0;
@@ -69,6 +71,34 @@ public partial class Debugger : Page
 
     private void Stop(object sender, RoutedEventArgs e) => vm.Stop();
 
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DebuggerViewModel.Variables))
+        {
+            RefreshVariables();
+        }
+    }
+
+    private void RefreshVariables() => Application.Current.Dispatcher.Invoke(() =>
+    {
+        variablesRTB.Clear();
+
+        foreach (var variable in vm.Variables)
+        {
+            var color = variable.MarkedForCapture ? LogColors.Tomato : LogColors.Yellow;
+            variablesRTB.AppendText($"{variable.Name} ({variable.Type}) = {variable.AsString()}", color);
+        }
+
+        try
+        {
+            variablesRTB.ClearUndoHistory();
+        }
+        catch
+        {
+
+        }
+    });
+
     private void NewLogEntry(object? sender, BotLoggerEntry entry) => Application.Current.Dispatcher.Invoke(() =>
                                                                                {
                                                                                    // Append the log message
@@ -86,22 +116,7 @@ public partial class Debugger : Page
 
                                                                                    }
 
-                                                                                   // Recreate the variables list
-                                                                                   variablesRTB.Clear();
-                                                                                   foreach (var variable in vm.Variables)
-                                                                                   {
-                                                                                       var color = variable.MarkedForCapture ? LogColors.Tomato : LogColors.Yellow;
-                                                                                       variablesRTB.AppendText($"{variable.Name} ({variable.Type}) = {variable.AsString()}", color);
-                                                                                   }
-
-                                                                                   try
-                                                                                   {
-                                                                                       logRTB.ClearUndoHistory();
-                                                                                   }
-                                                                                   catch
-                                                                                   {
-
-                                                                                   }
+                                                                                   RefreshVariables();
 
                                                                                    // Update the HTML view
                                                                                    if (entry.CanViewAsHtml)

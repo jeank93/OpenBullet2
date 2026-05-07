@@ -81,6 +81,24 @@ public sealed class HitStorageServiceTests
         Assert.Equal(["10|3|1|True", "10|3|2|True"], wordlistNames);
     }
 
+    [Fact]
+    public async Task StoreAsync_WhenUsingFileBackedSqliteAndCalledConcurrently_PersistsAllHits()
+    {
+        using var database = new TestDatabase(useFileBackedSqlite: true);
+        var service = database.Services.GetRequiredService<HitStorageService>();
+        var storeTasks = Enumerable.Range(1, 100)
+            .Select(i => service.StoreAsync(CreateHit(i)))
+            .ToArray();
+
+        await Task.WhenAll(storeTasks).WaitAsync(TestContext.Current.CancellationToken);
+
+        using var scope = database.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var hitCount = await context.Hits.CountAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(100, hitCount);
+    }
+
     private static Hit CreateHit(int index, RangeDataPool? dataPool = null) => new()
     {
         Data = new DataLine($"user{index}:pass{index}", new WordlistType()),
@@ -99,13 +117,36 @@ public sealed class HitStorageServiceTests
 
     private sealed class TestDatabase : IDisposable
     {
-        private readonly SqliteConnection connection = new("DataSource=:memory:");
+        private readonly SqliteConnection? connection;
+        private readonly string? databasePath;
 
-        public TestDatabase()
+        public TestDatabase(bool useFileBackedSqlite = false)
         {
-            connection.Open();
-            Services = new ServiceCollection()
-                .AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connection))
+            if (useFileBackedSqlite)
+            {
+                databasePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.db");
+            }
+            else
+            {
+                connection = new SqliteConnection("DataSource=:memory:");
+                connection.Open();
+            }
+
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddDbContext<ApplicationDbContext>(options =>
+            {
+                if (useFileBackedSqlite)
+                {
+                    options.UseSqlite($"Data Source={databasePath}");
+                }
+                else
+                {
+                    options.UseSqlite(connection!);
+                }
+            });
+
+            Services = serviceCollection
                 .AddScoped<IHitRepository, DbHitRepository>()
                 .AddSingleton<HitStorageService>()
                 .BuildServiceProvider();
@@ -120,7 +161,37 @@ public sealed class HitStorageServiceTests
         public void Dispose()
         {
             Services.Dispose();
-            connection.Dispose();
+            connection?.Dispose();
+
+            if (databasePath is not null)
+            {
+                TryDeleteFile(databasePath);
+            }
+        }
+
+        private static void TryDeleteFile(string path)
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                if (!File.Exists(path))
+                {
+                    return;
+                }
+
+                try
+                {
+                    File.Delete(path);
+                    return;
+                }
+                catch (IOException) when (i < 9)
+                {
+                    Thread.Sleep(50);
+                }
+                catch (IOException)
+                {
+                    return;
+                }
+            }
         }
     }
 

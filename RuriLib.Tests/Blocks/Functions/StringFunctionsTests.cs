@@ -91,6 +91,26 @@ public class StringFunctionsTests
     }
 
     [Fact]
+    public void RandomString_QuantifiedMask_RepeatsToken()
+    {
+        var data = NewBotData();
+
+        var result = Methods.RandomString(data, "?h{10}");
+
+        Assert.Matches(new Regex("^[0-9a-f]{10}$"), result);
+    }
+
+    [Fact]
+    public void RandomString_InvalidQuantifier_FallsBackToLiteralBraces()
+    {
+        var data = NewBotData();
+
+        var result = Methods.RandomString(data, "?h{abc}");
+
+        Assert.Matches(new Regex(@"^[0-9a-f]\{abc\}$"), result);
+    }
+
+    [Fact]
     public void Split_Separator_ReturnsItems()
     {
         var data = NewBotData();

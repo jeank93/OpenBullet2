@@ -25,6 +25,7 @@ public static class Methods
     private const string _digits = "0123456789";
     private const string _symbols = "\\!\"£$%&/()=?^'{}[]@#,;.:-_*+";
     private const string _hex = _digits + "abcdef";
+    private const string _upperHex = _digits + "ABCDEF";
     private const string _udChars = _uppercase + _digits;
     private const string _ldChars = _lowercase + _digits;
     private const string _upperLower = _lowercase + _uppercase;
@@ -238,7 +239,7 @@ public static class Methods
     /// Generates a random string given a mask.
     /// </summary>
     [Block("Generates a random string given a mask",
-        extraInfo = "?l = Lowercase, ?u = Uppercase, ?d = Digit, ?f = Uppercase + Lowercase, ?s = Symbol, ?h = Hex (Lowercase), ?H = Hex (Uppercase), ?m = Upper + Digits, ?n = Lower + Digits, ?i = Lower + Upper + Digits, ?a = Any, ?c = Custom")]
+        extraInfo = "?l = Lowercase, ?u = Uppercase, ?d = Digit, ?f = Uppercase + Lowercase, ?s = Symbol, ?h = Hex (Lowercase), ?H = Hex (Uppercase), ?m = Upper + Digits, ?n = Lower + Digits, ?i = Lower + Upper + Digits, ?a = Any, ?c = Custom. Append {N} to repeat a token, e.g. ?h{10}")]
     public static string RandomString(BotData data, string input, string customCharset = "0123456789")
     {
         data.Logger.LogHeader();
@@ -247,59 +248,22 @@ public static class Methods
 
         for (var i = 0; i < input.Length; i++)
         {
-            if (input[i] == '?' && i + 1 < input.Length)
+            if (input[i] == '?' &&
+                i + 1 < input.Length &&
+                TryGetRandomCharset(input[i + 1], customCharset, out var charset))
             {
-                switch (input[i + 1])
+                var repeatCount = 1;
+                var lastConsumedIndex = i + 1;
+
+                if (TryParseRepeatCount(input, i + 2, out var parsedRepeatCount, out var closingBraceIndex))
                 {
-                    case 'l':
-                        output.Append(_lowercase[data.Random.Next(_lowercase.Length)]);
-                        i++;
-                        continue;
-                    case 'u':
-                        output.Append(_uppercase[data.Random.Next(_uppercase.Length)]);
-                        i++;
-                        continue;
-                    case 'd':
-                        output.Append(_digits[data.Random.Next(_digits.Length)]);
-                        i++;
-                        continue;
-                    case 's':
-                        output.Append(_symbols[data.Random.Next(_symbols.Length)]);
-                        i++;
-                        continue;
-                    case 'h':
-                        output.Append(_hex[data.Random.Next(_hex.Length)]);
-                        i++;
-                        continue;
-                    case 'H':
-                        output.Append(char.ToUpperInvariant(_hex[data.Random.Next(_hex.Length)]));
-                        i++;
-                        continue;
-                    case 'a':
-                        output.Append(_allChars[data.Random.Next(_allChars.Length)]);
-                        i++;
-                        continue;
-                    case 'm':
-                        output.Append(_udChars[data.Random.Next(_udChars.Length)]);
-                        i++;
-                        continue;
-                    case 'n':
-                        output.Append(_ldChars[data.Random.Next(_ldChars.Length)]);
-                        i++;
-                        continue;
-                    case 'i':
-                        output.Append(_upperLowerDigits[data.Random.Next(_upperLowerDigits.Length)]);
-                        i++;
-                        continue;
-                    case 'f':
-                        output.Append(_upperLower[data.Random.Next(_upperLower.Length)]);
-                        i++;
-                        continue;
-                    case 'c':
-                        output.Append(customCharset[data.Random.Next(customCharset.Length)]);
-                        i++;
-                        continue;
+                    repeatCount = parsedRepeatCount;
+                    lastConsumedIndex = closingBraceIndex;
                 }
+
+                AppendRandomChars(output, data.Random, charset, repeatCount);
+                i = lastConsumedIndex;
+                continue;
             }
 
             output.Append(input[i]);
@@ -308,6 +272,63 @@ public static class Methods
         var generated = output.ToString();
         data.Logger.Log($"Generated string: {generated}", LogColors.YellowGreen);
         return generated;
+    }
+
+    private static bool TryGetRandomCharset(char token, string customCharset, out string charset)
+    {
+        charset = token switch
+        {
+            'l' => _lowercase,
+            'u' => _uppercase,
+            'd' => _digits,
+            's' => _symbols,
+            'h' => _hex,
+            'H' => _upperHex,
+            'a' => _allChars,
+            'm' => _udChars,
+            'n' => _ldChars,
+            'i' => _upperLowerDigits,
+            'f' => _upperLower,
+            'c' => customCharset,
+            _ => string.Empty
+        };
+
+        return token is 'l' or 'u' or 'd' or 's' or 'h' or 'H' or 'a' or 'm' or 'n' or 'i' or 'f' or 'c';
+    }
+
+    private static bool TryParseRepeatCount(string input, int startIndex, out int repeatCount, out int closingBraceIndex)
+    {
+        repeatCount = 1;
+        closingBraceIndex = startIndex - 1;
+
+        if (startIndex >= input.Length || input[startIndex] != '{')
+        {
+            return false;
+        }
+
+        var closingBrace = input.IndexOf('}', startIndex + 1);
+
+        if (closingBrace <= startIndex + 1)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(input.Substring(startIndex + 1, closingBrace - startIndex - 1), out repeatCount) ||
+            repeatCount < 0)
+        {
+            return false;
+        }
+
+        closingBraceIndex = closingBrace;
+        return true;
+    }
+
+    private static void AppendRandomChars(StringBuilder output, Random random, string charset, int repeatCount)
+    {
+        for (var i = 0; i < repeatCount; i++)
+        {
+            output.Append(charset[random.Next(charset.Length)]);
+        }
     }
 
     /// <summary>

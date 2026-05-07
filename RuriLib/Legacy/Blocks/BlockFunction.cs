@@ -743,17 +743,7 @@ public class BlockFunction : BlockBase
                     break;
 
                 case Function.RandomString:
-                    outputString = localInputString;
-                    outputString = Regex.Replace(outputString, @"\?l", m => _lowercase[data.Random.Next(_lowercase.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?u", m => _uppercase[data.Random.Next(_uppercase.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?d", m => _digits[data.Random.Next(_digits.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?s", m => _symbols[data.Random.Next(_symbols.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?h", m => _hex[data.Random.Next(_hex.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?a", m => _allChars[data.Random.Next(_allChars.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?m", m => _udChars[data.Random.Next(_udChars.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?n", m => _ldChars[data.Random.Next(_ldChars.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?i", m => _ludChars[data.Random.Next(_ludChars.Length)].ToString());
-                    outputString = Regex.Replace(outputString, @"\?f", m => _upperlwr[data.Random.Next(_upperlwr.Length)].ToString());
+                    outputString = GenerateRandomString(localInputString, data.Random);
                     break;
 
                 case Function.Ceil:
@@ -976,6 +966,91 @@ public class BlockFunction : BlockBase
         }
 
         return count;
+    }
+
+    private static string GenerateRandomString(string input, Random random)
+    {
+        var output = new StringBuilder(input.Length);
+
+        for (var i = 0; i < input.Length; i++)
+        {
+            if (input[i] == '?' &&
+                i + 1 < input.Length &&
+                TryGetRandomCharset(input[i + 1], out var charset))
+            {
+                var repeatCount = 1;
+                var lastConsumedIndex = i + 1;
+
+                if (TryParseRepeatCount(input, i + 2, out var parsedRepeatCount, out var closingBraceIndex))
+                {
+                    repeatCount = parsedRepeatCount;
+                    lastConsumedIndex = closingBraceIndex;
+                }
+
+                AppendRandomChars(output, random, charset, repeatCount);
+                i = lastConsumedIndex;
+                continue;
+            }
+
+            output.Append(input[i]);
+        }
+
+        return output.ToString();
+    }
+
+    private static bool TryGetRandomCharset(char token, out string charset)
+    {
+        charset = token switch
+        {
+            'l' => _lowercase,
+            'u' => _uppercase,
+            'd' => _digits,
+            's' => _symbols,
+            'h' => _hex,
+            'a' => _allChars,
+            'm' => _udChars,
+            'n' => _ldChars,
+            'i' => _ludChars,
+            'f' => _upperlwr,
+            _ => string.Empty
+        };
+
+        return charset.Length > 0;
+    }
+
+    private static bool TryParseRepeatCount(string input, int startIndex, out int repeatCount, out int closingBraceIndex)
+    {
+        repeatCount = 1;
+        closingBraceIndex = startIndex - 1;
+
+        if (startIndex >= input.Length || input[startIndex] != '{')
+        {
+            return false;
+        }
+
+        var closingBrace = input.IndexOf('}', startIndex + 1);
+
+        if (closingBrace <= startIndex + 1)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(input.Substring(startIndex + 1, closingBrace - startIndex - 1), out repeatCount) ||
+            repeatCount < 0)
+        {
+            return false;
+        }
+
+        closingBraceIndex = closingBrace;
+        return true;
+    }
+
+    private static void AppendRandomChars(StringBuilder output, Random random, string charset, int repeatCount)
+    {
+        for (var i = 0; i < repeatCount; i++)
+        {
+            output.Append(charset[random.Next(charset.Length)]);
+        }
     }
     #endregion
 

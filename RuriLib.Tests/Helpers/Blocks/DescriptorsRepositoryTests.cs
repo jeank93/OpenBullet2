@@ -52,6 +52,18 @@ public class DescriptorsRepositoryTests
     }
 
     [Fact]
+    public void GetAs_DnsLookup_ReturnsAutoDescriptor()
+    {
+        var repository = new DescriptorsRepository();
+
+        var descriptor = repository.GetAs<AutoBlockDescriptor>("DnsLookup");
+
+        Assert.Equal("DnsLookup", descriptor.Id);
+        Assert.Equal("LookupDnsAsync", descriptor.MethodName);
+        Assert.True(descriptor.Async);
+    }
+
+    [Fact]
     public void AsTree_ContainsAutoBlockDescriptors()
     {
         var repository = new DescriptorsRepository();

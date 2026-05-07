@@ -1,5 +1,6 @@
 using RuriLib.Helpers.Blocks;
 using RuriLib.Helpers.CSharp;
+using RuriLib.Functions.Networking;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Blocks.Settings;
 using RuriLib.Models.Blocks.Settings.Interpolated;
@@ -222,6 +223,13 @@ public class AutoBlockInstanceTests
         AssertSyntax(CreateTcpConnectBlock(), [],
             [],
             "await TcpConnect(data, ObjectExtensions.DynamicAsString(globals.host), 80, false, ObjectExtensions.DynamicAsInt(input.timeout)).ConfigureAwait(false);");
+
+        AssertSyntax(CreateDnsLookupBlock(), [],
+            ["dnsAnswers"],
+            "LookupDnsAsync(data, ObjectExtensions.DynamicAsString(globals.query)",
+            "\"127.0.0.1:5353\"",
+            "1500).ConfigureAwait(false);",
+            "data.LogVariableAssignment(nameof(dnsAnswers));");
     }
 
     private static AutoBlockInstance CreateSubstringBlock(
@@ -296,6 +304,27 @@ public class AutoBlockInstanceTests
         (ssl.FixedSetting as BoolSetting)!.Value = false;
         timeout.InputMode = SettingInputMode.Variable;
         timeout.InputVariableName = "input.timeout";
+
+        return block;
+    }
+
+    private static AutoBlockInstance CreateDnsLookupBlock()
+    {
+        var block = BlockFactory.GetBlock<AutoBlockInstance>("DnsLookup");
+        block.OutputVariable = "dnsAnswers";
+
+        var query = block.Settings["query"];
+        var recordType = block.Settings["recordType"];
+        var transport = block.Settings["transport"];
+        var server = block.Settings["server"];
+        var timeout = block.Settings["timeoutMilliseconds"];
+
+        query.InputMode = SettingInputMode.Variable;
+        query.InputVariableName = "globals.query";
+        (recordType.FixedSetting as EnumSetting)!.Value = nameof(DnsRecordType.MX);
+        (transport.FixedSetting as EnumSetting)!.Value = nameof(DnsTransportProtocol.Tcp);
+        (server.FixedSetting as StringSetting)!.Value = "127.0.0.1:5353";
+        (timeout.FixedSetting as IntSetting)!.Value = 1500;
 
         return block;
     }

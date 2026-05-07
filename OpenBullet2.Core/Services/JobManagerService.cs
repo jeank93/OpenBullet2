@@ -46,25 +46,32 @@ public class JobManagerService : IDisposable
                 continue;
             }
 
-            // Convert old namespaces to support old databases
-            if (entity.JobOptions.Contains("OpenBullet2.Models") || entity.JobOptions.Contains(", OpenBullet2\""))
+            try
             {
-                entity.JobOptions = entity.JobOptions
-                    .Replace("OpenBullet2.Models", "OpenBullet2.Core.Models")
-                    .Replace(", OpenBullet2\"", ", OpenBullet2.Core\"");
+                // Convert old namespaces to support old databases
+                if (entity.JobOptions.Contains("OpenBullet2.Models") || entity.JobOptions.Contains(", OpenBullet2\""))
+                {
+                    entity.JobOptions = entity.JobOptions
+                        .Replace("OpenBullet2.Models", "OpenBullet2.Core.Models")
+                        .Replace(", OpenBullet2\"", ", OpenBullet2.Core\"");
 
-                jobRepo.UpdateAsync(entity).Wait();
+                    jobRepo.UpdateAsync(entity).Wait();
+                }
+
+                var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings);
+                if (wrapper?.Options is null)
+                {
+                    continue;
+                }
+
+                var options = wrapper.Options;
+                var job = jobFactory.FromOptions(entity.Id, entity.Owner == null ? 0 : entity.Owner.Id, options);
+                AddJob(job);
             }
-
-            var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings);
-            if (wrapper?.Options is null)
+            catch (Exception ex)
             {
-                continue;
+                Console.WriteLine($"Skipped restoring job {entity.Id}: {ex.Message}");
             }
-
-            var options = wrapper.Options;
-            var job = jobFactory.FromOptions(entity.Id, entity.Owner == null ? 0 : entity.Owner.Id, options);
-            AddJob(job);
         }
 
         _scopeFactory = scopeFactory;

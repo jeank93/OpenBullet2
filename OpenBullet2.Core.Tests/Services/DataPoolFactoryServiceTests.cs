@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
 using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Repositories;
@@ -54,6 +55,24 @@ public sealed class DataPoolFactoryServiceTests : IDisposable
         Assert.Equal(fileName, filePool.FileName);
         Assert.Equal("Default", filePool.WordlistType);
         Assert.Equal(["one", "two"], filePool.DataList.ToArray());
+    }
+
+    [Fact]
+    public async Task FromOptionsAsync_FileOptions_WithNullFileName_FallsBackToInfiniteDataPool()
+    {
+        var options = JsonConvert.DeserializeObject<FileDataPoolOptions>(
+            """
+            {
+              "FileName": null,
+              "WordlistType": "Default"
+            }
+            """)!;
+
+        var service = CreateService();
+        var pool = await service.FromOptionsAsync(options);
+
+        Assert.IsType<InfiniteDataPool>(pool);
+        Assert.Equal(string.Empty, options.FileName);
     }
 
     [Fact]

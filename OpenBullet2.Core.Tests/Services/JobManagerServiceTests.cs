@@ -61,6 +61,19 @@ public sealed class JobManagerServiceTests
         Assert.Equal(0, options.Skip);
     }
 
+    [Fact]
+    public async Task Constructor_WhenPersistedJobOptionsAreMalformed_DoesNotThrow()
+    {
+        using var database = new TestDatabase();
+        await database.AddRawJobEntityAsync("{ this is not valid json }");
+
+        var exception = Record.Exception(() => new JobManagerService(
+            database.Services.GetRequiredService<IServiceScopeFactory>(),
+            (JobFactoryService)RuntimeHelpers.GetUninitializedObject(typeof(JobFactoryService))));
+
+        Assert.Null(exception);
+    }
+
     private static RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-jobmanager-settings-{Guid.NewGuid():N}"));
 
@@ -96,6 +109,21 @@ public sealed class JobManagerServiceTests
                 JobOptions = JsonConvert.SerializeObject(
                     new JobOptionsWrapper { Options = options },
                     new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto })
+            };
+
+            context.Jobs.Add(entity);
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+            return entity;
+        }
+
+        public async Task<JobEntity> AddRawJobEntityAsync(string jobOptions)
+        {
+            using var scope = Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var entity = new JobEntity
+            {
+                JobType = JobType.MultiRun,
+                JobOptions = jobOptions
             };
 
             context.Jobs.Add(entity);

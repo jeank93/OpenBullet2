@@ -4,8 +4,10 @@ using Microsoft.Scripting.Hosting;
 using RuriLib.Attributes;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using RuriLib.Exceptions;
 
@@ -27,8 +29,15 @@ public static class Methods
     /// <summary>
     /// Executes a shell command and redirects all stdout to the output variable.
     /// </summary>
-    [Block("Executes a shell command and redirects all stdout to the output variable", id = nameof(ShellCommand))]
     public static async Task<string> ShellCommandAsync(BotData data, string executable, string arguments)
+        => await ShellCommandAsync(data, executable, arguments, Timeout.Infinite).ConfigureAwait(false);
+
+    /// <summary>
+    /// Executes a shell command and redirects all stdout to the output variable.
+    /// </summary>
+    [Block("Executes a shell command and redirects all stdout to the output variable", id = nameof(ShellCommand))]
+    public static async Task<string> ShellCommandAsync(BotData data, string executable, string arguments,
+        int timeoutMilliseconds = 30000)
     {
         data.Logger.LogHeader();
 
@@ -48,13 +57,49 @@ public static class Methods
             return string.Empty;
         }
 
+        using var timeoutCts = timeoutMilliseconds == Timeout.Infinite
+            ? null
+            : new CancellationTokenSource(timeoutMilliseconds);
+        using var linkedCts = timeoutCts is null
+            ? CancellationTokenSource.CreateLinkedTokenSource(data.CancellationToken)
+            : CancellationTokenSource.CreateLinkedTokenSource(data.CancellationToken, timeoutCts.Token);
+
         using var reader = process.StandardOutput;
 
-        var result = await reader.ReadToEndAsync(data.CancellationToken).ConfigureAwait(false);
-        await process.WaitForExitAsync(data.CancellationToken).ConfigureAwait(false);
-        data.Logger.Log($"Standard Output:", LogColors.PaleChestnut);
-        data.Logger.Log(result, LogColors.PaleChestnut);
-        return result;
+        try
+        {
+            var result = await reader.ReadToEndAsync(linkedCts.Token).ConfigureAwait(false);
+            await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+            data.Logger.Log($"Standard Output:", LogColors.PaleChestnut);
+            data.Logger.Log(result, LogColors.PaleChestnut);
+            return result;
+        }
+        catch (OperationCanceledException) when (timeoutCts?.IsCancellationRequested == true &&
+                                                 !data.CancellationToken.IsCancellationRequested)
+        {
+            TryKillProcess(process);
+            throw new TimeoutException($"The process timed out after {timeoutMilliseconds} ms");
+        }
+        catch
+        {
+            TryKillProcess(process);
+            throw;
+        }
+    }
+
+    private static void TryKillProcess(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors and preserve the original exception.
+        }
     }
 
     /*

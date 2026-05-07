@@ -10,6 +10,7 @@ using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 using BotProviders = RuriLib.Models.Bots.Providers;
@@ -28,6 +29,16 @@ public class InteropBlocksTests
 
         Assert.False(string.IsNullOrWhiteSpace(output));
         Assert.Contains(".", output);
+    }
+
+    [Fact]
+    public async Task ShellCommand_Timeout_ThrowsTimeoutException()
+    {
+        var data = NewBotData();
+        var (executable, arguments) = GetSleepCommand();
+
+        await Assert.ThrowsAsync<TimeoutException>(() =>
+            InteropMethods.ShellCommandAsync(data, executable, arguments, timeoutMilliseconds: 100));
     }
 
     [Fact]
@@ -81,4 +92,14 @@ public class InteropBlocksTests
             new ConfigSettings(),
             new BotLogger(),
             new DataLine("hello", new WordlistType()));
+
+    private static (string Executable, string Arguments) GetSleepCommand()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return ("powershell.exe", "-NoProfile -Command \"Start-Sleep -Seconds 5\"");
+        }
+
+        return ("/bin/sh", "-c \"sleep 5\"");
+    }
 }

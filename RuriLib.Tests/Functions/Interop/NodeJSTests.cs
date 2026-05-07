@@ -14,6 +14,15 @@ public class NodeJsTests
 {
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
+    static NodeJsTests()
+    {
+        StaticNodeJSService.Configure<OutOfProcessNodeJSServiceOptions>(options =>
+        {
+            options.ConnectionTimeoutMS = 15000;
+            options.NumConnectionRetries = 1;
+        });
+    }
+
     private static string BuildScript(string innerScript, string[] inputs, string[] outputs) => @$"module.exports = (callback, {MakeInputs(inputs)}) => {{
 {innerScript}
 var noderesult = {{

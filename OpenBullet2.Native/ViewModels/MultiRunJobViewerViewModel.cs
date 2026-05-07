@@ -342,11 +342,12 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
 
     private void UpdateHitsCollection()
     {
+        var hitsSnapshot = MultiRunJob.GetHitsSnapshot();
         var hits = HitsFilter switch
         {
-            HitsFilter.Hits => MultiRunJob.Hits.Where(h => h.Type == "SUCCESS"),
-            HitsFilter.ToCheck => MultiRunJob.Hits.Where(h => h.Type == "NONE"),
-            HitsFilter.Custom => MultiRunJob.Hits.Where(h => h.Type != "SUCCESS" && h.Type != "NONE"),
+            HitsFilter.Hits => hitsSnapshot.Where(h => h.Type == "SUCCESS"),
+            HitsFilter.ToCheck => hitsSnapshot.Where(h => h.Type == "NONE"),
+            HitsFilter.Custom => hitsSnapshot.Where(h => h.Type != "SUCCESS" && h.Type != "NONE"),
             _ => throw new NotImplementedException()
         };
 

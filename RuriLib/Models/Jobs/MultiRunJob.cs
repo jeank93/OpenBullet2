@@ -92,6 +92,7 @@ public class MultiRunJob : Job
 
     // Private fields
     private readonly string[] badStatuses = ["FAIL", "RETRY", "BAN", "ERROR", "INVALID"];
+    private readonly object hitsLock = new();
     private Parallelizer<MultiRunInput, CheckResult>? parallelizer;
     private ProxyPool? proxyPool;
     private Timer? tickTimer;
@@ -107,6 +108,28 @@ public class MultiRunJob : Job
     // Instance properties and stats
     /// <summary>Gets the hits collected during the current run.</summary>
     public List<Hit> Hits { get; private set; } = [];
+
+    /// <summary>
+    /// Gets a snapshot of the hits collected during the current run.
+    /// </summary>
+    public List<Hit> GetHitsSnapshot()
+    {
+        lock (hitsLock)
+        {
+            return [.. Hits];
+        }
+    }
+
+    /// <summary>
+    /// Finds a hit by id in a thread-safe manner.
+    /// </summary>
+    public Hit? FindHit(string id)
+    {
+        lock (hitsLock)
+        {
+            return Hits.Find(h => h.Id == id);
+        }
+    }
 
     // Events
     /// <summary>Raised when a worker task fails.</summary>
@@ -1004,7 +1027,11 @@ public class MultiRunJob : Job
         dataToCheck = 0;
         dataInvalid = 0;
         dataErrors = 0;
-        Hits = new();
+
+        lock (hitsLock)
+        {
+            Hits = [];
+        }
     }
 
     private void StatusChanged(object? sender, ParallelizerStatus status)
@@ -1075,7 +1102,11 @@ public class MultiRunJob : Job
         };
 
         // Add it to the local list of hits
-        Hits.Add(hit);
+        lock (hitsLock)
+        {
+            Hits.Add(hit);
+        }
+
         OnHit?.Invoke(this, hit);
 
         foreach (var hitOutput in HitOutputs)

@@ -3,6 +3,7 @@ using RuriLib.Models.Data;
 using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.StartConditions;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -159,6 +160,54 @@ public class MultiRunJobTests
         Assert.Equal(0, job.Skip);
     }
 
+    [Fact]
+    public async Task GetHitsSnapshot_DuringConcurrentWrites_DoesNotThrow()
+    {
+        var job = CreateJob();
+        var hits = job.Hits;
+        var hitsLock = typeof(MultiRunJob)
+            .GetField("hitsLock", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(job)!;
+        using var cts = new CancellationTokenSource();
+
+        var writer = Task.Run(async () =>
+        {
+            var index = 0;
+
+            while (!cts.Token.IsCancellationRequested)
+            {
+                lock (hitsLock)
+                {
+                    hits.Add(CreateHit(index++));
+                }
+
+                await Task.Yield();
+            }
+        }, TestCancellationToken);
+
+        for (var i = 0; i < 200; i++)
+        {
+            var exception = Record.Exception(() => job.GetHitsSnapshot());
+            Assert.Null(exception);
+            await Task.Yield();
+        }
+
+        await cts.CancelAsync();
+        await writer.WaitAsync(TestCancellationToken);
+    }
+
+    [Fact]
+    public void FindHit_ReturnsMatchingHit()
+    {
+        var job = CreateJob();
+        var hit = CreateHit(1);
+        job.Hits.Add(hit);
+
+        var found = job.FindHit(hit.Id);
+
+        Assert.Same(hit, found);
+    }
+
     private static MultiRunJob CreateJob()
         => new(CreateSettingsService(), CreatePluginRepository());
 
@@ -177,6 +226,27 @@ public class MultiRunJobTests
         }
 
         Assert.Equal(JobStatus.Idle, job.Status);
+    }
+
+    private static global::RuriLib.Models.Hits.Hit CreateHit(int index)
+    {
+        const string wordlistTypeName = "default";
+
+        return new global::RuriLib.Models.Hits.Hit
+        {
+            Data = new DataLine(
+                $"user{index}:pass{index}",
+                new global::RuriLib.Models.Environment.WordlistType { Name = wordlistTypeName }),
+            CapturedData = new Dictionary<string, object> { ["token"] = $"abc{index}" },
+            Date = DateTime.UtcNow,
+            Type = "SUCCESS",
+            Config = new Config
+            {
+                Id = $"cfg-{index}",
+                Metadata = new ConfigMetadata { Name = "Config", Category = "Cat" }
+            },
+            DataPool = new TestDataPool([$"user{index}:pass{index}"], wordlistTypeName)
+        };
     }
 
     private sealed class TestDataPool : DataPool

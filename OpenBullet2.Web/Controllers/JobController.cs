@@ -544,7 +544,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
                 $"The job with id {jobId} is not a multi run job");
         }
 
-        var hit = mrJob.Hits.Find(h => h.Id == hitId) ?? throw new EntryNotFoundException(ErrorCode.HitNotFound,
+        var hit = mrJob.FindHit(hitId) ?? throw new EntryNotFoundException(ErrorCode.HitNotFound,
                 hitId, nameof(MultiRunJob.Hits));
         return new MrjHitLogDto { Log = hit.BotLogger?.Entries.ToList() };
     }
@@ -968,6 +968,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             _ => throw new NotImplementedException()
         };
 
+        var hits = job.GetHitsSnapshot();
+
         return new MultiRunJobDto
         {
             Id = job.Id,
@@ -1018,7 +1020,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             Elapsed = job.Elapsed,
             Remaining = job.Remaining,
             Progress = job.Progress < 0 ? 0 : job.Progress,
-            Hits = job.Hits.Select(h => new MrjHitDto
+            Hits = hits.Select(h => new MrjHitDto
             {
                 Id = h.Id,
                 Date = h.Date,

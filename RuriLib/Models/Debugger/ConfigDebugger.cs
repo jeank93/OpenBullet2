@@ -369,6 +369,11 @@ public class ConfigDebugger : IDisposable
                         Options.Variables.AddRange(legacyVariables.Variables);
                     }
                     Options.Variables.AddRange(lsGlobals.Globals.Variables);
+
+                    if (Options.StepByStep && loliScript.CanProceed)
+                    {
+                        await data.Stepper!.WaitForStepAsync(data.CancellationToken).ConfigureAwait(false);
+                    }
                 }
                 while (loliScript.CanProceed);
             }

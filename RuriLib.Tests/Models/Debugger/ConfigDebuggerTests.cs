@@ -3,7 +3,6 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Debugger;
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -98,16 +97,60 @@ public class ConfigDebuggerTests
         Assert.Equal(ConfigDebuggerStatus.Idle, debugger.Status);
     }
 
-    private static ConfigDebugger CreateDebugger(DebuggerOptions? options = null)
-        => new(new Config
+    [Fact]
+    public async Task Run_LegacyConfigInStepByStepMode_WaitsForExplicitStep()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+
+        using var debugger = CreateDebugger(new Config
         {
-            Id = "test"
-        }, options ?? new DebuggerOptions(), new BotLogger());
+            Id = "legacy-test",
+            Mode = ConfigMode.Legacy,
+            LoliScript = "PRINT \"first\"\nPRINT \"second\""
+        }, new DebuggerOptions
+        {
+            TestData = "test",
+            WordlistType = "Default",
+            StepByStep = true
+        });
+
+        debugger.RuriLibSettings = CreateSettingsService();
+        debugger.RNGProvider = new global::RuriLib.Providers.RandomNumbers.DefaultRNGProvider();
+        debugger.PluginRepo = CreatePluginRepository();
+
+        var waitingForStep = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        debugger.StatusChanged += (_, status) =>
+        {
+            if (status == ConfigDebuggerStatus.WaitingForStep)
+            {
+                waitingForStep.TrySetResult();
+            }
+        };
+
+        var runTask = debugger.Run();
+
+        await waitingForStep.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        Assert.Equal(ConfigDebuggerStatus.WaitingForStep, debugger.Status);
+        Assert.Contains(debugger.Logger.Entries, e => e.Message == "\"first\"");
+        Assert.DoesNotContain(debugger.Logger.Entries, e => e.Message == "\"second\"");
+        Assert.True(debugger.TryTakeStep());
+
+        await runTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
+        Assert.Equal(ConfigDebuggerStatus.Idle, debugger.Status);
+        Assert.Contains(debugger.Logger.Entries, e => e.Message == "\"second\"");
+    }
+
+    private static ConfigDebugger CreateDebugger(DebuggerOptions? options = null)
+        => CreateDebugger(new Config { Id = "test" }, options);
+
+    private static ConfigDebugger CreateDebugger(Config config, DebuggerOptions? options = null)
+        => new(config, options ?? new DebuggerOptions(), new BotLogger());
 
     private static global::RuriLib.Services.RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-config-debugger-tests-{Guid.NewGuid():N}"));
 
     private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
-        => (global::RuriLib.Services.PluginRepository)RuntimeHelpers
-            .GetUninitializedObject(typeof(global::RuriLib.Services.PluginRepository));
+        => new(Path.Combine(Path.GetTempPath(), $"ob2-plugin-repo-tests-{Guid.NewGuid():N}"));
 }

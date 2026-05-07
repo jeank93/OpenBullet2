@@ -15,13 +15,32 @@ namespace RuriLib.Models.Proxies;
 /// </summary>
 public class ProxyPool : IDisposable
 {
-    /// <summary>All the proxies currently in the pool.</summary>
-    public IEnumerable<Proxy> Proxies => proxies;
+    /// <summary>All the proxies currently in the pool as a stable snapshot.</summary>
+    public IEnumerable<Proxy> Proxies
+    {
+        get
+        {
+            lock (proxiesLock)
+            {
+                return proxies.ToArray();
+            }
+        }
+    }
 
     /// <summary>Checks if all proxies are banned.</summary>
-    public bool AllBanned => proxies.All(p => p.ProxyStatus is ProxyStatus.Bad or ProxyStatus.Banned);
+    public bool AllBanned
+    {
+        get
+        {
+            lock (proxiesLock)
+            {
+                return proxies.All(p => p.ProxyStatus is ProxyStatus.Bad or ProxyStatus.Banned);
+            }
+        }
+    }
 
     private List<Proxy> proxies = [];
+    private readonly object proxiesLock = new();
     private bool isReloadingProxies;
     private readonly List<ProxySource> sources;
     private readonly ProxyPoolOptions options;
@@ -51,15 +70,18 @@ public class ProxyPool : IDisposable
     public void UnbanAll(TimeSpan minimumBanTime)
     {
         var now = DateTime.Now;
-        proxies.Where(p => now > p.LastBanned + minimumBanTime).ToList().ForEach(p =>
+        lock (proxiesLock)
         {
-            if (p.ProxyStatus is ProxyStatus.Banned or ProxyStatus.Bad)
+            proxies.Where(p => now > p.LastBanned + minimumBanTime).ToList().ForEach(p =>
             {
-                p.ProxyStatus = ProxyStatus.Available;
-                p.BeingUsedBy = 0;
-                p.TotalUses = 0;
-            }
-        });
+                if (p.ProxyStatus is ProxyStatus.Banned or ProxyStatus.Bad)
+                {
+                    p.ProxyStatus = ProxyStatus.Available;
+                    p.BeingUsedBy = 0;
+                    p.TotalUses = 0;
+                }
+            });
+        }
     }
 
     /// <summary>
@@ -67,8 +89,7 @@ public class ProxyPool : IDisposable
     /// (or even a Busy one if <paramref name="evenBusy"/> is true).
     /// If <paramref name="maxUses"/> is not 0, the pool will try to
     /// return a proxy that was used less than <paramref name="maxUses"/> times.
-    /// Use this together with a lock if possible. Returns null if no proxy
-    /// matching the required parameters was found.
+    /// Returns null if no proxy matching the required parameters was found.
     /// </summary>
     /// <param name="evenBusy">Whether busy proxies are also considered valid candidates.</param>
     /// <param name="maxUses">The maximum number of times a proxy can have been used, or 0 for no limit.</param>
@@ -76,12 +97,33 @@ public class ProxyPool : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveOptimization)] //hot path
     public Proxy? GetProxy(bool evenBusy = false, int maxUses = 0)
     {
-        for (var i = 0; i < proxies.Count; i++)
+        lock (proxiesLock)
         {
-            var px = proxies[i];
-            if (evenBusy)
+            for (var i = 0; i < proxies.Count; i++)
             {
-                if (px.ProxyStatus is ProxyStatus.Available or ProxyStatus.Busy)
+                var px = proxies[i];
+                if (evenBusy)
+                {
+                    if (px.ProxyStatus is ProxyStatus.Available or ProxyStatus.Busy)
+                    {
+                        if (maxUses > 0)
+                        {
+                            if (px.TotalUses < maxUses)
+                            {
+                                px.BeingUsedBy++;
+                                px.ProxyStatus = ProxyStatus.Busy;
+                                return px;
+                            }
+                        }
+                        else
+                        {
+                            px.BeingUsedBy++;
+                            px.ProxyStatus = ProxyStatus.Busy;
+                            return px;
+                        }
+                    }
+                }
+                else if (px.ProxyStatus == ProxyStatus.Available)
                 {
                     if (maxUses > 0)
                     {
@@ -100,24 +142,6 @@ public class ProxyPool : IDisposable
                     }
                 }
             }
-            else if (px.ProxyStatus == ProxyStatus.Available)
-            {
-                if (maxUses > 0)
-                {
-                    if (px.TotalUses < maxUses)
-                    {
-                        px.BeingUsedBy++;
-                        px.ProxyStatus = ProxyStatus.Busy;
-                        return px;
-                    }
-                }
-                else
-                {
-                    px.BeingUsedBy++;
-                    px.ProxyStatus = ProxyStatus.Busy;
-                    return px;
-                }
-            }
         }
 
         return null;
@@ -132,17 +156,20 @@ public class ProxyPool : IDisposable
     {
         ArgumentNullException.ThrowIfNull(proxy);
 
-        proxy.TotalUses++;
-        proxy.BeingUsedBy--;
+        lock (proxiesLock)
+        {
+            proxy.TotalUses++;
+            proxy.BeingUsedBy--;
 
-        if (ban)
-        {
-            proxy.ProxyStatus = ProxyStatus.Banned;
-            proxy.LastBanned = DateTime.Now;
-        }
-        else
-        {
-            proxy.ProxyStatus = ProxyStatus.Available;
+            if (ban)
+            {
+                proxy.ProxyStatus = ProxyStatus.Banned;
+                proxy.LastBanned = DateTime.Now;
+            }
+            else
+            {
+                proxy.ProxyStatus = ProxyStatus.Available;
+            }
         }
     }
 
@@ -150,13 +177,23 @@ public class ProxyPool : IDisposable
     /// Removes duplicates.
     /// </summary>
     public void RemoveDuplicates()
-        => proxies = proxies.Distinct(ProxyIdentityComparer.Instance).ToList();
+    {
+        lock (proxiesLock)
+        {
+            proxies = proxies.Distinct(ProxyIdentityComparer.Instance).ToList();
+        }
+    }
 
     /// <summary>
     /// Shuffles proxies.
     /// </summary>
     public void Shuffle()
-        => proxies.Shuffle();
+    {
+        lock (proxiesLock)
+        {
+            proxies.Shuffle();
+        }
+    }
 
     /// <summary>
     /// Reloads all proxies in the pool from the provided sources.
@@ -241,13 +278,16 @@ public class ProxyPool : IDisposable
             return false;
         }
 
-        proxies = results
-            .Where(p => options.AllowedTypes.Contains(p.Type)) // Filter by allowed types
-            .ToList();
-
-        if (shuffle)
+        lock (proxiesLock)
         {
-            Shuffle();
+            proxies = results
+                .Where(p => options.AllowedTypes.Contains(p.Type)) // Filter by allowed types
+                .ToList();
+
+            if (shuffle)
+            {
+                proxies.Shuffle();
+            }
         }
 
         return true;

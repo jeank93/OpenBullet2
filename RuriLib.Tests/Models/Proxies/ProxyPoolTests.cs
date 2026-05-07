@@ -152,6 +152,30 @@ public class ProxyPoolTests
     }
 
     [Fact]
+    public async Task Proxies_SnapshotEnumeration_RemainsValidAfterShuffle()
+    {
+        ListProxySource source = new([
+            new("127.0.0.1", 8000),
+            new("127.0.0.2", 8001),
+            new("127.0.0.3", 8002)
+        ]);
+
+        using var pool = new ProxyPool([source]);
+
+        await pool.ReloadAllAsync(false, TestCancellationToken);
+
+        var snapshot = pool.Proxies;
+        pool.Shuffle();
+
+        var proxies = snapshot.ToArray();
+
+        Assert.Equal(3, proxies.Length);
+        Assert.Contains(proxies, p => p.Host == "127.0.0.1" && p.Port == 8000);
+        Assert.Contains(proxies, p => p.Host == "127.0.0.2" && p.Port == 8001);
+        Assert.Contains(proxies, p => p.Host == "127.0.0.3" && p.Port == 8002);
+    }
+
+    [Fact]
     public async Task ReleaseProxy_Ban_SetsBannedStatusAndTimestamp()
     {
         ListProxySource source = new([new Proxy("127.0.0.1", 8000)]);

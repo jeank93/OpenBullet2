@@ -22,13 +22,22 @@ namespace OpenBullet2.Web.Controllers;
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
 public class InfoController(IAnnouncementService announcementService,
-    HttpClient httpClient,
-    IUpdateService updateService, IServiceProvider serviceProvider) : ApiController
+    HttpClient httpClient, IUpdateService updateService,
+    JobManagerService jobManager, IProxyRepository proxyRepo,
+    IWordlistRepository wordlistRepo, IHitRepository hitRepo,
+    IGuestRepository guestRepo, ConfigService configService,
+    PluginRepository pluginRepository) : ApiController
 {
     private readonly IAnnouncementService _announcementService = announcementService;
+    private readonly ConfigService _configService = configService;
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly IHitRepository _hitRepo = hitRepo;
     private readonly HttpClient _httpClient = httpClient;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly JobManagerService _jobManager = jobManager;
+    private readonly PluginRepository _pluginRepository = pluginRepository;
+    private readonly IProxyRepository _proxyRepo = proxyRepo;
     private readonly IUpdateService _updateService = updateService;
+    private readonly IWordlistRepository _wordlistRepo = wordlistRepo;
 
     /// <summary>
     /// Get information about the server and the environment.
@@ -144,48 +153,38 @@ public class InfoController(IAnnouncementService announcementService,
         var apiUser = HttpContext.GetApiUser();
 
         var jobCount = apiUser.Role is UserRole.Admin
-            ? _serviceProvider.GetRequiredService<JobManagerService>()
-                .Jobs.Count()
-            : _serviceProvider.GetRequiredService<JobManagerService>()
-                .Jobs.Count(j => j.OwnerId == apiUser.Id);
+            ? _jobManager.Jobs.Count()
+            : _jobManager.Jobs.Count(j => j.OwnerId == apiUser.Id);
 
         var proxyCount = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IProxyRepository>()
-                .GetAll().CountAsync(cancellationToken)
-            : await _serviceProvider.GetRequiredService<IProxyRepository>()
-                .GetAll().CountAsync(p => p.Group != null
+            ? await _proxyRepo.GetAll().CountAsync(cancellationToken)
+            : await _proxyRepo.GetAll().CountAsync(p => p.Group != null
                     && p.Group.Owner != null
                     && p.Group.Owner.Id == apiUser.Id, cancellationToken);
 
         var wordlistCount = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().CountAsync(cancellationToken)
-            : await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().CountAsync(w => w.Owner != null && w.Owner.Id == apiUser.Id, cancellationToken);
+            ? await _wordlistRepo.GetAll().CountAsync(cancellationToken)
+            : await _wordlistRepo.GetAll()
+                .CountAsync(w => w.Owner != null && w.Owner.Id == apiUser.Id, cancellationToken);
 
         var wordlistLines = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll().SumAsync(w => (long)w.Total, cancellationToken)
-            : await _serviceProvider.GetRequiredService<IWordlistRepository>()
-                .GetAll()
+            ? await _wordlistRepo.GetAll().SumAsync(w => (long)w.Total, cancellationToken)
+            : await _wordlistRepo.GetAll()
                 .Where(w => w.Owner != null && w.Owner.Id == apiUser.Id)
                 .SumAsync(w => (long)w.Total, cancellationToken);
 
         var hitCount = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IHitRepository>()
-                .GetAll().CountAsync(cancellationToken)
-            : await _serviceProvider.GetRequiredService<IHitRepository>()
-                .GetAll().CountAsync(h => h.OwnerId == apiUser.Id, cancellationToken);
+            ? await _hitRepo.GetAll().CountAsync(cancellationToken)
+            : await _hitRepo.GetAll().CountAsync(h => h.OwnerId == apiUser.Id, cancellationToken);
 
-        var configCount = _serviceProvider
-            .GetRequiredService<ConfigService>().Configs.Count;
+        var configCount = _configService.Configs.Count;
 
         var guestCount = apiUser.Role is UserRole.Admin
-            ? await _serviceProvider.GetRequiredService<IGuestRepository>().GetAll().CountAsync(cancellationToken)
+            ? await _guestRepo.GetAll().CountAsync(cancellationToken)
             : 1; // The guest shouldn't see the total number of guests
 
         var pluginCount = apiUser.Role is UserRole.Admin
-            ? _serviceProvider.GetRequiredService<PluginRepository>().GetPlugins().Count()
+            ? _pluginRepository.GetPlugins().Count()
             : 0; // The guest shouldn't see the total number of plugins
 
         return new CollectionInfoDto

@@ -366,6 +366,47 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
     }
 
     /// <summary>
+    /// Admin can get the details of a multi run job with multiple group proxy sources.
+    /// </summary>
+    [Fact]
+    public async Task GetMultiRunJob_Admin_MultipleGroupProxySources_Success()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var proxyReloadService = GetRequiredService<ProxyReloadService>();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+
+        var groupOne = new ProxyGroupEntity { Name = "Group 1" };
+        var groupTwo = new ProxyGroupEntity { Name = "Group 2" };
+        dbContext.ProxyGroups.AddRange(groupOne, groupTwo);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        var mrJob = CreateMultiRunJob();
+        mrJob.Name = "Test MRJ";
+        mrJob.Id = 2;
+        mrJob.ProxySources =
+        [
+            new GroupProxySource(groupOne.Id, proxyReloadService),
+            new GroupProxySource(groupTwo.Id, proxyReloadService)
+        ];
+        mrJob.DataPool = new CombinationsDataPool("abc", 3);
+        jobManager.AddJob(mrJob);
+
+        // Act
+        var queryParams = new
+        {
+            id = mrJob.Id
+        };
+        var result = await GetJsonAsync<MultiRunJobDto>(
+            client, "/api/v1/job/multi-run".ToUri(queryParams));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Group 1 (Group)", "Group 2 (Group)"], result.Value.ProxySources);
+    }
+
+    /// <summary>
     /// Guest cannot get the details of a multi run job not owned by them.
     /// </summary>
     [Fact]

@@ -924,13 +924,24 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             _ => throw new NotImplementedException()
         };
 
-        var proxySources = await Task.WhenAll(job.ProxySources.Select(async s => s switch
+        var groupIds = job.ProxySources
+            .OfType<GroupProxySource>()
+            .Select(s => s.GroupId)
+            .Where(id => id != -1)
+            .Distinct()
+            .ToList();
+
+        var groupNames = await _proxyGroupRepo.GetAll()
+            .Where(g => groupIds.Contains(g.Id))
+            .ToDictionaryAsync(g => g.Id, g => g.Name ?? "Invalid", cancellationToken);
+
+        var proxySources = job.ProxySources.Select(s => s switch
         {
-            GroupProxySource g => $"{await GetProxyGroupName(g.GroupId, cancellationToken)} (Group)",
+            GroupProxySource g => $"{GetProxyGroupName(g.GroupId, groupNames)} (Group)",
             FileProxySource f => $"{f.FileName} (File)",
             RemoteProxySource r => $"{r.Url} (Remote)",
             _ => throw new NotImplementedException()
-        }));
+        }).ToArray();
 
         var hitOutputs = job.HitOutputs.Select(o => o switch
         {
@@ -1028,15 +1039,14 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         };
     }
 
-    private async Task<string> GetProxyGroupName(int id, CancellationToken cancellationToken)
+    private static string GetProxyGroupName(int id, IReadOnlyDictionary<int, string> groupNames)
     {
         if (id == -1)
         {
             return "All";
         }
 
-        var proxyGroup = await _proxyGroupRepo.GetAsync(id, cancellationToken);
-        return proxyGroup?.Name ?? "Invalid";
+        return groupNames.GetValueOrDefault(id, "Invalid");
     }
 
     private static JobOptionsWrapper DeserializeJobOptions(JobEntity entity)

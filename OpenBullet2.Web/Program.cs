@@ -125,7 +125,6 @@ builder.Services.AddScoped<DataPoolFactoryService>();
 builder.Services.AddScoped<ProxySourceFactoryService>();
 
 // Singleton
-builder.Services.AddSingleton(sp => sp); // The service provider itself
 builder.Services.AddSingleton<IAuthTokenService, AuthTokenService>();
 builder.Services.AddSingleton<IAnnouncementService, AnnouncementService>();
 builder.Services.AddSingleton<IUpdateService, UpdateService>();

@@ -161,7 +161,9 @@ public class DiskConfigRepository : IConfigRepository
 
                 // Write the required plugins in the config's metadata
                 config.Metadata.Plugins = stack.Select(b => b.Descriptor.AssemblyFullName)
-                    .Where(n => n != null && !n.Contains("RuriLib")).ToList();
+                    .Where(n => !string.IsNullOrWhiteSpace(n) && !n.Contains("RuriLib"))
+                    .Distinct()
+                    .ToList();
             }
             catch
             {

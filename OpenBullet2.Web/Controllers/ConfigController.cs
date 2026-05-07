@@ -187,7 +187,9 @@ public class ConfigController : ApiController
         if (config.Metadata.Plugins is not null)
         {
             var missingPlugins = config.Metadata.Plugins.Where(
-                p => !loadedPlugins.Any(lp => lp.FullName == p)).ToList();
+                p => !string.IsNullOrWhiteSpace(p) && !loadedPlugins.Any(lp => lp.FullName == p))
+                .Distinct()
+                .ToList();
 
             if (missingPlugins.Any())
             {

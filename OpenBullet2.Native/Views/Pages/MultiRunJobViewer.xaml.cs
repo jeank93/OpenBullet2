@@ -31,7 +31,7 @@ public partial class MultiRunJobViewer : Page
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
 
-    private IEnumerable<HitViewModel> SelectedHits => hitsListView.SelectedItems.Cast<HitViewModel>().ToList();
+    private IEnumerable<HitViewModel> SelectedHits => hitsListView.GetSelectedItemsInDisplayOrder<HitViewModel>();
     private MultiRunJobViewerViewModel ViewModel => vm
         ?? throw new InvalidOperationException("The job viewer has not been bound yet");
 

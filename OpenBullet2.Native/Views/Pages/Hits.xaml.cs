@@ -35,10 +35,7 @@ public partial class Hits : Page
     private GridViewColumnHeader? listViewSortCol;
     private SortAdorner? listViewSortAdorner;
 
-    private IEnumerable<HitEntity> SelectedHits => hitsListView.SelectedItems
-        .Cast<HitEntity>()
-        .OrderBy(hit => hitsListView.Items.IndexOf(hit))
-        .ToList();
+    private IEnumerable<HitEntity> SelectedHits => hitsListView.GetSelectedItemsInDisplayOrder<HitEntity>();
 
     private readonly Func<HitEntity, string> captureMapping = new(hit => $"{hit.Data} | {hit.CapturedData}");
     private readonly Func<HitEntity, string> fullMapping = new(hit =>

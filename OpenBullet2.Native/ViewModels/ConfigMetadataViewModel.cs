@@ -86,4 +86,6 @@ public class ConfigMetadataViewModel : ViewModelBase
         Config.Metadata.Base64Image = base64;
         OnPropertyChanged(nameof(Icon));
     }
+
+    public Task Save() => configService.SaveSelectedConfigAsync();
 }

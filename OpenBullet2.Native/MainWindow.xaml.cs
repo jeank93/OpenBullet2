@@ -1,10 +1,12 @@
 using MahApps.Metro.Controls;
+using MahApps.Metro.IconPacks;
 using OpenBullet2.Core.Models.Settings;
 using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.Utils;
 using OpenBullet2.Native.ViewModels;
+using OpenBullet2.Native.Views.Dialogs;
 using OpenBullet2.Native.Views.Pages;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Jobs;
@@ -16,6 +18,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace OpenBullet2.Native;
 
@@ -30,6 +33,7 @@ public partial class MainWindow : MetroWindow
 
     private bool hoveringConfigsMenuOption;
     private bool hoveringConfigSubmenu;
+    private readonly DispatcherTimer toastTimer = new() { Interval = TimeSpan.FromSeconds(2.5) };
 
     private readonly TextBlock[] labels;
 
@@ -67,6 +71,7 @@ public partial class MainWindow : MetroWindow
         Loaded += OnLoaded;
 
         InitializeComponent();
+        toastTimer.Tick += HideToast;
 
         labels =
         [
@@ -280,6 +285,41 @@ public partial class MainWindow : MetroWindow
         return jobsPage!.EditJobAsync(jobVM);
     }
 
+    public void ShowToast(AlertType type, string title, string message)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            toastTimer.Stop();
+
+            toastTitle.Text = title;
+            toastMessage.Text = message;
+
+            var accentColor = type switch
+            {
+                AlertType.Success => System.Windows.Media.Colors.YellowGreen,
+                AlertType.Warning => System.Windows.Media.Colors.Orange,
+                AlertType.Error => System.Windows.Media.Colors.Tomato,
+                AlertType.Info => System.Windows.Media.Colors.SkyBlue,
+                _ => System.Windows.Media.Colors.SkyBlue
+            };
+
+            toastIcon.Kind = type switch
+            {
+                AlertType.Success => PackIconOcticonsKind.Check,
+                AlertType.Warning => PackIconOcticonsKind.Alert,
+                AlertType.Error => PackIconOcticonsKind.X,
+                AlertType.Info => PackIconOcticonsKind.Info,
+                _ => PackIconOcticonsKind.Info
+            };
+
+            toastIcon.Foreground = new System.Windows.Media.SolidColorBrush(accentColor);
+            toastContainer.BorderBrush = new System.Windows.Media.SolidColorBrush(accentColor);
+            toastContainer.Visibility = Visibility.Visible;
+
+            toastTimer.Start();
+        });
+    }
+
     private void OpenHomePage(object sender, MouseEventArgs e) => NavigateTo(MainWindowPage.Home);
     private void OpenJobsPage(object sender, MouseEventArgs e) => NavigateTo(MainWindowPage.Jobs);
     private void OpenMonitorPage(object sender, MouseEventArgs e) => NavigateTo(MainWindowPage.Monitor);
@@ -319,6 +359,12 @@ public partial class MainWindow : MetroWindow
 
     private void TakeScreenshot(object sender, RoutedEventArgs e)
         => Screenshot.Take((int)Width, (int)Height, (int)Top, (int)Left);
+
+    private void HideToast(object? sender, EventArgs e)
+    {
+        toastTimer.Stop();
+        toastContainer.Visibility = Visibility.Collapsed;
+    }
 
     #region Dropdown submenu logic
     private void ConfigSubmenuMouseEnter(object sender, MouseEventArgs e)

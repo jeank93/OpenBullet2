@@ -1,6 +1,9 @@
 using OpenBullet2.Native.Extensions;
+using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.ViewModels;
+using System;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace OpenBullet2.Native.Views.Pages;
 
@@ -34,6 +37,22 @@ public partial class ConfigReadme : Page
         if (!string.IsNullOrWhiteSpace(newText))
         {
             vm.Readme = newText;
+        }
+    }
+
+    private async void PageKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
+        {
+            try
+            {
+                await vm.Save();
+                Alert.ToastSuccess("Saved", "The config readme was saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                Alert.Exception(ex);
+            }
         }
     }
 }

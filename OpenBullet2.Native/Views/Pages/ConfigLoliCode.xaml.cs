@@ -211,7 +211,7 @@ public partial class ConfigLoliCode : Page
             configService.SelectedConfig.LoliCodeScript = editor.Text;
             configService.SelectedConfig.StartupLoliCodeScript = startupEditor.Text;
             await configService.SaveSelectedConfigAsync();
-            Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
+            Alert.ToastSuccess("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
         }
     }
 

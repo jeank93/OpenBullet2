@@ -1,6 +1,7 @@
 using OpenBullet2.Core.Services;
 using RuriLib.Models.Configs;
 using System;
+using System.Threading.Tasks;
 
 namespace OpenBullet2.Native.ViewModels;
 
@@ -21,4 +22,6 @@ public class ConfigReadmeViewModel : ViewModelBase
     }
 
     public ConfigReadmeViewModel(ConfigService configService) => this.configService = configService;
+
+    public Task Save() => configService.SaveSelectedConfigAsync();
 }

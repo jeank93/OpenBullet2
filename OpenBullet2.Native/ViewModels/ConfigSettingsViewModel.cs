@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace OpenBullet2.Native.ViewModels;
 
@@ -362,4 +363,6 @@ public class ConfigSettingsViewModel : ViewModelBase
         ResourcesCollection = new ObservableCollection<ConfigResourceOptions>(Data.Resources);
         DataRulesCollection = new ObservableCollection<DataRule>(Data.DataRules);
     }
+
+    public Task Save() => configService.SaveSelectedConfigAsync();
 }

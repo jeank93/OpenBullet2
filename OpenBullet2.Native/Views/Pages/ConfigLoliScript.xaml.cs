@@ -72,7 +72,7 @@ public partial class ConfigLoliScript : Page
         {
             configService.SelectedConfig.LoliScript = editor.Text;
             await configService.SaveSelectedConfigAsync();
-            Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
+            Alert.ToastSuccess("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
         }
     }
 }

@@ -149,7 +149,7 @@ public partial class ConfigEditor : Page
         try
         {
             await vm.Save();
-            Alert.Success("Success", $"{vm.Config.Metadata.Name} was saved successfully!");
+            Alert.ToastSuccess("Saved", $"{vm.Config.Metadata.Name} was saved successfully!");
         }
         catch (Exception ex)
         {

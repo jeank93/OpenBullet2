@@ -4,6 +4,7 @@ using OpenBullet2.Native.ViewModels;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace OpenBullet2.Native.Views.Pages;
 
@@ -73,6 +74,22 @@ public partial class ConfigMetadata : Page
         catch (Exception ex)
         {
             Alert.Exception(ex);
+        }
+    }
+
+    private async void PageKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
+        {
+            try
+            {
+                await vm.Save();
+                Alert.ToastSuccess("Saved", $"{vm.Name} was saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                Alert.Exception(ex);
+            }
         }
     }
 }

@@ -11,6 +11,7 @@
       xmlns:rules="clr-namespace:RuriLib.Models.Data.Rules;assembly=RuriLib"
       mc:Ignorable="d" 
       d:DesignHeight="2750" d:DesignWidth="800"
+      KeyDown="PageKeyDown"
       Title="Config Settings">
 
     <Grid>

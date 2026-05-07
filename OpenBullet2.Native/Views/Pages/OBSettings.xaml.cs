@@ -26,7 +26,18 @@ public partial class OBSettings : Page
         configSectionOnLoadCombobox.ItemsSource = Enum.GetValues(typeof(ConfigSection)).Cast<ConfigSection>();
     }
 
-    private async void Save(object sender, RoutedEventArgs e) => await vm.Save();
+    private async void Save(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await vm.Save();
+            Alert.ToastSuccess("Saved", "OB settings were saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            Alert.Exception(ex);
+        }
+    }
     private void Reset(object sender, RoutedEventArgs e) => vm.Reset();
     private void ResetCustomization(object sender, RoutedEventArgs e) => vm.ResetCustomization();
 

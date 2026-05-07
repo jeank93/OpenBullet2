@@ -100,7 +100,7 @@ public partial class Configs : Page
         try
         {
             await vm.Save(vm.SelectedConfig);
-            Alert.Success("Success", $"{vm.SelectedConfig.Config.Metadata.Name} was saved successfully!");
+            Alert.ToastSuccess("Saved", $"{vm.SelectedConfig.Config.Metadata.Name} was saved successfully!");
         }
         catch (Exception ex)
         {

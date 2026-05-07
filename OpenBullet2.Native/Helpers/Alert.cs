@@ -13,6 +13,10 @@ public static class Alert
     public static void Warning(string title, string message) => ShowAlert(AlertType.Warning, title, message);
     public static void Error(string title, string message) => ShowAlert(AlertType.Error, title, message);
     public static void Error(string title, string message, string copyText) => ShowAlert(AlertType.Error, title, message, copyText);
+    public static void ToastInfo(string title, string message) => ShowToast(AlertType.Info, title, message);
+    public static void ToastSuccess(string title, string message) => ShowToast(AlertType.Success, title, message);
+    public static void ToastWarning(string title, string message) => ShowToast(AlertType.Warning, title, message);
+    public static void ToastError(string title, string message) => ShowToast(AlertType.Error, title, message);
 
     public static bool Choice(string title, string message, string yesText = "Yes", string noText = "No")
     {
@@ -46,6 +50,25 @@ public static class Alert
         }
 
         Application.Current.Dispatcher.Invoke(() => new MainDialog(new AlertDialog(type, title, message, copyText), title).ShowDialog());
+    }
+
+    private static void ShowToast(AlertType type, string title, string message)
+    {
+        if (SuppressDialogs)
+        {
+            return;
+        }
+
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (Application.Current?.MainWindow is MainWindow mainWindow)
+            {
+                mainWindow.ShowToast(type, title, message);
+                return;
+            }
+
+            new MainDialog(new AlertDialog(type, title, message), title).ShowDialog();
+        });
     }
 
     public static void Exception(Exception ex) => Error(ex.GetType().Name, ex.Message);

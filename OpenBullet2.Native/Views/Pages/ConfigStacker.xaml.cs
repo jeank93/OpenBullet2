@@ -163,7 +163,7 @@ public partial class ConfigStacker : Page
             }
 
             await configRepo.SaveAsync(configService.SelectedConfig);
-            Alert.Success("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
+            Alert.ToastSuccess("Saved", $"{configService.SelectedConfig.Metadata.Name} was saved successfully!");
         }
     }
 }

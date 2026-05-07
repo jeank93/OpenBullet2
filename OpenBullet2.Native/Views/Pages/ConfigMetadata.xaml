@@ -7,6 +7,7 @@
       xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
       mc:Ignorable="d" 
       d:DesignHeight="550" d:DesignWidth="780"
+      KeyDown="PageKeyDown"
       Title="Metadata">
 
     <Grid>

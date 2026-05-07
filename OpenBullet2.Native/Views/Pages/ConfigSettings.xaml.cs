@@ -1,4 +1,5 @@
 using OpenBullet2.Native.Extensions;
+using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Services;
 using OpenBullet2.Native.ViewModels;
 using OpenBullet2.Native.Views.Dialogs;
@@ -9,6 +10,7 @@ using System;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace OpenBullet2.Native.Views.Pages;
@@ -69,4 +71,20 @@ public partial class ConfigSettings : Page
 
     private void TestDataRules(object sender, RoutedEventArgs e)
         => new MainDialog(uiFactory.Create<TestDataRulesDialog>(vm.TestDataForRules, vm.TestWordlistTypeForRules, vm.DataRulesCollection), "Test Results").ShowDialog();
+
+    private async void PageKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.S)
+        {
+            try
+            {
+                await vm.Save();
+                Alert.ToastSuccess("Saved", "The config settings were saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                Alert.Exception(ex);
+            }
+        }
+    }
 }

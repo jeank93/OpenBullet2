@@ -153,7 +153,13 @@ public class KeycheckBlockInstance(KeycheckBlockDescriptor descriptor) : BlockIn
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var statements = new List<StatementSyntax>();
+        var statements = new List<StatementSyntax>
+        {
+            BlockSyntaxFactory.CreateMemberInvocation(
+                Expr("data.Logger"),
+                "LogHeader",
+                Arg(Lit("CheckCondition"))).Stmt()
+        };
         var banIfNoMatch = Settings["banIfNoMatch"];
         var nonEmpty = Keychains.Where(kc => kc.Keys.Count > 0).ToList();
         var continueBan = context.Settings.GeneralSettings.ContinueStatuses.Contains("BAN");

@@ -22,8 +22,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, bool leftTerm, BoolComparison comparison, bool rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -39,8 +37,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, string leftTerm, StrComparison comparison, string rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -56,8 +52,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, List<string> leftTerm, ListComparison comparison, string rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -73,8 +67,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, int leftTerm, NumComparison comparison, int rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -90,8 +82,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, float leftTerm, NumComparison comparison, float rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -107,8 +97,6 @@ public static class Methods
     /// </summary>
     public static bool CheckCondition(BotData data, Dictionary<string, string> leftTerm, DictComparison comparison, string rightTerm)
     {
-        data.Logger.LogHeader();
-
         var result = RuriLib.Functions.Conditions.Conditions.Check(leftTerm, comparison, rightTerm);
 
         if (result)
@@ -124,8 +112,6 @@ public static class Methods
     /// </summary>
     public static bool CheckGlobalBanKeys(BotData data)
     {
-        data.Logger.LogHeader();
-
         var result = data.Providers.ProxySettings.ContainsBanKey(data.SOURCE, out var matchedKey);
 
         if (result)
@@ -141,8 +127,6 @@ public static class Methods
     /// </summary>
     public static bool CheckGlobalRetryKeys(BotData data)
     {
-        data.Logger.LogHeader();
-
         var result = data.Providers.ProxySettings.ContainsRetryKey(data.SOURCE, out var matchedKey);
 
         if (result)

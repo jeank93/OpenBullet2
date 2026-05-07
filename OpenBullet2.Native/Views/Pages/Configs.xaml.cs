@@ -232,6 +232,14 @@ public partial class Configs : Page
         }
 
         vm.SelectedConfig = HoveredItem;
+
+        if (obSettingsService.Settings.GeneralSettings.WarnDangerousConfig
+            && HoveredItem.Config.HasCSharpCode())
+        {
+            Alert.ToastWarning("Potentially dangerous config", "The config you selected might have some C# code in it" +
+                " (or blocks that call external programs). Do not run it unless you trust the source.");
+        }
+
         debuggerViewModel.ClearLog();
         NavigateToConfigSection();
     }

@@ -150,6 +150,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         var openBulletSettings = GetRequiredService<OpenBulletSettingsService>();
         openBulletSettings.Settings.GeneralSettings.DefaultAuthor = "test";
+        openBulletSettings.Settings.GeneralSettings.WarnDangerousConfig = false;
         await openBulletSettings.SaveAsync();
 
         // Act
@@ -160,6 +161,7 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         Assert.Equal("test", result.Value.GeneralSettings.DefaultAuthor);
+        Assert.False(result.Value.GeneralSettings.WarnDangerousConfig);
     }
 
     [Fact]
@@ -207,11 +209,16 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         using var client = Factory.CreateClient();
         var openBulletSettings = GetRequiredService<OpenBulletSettingsService>();
         openBulletSettings.Settings.GeneralSettings.DefaultAuthor = "test";
+        openBulletSettings.Settings.GeneralSettings.WarnDangerousConfig = true;
         await openBulletSettings.SaveAsync();
 
         var newSettings = new OpenBulletSettingsDto
         {
-            GeneralSettings = new OBGeneralSettingsDto { DefaultAuthor = "test2" }
+            GeneralSettings = new OBGeneralSettingsDto
+            {
+                DefaultAuthor = "test2",
+                WarnDangerousConfig = false
+            }
         };
 
         // Act
@@ -221,7 +228,9 @@ public class SettingsIntegrationTests(ITestOutputHelper testOutputHelper)
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal("test2", result.Value.GeneralSettings.DefaultAuthor);
+        Assert.False(result.Value.GeneralSettings.WarnDangerousConfig);
         Assert.Equal("test2", openBulletSettings.Settings.GeneralSettings.DefaultAuthor);
+        Assert.False(openBulletSettings.Settings.GeneralSettings.WarnDangerousConfig);
     }
 
     [Fact]

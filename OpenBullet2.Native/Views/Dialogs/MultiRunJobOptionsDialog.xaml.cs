@@ -34,24 +34,28 @@ namespace OpenBullet2.Native.Views.Dialogs;
 public partial class MultiRunJobOptionsDialog : Page
 {
     private readonly IUiFactory uiFactory;
+    private readonly OpenBulletSettingsService obSettingsService;
     private readonly Func<JobOptions, Task>? onAccept;
     private readonly MultiRunJobOptionsViewModel vm;
 
     public MultiRunJobOptionsDialog(
         IUiFactory uiFactory,
+        OpenBulletSettingsService obSettingsService,
         MultiRunJobOptionsViewModel vm,
         Func<JobOptions, Task>? onAccept)
-        : this(uiFactory, vm, null, onAccept)
+        : this(uiFactory, obSettingsService, vm, null, onAccept)
     {
     }
 
     public MultiRunJobOptionsDialog(
         IUiFactory uiFactory,
+        OpenBulletSettingsService obSettingsService,
         MultiRunJobOptionsViewModel vm,
         MultiRunJobOptions? options,
         Func<JobOptions, Task>? onAccept)
     {
         this.uiFactory = uiFactory;
+        this.obSettingsService = obSettingsService;
         this.onAccept = onAccept;
         this.vm = vm;
         vm.Initialize(options);
@@ -127,7 +131,9 @@ public partial class MultiRunJobOptionsDialog : Page
                 return;
             }
 
-            if (vm.SelectedConfig is not null && vm.SelectedConfig.HasCSharpCode())
+            if (obSettingsService.Settings.GeneralSettings.WarnDangerousConfig
+                && vm.SelectedConfig is not null
+                && vm.SelectedConfig.HasCSharpCode())
             {
                 Alert.Warning("Potentially dangerous config", "The Config you selected might have some C# code in it" +
                     " (or blocks that call external programs). Although C# can be helpful for config makers who want to" +

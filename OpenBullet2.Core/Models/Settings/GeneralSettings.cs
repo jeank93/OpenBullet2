@@ -88,6 +88,12 @@ public class GeneralSettings
     public bool WarnConfigNotSaved { get; set; } = true;
 
     /// <summary>
+    /// Whether to output a warning when selecting a config that might contain
+    /// custom C# code or external program calls.
+    /// </summary>
+    public bool WarnDangerousConfig { get; set; } = true;
+
+    /// <summary>
     /// The default author to use when creating new configs.
     /// </summary>
     public string DefaultAuthor { get; set; } = "Anonymous";

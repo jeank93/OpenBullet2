@@ -63,6 +63,15 @@
     </div>
     <div class="row my-3">
         <div class="col-12">
+            <p-checkbox
+                (onChange)="touched = true" ngDefaultControl
+                [(ngModel)]="settings.generalSettings.warnDangerousConfig"
+                [binary]="true" inputId="warnDangerousConfig"
+                label="Show a warning when selecting a potentially dangerous config" />
+        </div>
+    </div>
+    <div class="row my-3">
+        <div class="col-12">
             <span class="mr-2">Default author on newly created configs</span>
             <app-input-text key="defaultAuthor" class="input-small"
                 (touched)="touched = true" ngDefaultControl

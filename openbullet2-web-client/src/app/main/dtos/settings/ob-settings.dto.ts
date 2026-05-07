@@ -24,6 +24,7 @@ export interface GeneralOBSettings {
   configSectionOnLoad: ConfigSection;
   autoSetRecommendedBots: boolean;
   warnConfigNotSaved: boolean;
+  warnDangerousConfig: boolean;
   defaultAuthor: string;
   enableJobLogging: boolean;
   logBufferSize: number;

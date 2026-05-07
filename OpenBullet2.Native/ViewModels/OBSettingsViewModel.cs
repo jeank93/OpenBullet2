@@ -54,6 +54,16 @@ public class OBSettingsViewModel : ViewModelBase
         }
     }
 
+    public bool WarnDangerousConfig
+    {
+        get => General.WarnDangerousConfig;
+        set
+        {
+            General.WarnDangerousConfig = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string DefaultAuthor
     {
         get => General.DefaultAuthor;

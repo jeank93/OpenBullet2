@@ -171,7 +171,7 @@ export class ConfigsComponent implements OnInit {
         summary: 'Selected',
         detail: `Selected config ${resp.metadata.name}`,
       });
-      if (config.dangerous) {
+      if (config.dangerous && this.obSettings?.generalSettings.warnDangerousConfig !== false) {
         this.messageService.add({
           key: 'br',
           severity: 'warn',

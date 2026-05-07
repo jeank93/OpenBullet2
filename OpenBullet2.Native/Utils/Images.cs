@@ -6,18 +6,49 @@ namespace OpenBullet2.Native.Utils;
 
 public static class Images
 {
-    public static BitmapImage Base64ToBitmapImage(string base64)
-        => BytesToBitmapImage(Convert.FromBase64String(base64));
-
-    public static BitmapImage BytesToBitmapImage(byte[] bytes)
+    public static BitmapImage? Base64ToBitmapImage(string base64)
     {
-        using var ms = new MemoryStream(bytes);
-        var image = new BitmapImage();
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.StreamSource = ms;
-        image.EndInit();
+        if (string.IsNullOrWhiteSpace(base64))
+        {
+            return null;
+        }
 
-        return image;
+        try
+        {
+            return BytesToBitmapImage(Convert.FromBase64String(base64));
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    public static BitmapImage? BytesToBitmapImage(byte[] bytes)
+    {
+        if (bytes.Length == 0)
+        {
+            return null;
+        }
+
+        using var ms = new MemoryStream(bytes);
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.StreamSource = ms;
+            image.EndInit();
+            image.Freeze();
+
+            return image;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
     }
 }

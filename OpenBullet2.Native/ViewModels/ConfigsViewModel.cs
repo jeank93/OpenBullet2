@@ -172,7 +172,7 @@ public class ConfigViewModel(Config config) : ViewModelBase
     public Config Config { get; init; } = config;
 
     public string Id => Config.Id;
-    public BitmapImage Icon => Images.Base64ToBitmapImage(Config.Metadata.Base64Image);
+    public BitmapImage? Icon => Images.Base64ToBitmapImage(Config.Metadata.Base64Image);
     public string Name => Config.Metadata.Name;
     public string Author => Config.Metadata.Author;
     public string Category => Config.Metadata.Category;

@@ -27,4 +27,24 @@ public sealed class ConfigsViewModelTests(WpfAppFixture fixture)
             Assert.True(configsViewModel.IsConfigSelected);
         });
     }
+
+    [Fact]
+    public async Task CreateCollection_WithEmptyConfigIcon_DoesNotThrowAndExposesNullIcon()
+    {
+        await fixture.InvokeAsync(services =>
+        {
+            var rlSettings = services.GetRequiredService<RuriLibSettingsService>();
+            var configService = services.GetRequiredService<ConfigService>();
+            var configsViewModel = services.GetRequiredService<ConfigsViewModel>();
+
+            var config = TestConfigFactory.Create(rlSettings);
+            config.Metadata.Base64Image = string.Empty;
+
+            configService.Configs = [config];
+            configsViewModel.CreateCollection();
+
+            var configViewModel = Assert.Single(configsViewModel.ConfigsCollection);
+            Assert.Null(configViewModel.Icon);
+        });
+    }
 }

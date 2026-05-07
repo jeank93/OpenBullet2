@@ -34,7 +34,9 @@ public static class Methods
     /// Connects to a POP3 server by automatically detecting the host and port.
     /// </summary>
     [Block("Connects to a POP3 server by automatically detecting the host and port")]
-    public static async Task Pop3AutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+    public static async Task Pop3AutoConnect(BotData data, string email, int timeoutMilliseconds = 60000,
+        [BlockParam("Mode", "Choose whether to use only the known entries from pop3domains.dat or all discovery strategies.")]
+        Pop3AutoConnectMode mode = Pop3AutoConnectMode.Full)
     {
         data.Logger.LogHeader();
 
@@ -66,6 +68,11 @@ public static class Methods
             {
                 return;
             }
+        }
+
+        if (mode == Pop3AutoConnectMode.KnownServersOnly)
+        {
+            throw new BlockExecutionException("Exhausted the known POP3 servers from pop3domains.dat, failed to connect!");
         }
 
         // Thunderbird autoconfig
@@ -213,6 +220,13 @@ public static class Methods
 
         throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
+
+    /// <summary>
+    /// Connects to a POP3 server by automatically detecting the host and port.
+    /// </summary>
+    /// <remarks>Backwards-compatible overload without the mode flag.</remarks>
+    public static Task Pop3AutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+        => Pop3AutoConnect(data, email, timeoutMilliseconds, Pop3AutoConnectMode.Full);
 
     private static async Task<bool> TryConnect(BotData data, Pop3Client client, string domain, HostEntry entry)
     {

@@ -37,7 +37,9 @@ public static class Methods
     /// Connects to an IMAP server by automatically detecting the host and port.
     /// </summary>
     [Block("Connects to an IMAP server by automatically detecting the host and port")]
-    public static async Task ImapAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+    public static async Task ImapAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000,
+        [BlockParam("Mode", "Choose whether to use only the known entries from imapdomains.dat or all discovery strategies.")]
+        ImapAutoConnectMode mode = ImapAutoConnectMode.Full)
     {
         data.Logger.LogHeader();
 
@@ -69,6 +71,11 @@ public static class Methods
             {
                 return;
             }
+        }
+
+        if (mode == ImapAutoConnectMode.KnownServersOnly)
+        {
+            throw new BlockExecutionException("Exhausted the known IMAP servers from imapdomains.dat, failed to connect!");
         }
 
         // Thunderbird autoconfig
@@ -216,6 +223,13 @@ public static class Methods
 
         throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
+
+    /// <summary>
+    /// Connects to an IMAP server by automatically detecting the host and port.
+    /// </summary>
+    /// <remarks>Backwards-compatible overload without the mode flag.</remarks>
+    public static Task ImapAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+        => ImapAutoConnect(data, email, timeoutMilliseconds, ImapAutoConnectMode.Full);
 
     private static async Task<bool> TryConnect(BotData data, ImapClient client, string domain, HostEntry entry)
     {

@@ -36,7 +36,9 @@ public static class Methods
     /// Connects to a SMTP server by automatically detecting the host and port.
     /// </summary>
     [Block("Connects to a SMTP server by automatically detecting the host and port")]
-    public static async Task SmtpAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+    public static async Task SmtpAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000,
+        [BlockParam("Mode", "Choose whether to use only the known entries from smtpdomains.dat or all discovery strategies.")]
+        SmtpAutoConnectMode mode = SmtpAutoConnectMode.Full)
     {
         data.Logger.LogHeader();
 
@@ -67,6 +69,11 @@ public static class Methods
             {
                 return;
             }
+        }
+
+        if (mode == SmtpAutoConnectMode.KnownServersOnly)
+        {
+            throw new BlockExecutionException("Exhausted the known SMTP servers from smtpdomains.dat, failed to connect!");
         }
 
         // Thunderbird autoconfig
@@ -218,6 +225,13 @@ public static class Methods
         throw new BlockExecutionException("Exhausted all possibilities, failed to connect!");
     }
 
+    /// <summary>
+    /// Connects to a SMTP server by automatically detecting the host and port.
+    /// </summary>
+    /// <remarks>Backwards-compatible overload without the mode flag.</remarks>
+    public static Task SmtpAutoConnect(BotData data, string email, int timeoutMilliseconds = 60000)
+        => SmtpAutoConnect(data, email, timeoutMilliseconds, SmtpAutoConnectMode.Full);
+
     private static async Task<bool> TryConnect(BotData data, SmtpClient client, string domain, HostEntry entry)
     {
         data.Logger.Log($"Trying {entry.Host} on port {entry.Port}...", LogColors.LightBrown);
@@ -230,6 +244,7 @@ public static class Methods
             if (!client.Capabilities.HasFlag(SmtpCapabilities.Authentication))
             {
                 data.Logger.Log($"Server doesn't support authentication, trying another one...");
+                await client.DisconnectAsync(true, data.CancellationToken).ConfigureAwait(false);
                 return false;
             }
 

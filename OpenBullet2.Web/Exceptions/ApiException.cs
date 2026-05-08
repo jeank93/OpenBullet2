@@ -105,6 +105,11 @@ public static class ErrorCode
     public const string FileOutsideAllowedPath = "FILE_OUTSIDE_ALLOWED_PATH";
 
     /// <summary>
+    /// Script files are not allowed for this operation.
+    /// </summary>
+    public const string ScriptFileNotAllowed = "SCRIPT_FILE_NOT_ALLOWED";
+
+    /// <summary>
     /// Remote resource not found.
     /// </summary>
     public const string RemoteResourceNotFound = "REMOTE_RESOURCE_NOT_FOUND";

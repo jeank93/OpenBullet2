@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Models.Proxies;
@@ -19,6 +20,7 @@ using OpenBullet2.Web.Extensions;
 using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Models.Identity;
 using OpenBullet2.Web.Utils;
+using RuriLib.Extensions;
 using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Hits.HitOutputs;
 using RuriLib.Models.Jobs;
@@ -46,6 +48,7 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
     private readonly IObjectMapper _mapper = mapper;
     private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
     private readonly IRecordRepository _recordRepo = recordRepo;
+    private static readonly string[] ScriptExtensions = [".bat", ".ps1", ".sh"];
 
     /// <summary>
     /// Get overview information about all jobs.
@@ -243,6 +246,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         var apiUser = HttpContext.GetApiUser();
         var jobOptions = _mapper.Map<MultiRunJobOptions>(dto);
 
+        ValidateGuestLocalFileUsage(apiUser, jobOptions);
+
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
@@ -342,6 +347,8 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         EnsureOwnership(entity);
 
         var jobOptions = _mapper.Map<MultiRunJobOptions>(dto);
+
+        ValidateGuestLocalFileUsage(HttpContext.GetApiUser(), jobOptions);
 
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
@@ -1071,4 +1078,28 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
             ProxyCheckJob => JobType.ProxyCheck,
             _ => throw new NotImplementedException()
         };
+
+    private static void ValidateGuestLocalFileUsage(ApiUser apiUser, MultiRunJobOptions jobOptions)
+    {
+        if (apiUser.Role is not UserRole.Guest)
+        {
+            return;
+        }
+
+        if (jobOptions.DataPool is FileDataPoolOptions fileDataPool
+            && !fileDataPool.FileName.IsSubPathOf(Globals.UserDataFolder))
+        {
+            throw new ForbiddenException(
+                ErrorCode.FileOutsideAllowedPath,
+                $"Guest users cannot access files outside of the {Globals.UserDataFolder} folder");
+        }
+
+        if (jobOptions.ProxySources.OfType<FileProxySourceOptions>().Any(ps =>
+                ScriptExtensions.Contains(Path.GetExtension(ps.FileName), StringComparer.OrdinalIgnoreCase)))
+        {
+            throw new ForbiddenException(
+                ErrorCode.ScriptFileNotAllowed,
+                "Guest users cannot use script-based proxy sources");
+        }
+    }
 }

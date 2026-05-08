@@ -22,16 +22,14 @@ namespace OpenBullet2.Web.Controllers;
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
 public class WordlistController(IWordlistRepository wordlistRepo,
-    IConfiguration config,
     IGuestRepository guestRepo, IObjectMapper mapper,
     ILogger<WordlistController> logger) : ApiController
 {
-    private readonly string _baseDir = config.GetSection("Settings")
-            .GetValue<string>("UserDataFolder") ?? "UserData";
     private readonly IGuestRepository _guestRepo = guestRepo;
     private readonly ILogger<WordlistController> _logger = logger;
     private readonly IObjectMapper _mapper = mapper;
     private readonly IWordlistRepository _wordlistRepo = wordlistRepo;
+    private static readonly string[] ScriptExtensions = [".bat", ".ps1", ".sh"];
 
     /// <summary>
     /// Get a wordlist by id.
@@ -114,14 +112,14 @@ public class WordlistController(IWordlistRepository wordlistRepo,
 
         // If the user is a guest, make sure they are not accessing
         // anything outside the UserData folder.
-        if (apiUser.Role is UserRole.Guest && !dto.FilePath.IsSubPathOf(_baseDir))
+        if (apiUser.Role is UserRole.Guest && !dto.FilePath.IsSubPathOf(Globals.UserDataFolder))
         {
             _logger.LogWarning(
                 "Guest user {Username} tried to access a file outside of the allowed directory while creating a wordlist at {FilePath}",
                 apiUser.Username, dto.FilePath);
 
             throw new ForbiddenException(ErrorCode.FileOutsideAllowedPath,
-                $"Guest users cannot access files outside of the {_baseDir} folder");
+                $"Guest users cannot access files outside of the {Globals.UserDataFolder} folder");
         }
 
         // Make sure the file exists
@@ -171,8 +169,28 @@ public class WordlistController(IWordlistRepository wordlistRepo,
     [RequestSizeLimit(long.MaxValue)]
     public async Task<ActionResult<WordlistFileDto>> Upload(IFormFile file, CancellationToken cancellationToken)
     {
+        var uploadedFileName = Path.GetFileName(file.FileName);
+
+        if (string.IsNullOrWhiteSpace(uploadedFileName))
+        {
+            throw new BadRequestException(
+                ErrorCode.ValidationError, "The uploaded file name is invalid");
+        }
+
+        if (ScriptExtensions.Contains(Path.GetExtension(uploadedFileName),
+                StringComparer.OrdinalIgnoreCase))
+        {
+            throw new ForbiddenException(
+                ErrorCode.ScriptFileNotAllowed,
+                "Uploading script files as wordlists is not allowed");
+        }
+
+        var safeFileName = FileUtils.ReplaceInvalidFileNameChars(uploadedFileName);
+        var wordlistsDir = Path.Combine(Globals.UserDataFolder, "Wordlists");
+        Directory.CreateDirectory(wordlistsDir);
+
         var path = FileUtils.GetFirstAvailableFileName(
-            Path.Combine(_baseDir, "Wordlists", file.FileName));
+            Path.Combine(wordlistsDir, safeFileName));
 
         await using var fileStream = System.IO.File.OpenWrite(path);
         await file.CopyToAsync(fileStream, cancellationToken);

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core;
@@ -6,6 +7,7 @@ using OpenBullet2.Core.Entities;
 using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.Wordlist;
 using OpenBullet2.Web.Exceptions;
+using OpenBullet2.Web.Models.Errors;
 using OpenBullet2.Web.Tests.Extensions;
 using RuriLib.Extensions;
 using Xunit;
@@ -553,6 +555,31 @@ public class WordlistIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.NotNull(dto);
         Assert.True(dto.FilePath.IsSubPathOf(
             Path.Combine(UserDataFolder, "Wordlists")));
+    }
+
+    [Fact]
+    public async Task UploadWordlistFile_ScriptExtension_Forbidden()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        await using var stream = new MemoryStream("echo test"u8.ToArray());
+        var content = new MultipartFormDataContent
+        {
+            { new StreamContent(stream), "file", "test.sh" }
+        };
+
+        // Act
+        var response = await client.PostAsync(
+            "/api/v1/wordlist/upload", content, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+        var dto = await response.Content.ReadFromJsonAsync<ApiError>(
+            JsonSerializerOptions, TestCancellationToken);
+
+        Assert.NotNull(dto);
+        Assert.Equal(ErrorCode.ScriptFileNotAllowed, dto.ErrorCode);
     }
 
     [Fact]

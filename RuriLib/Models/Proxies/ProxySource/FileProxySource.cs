@@ -39,6 +39,12 @@ public class FileProxySource : ProxySource
         var fileExtension = (Path.GetExtension(FileName) ?? string.Empty).ToLowerInvariant();
         if (fileExtension.Length != 0 && supportedScripts.Contains(fileExtension))
         {
+            if (UserId > 0)
+            {
+                throw new UnauthorizedAccessException(
+                    "Script-based proxy sources are not allowed for guest users");
+            }
+
             var locker = asyncLocker ?? throw new ObjectDisposedException(nameof(FileProxySource));
 
             // The file is a script.

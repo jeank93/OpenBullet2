@@ -25,6 +25,7 @@ using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Hits;
 using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.StartConditions;
+using RuriLib.Models.Proxies;
 using RuriLib.Services;
 using Xunit;
 
@@ -1096,6 +1097,65 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(guest.Id, resultJob.OwnerId);
     }
 
+    [Fact]
+    public async Task CreateMultiRunJob_Guest_ScriptFileProxySource_Forbidden()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var configRepository = GetRequiredService<IConfigRepository>();
+        var config = new Config
+        {
+            Id = Guid.NewGuid().ToString(),
+            Metadata = new ConfigMetadata { Name = "Test Config" }
+        };
+        await configRepository.SaveAsync(config);
+
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
+        dbContext.Guests.Add(guest);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        RequireLogin();
+        ImpersonateGuest(client, guest);
+
+        var dto = new CreateMultiRunJobDto
+        {
+            Name = "Test MRJ",
+            ConfigId = config.Id,
+            Bots = 10,
+            ProxyMode = JobProxyMode.On,
+            DataPool = JsonSerializer.SerializeToElement(new InfiniteDataPoolOptionsDto
+            {
+                PolyTypeName = "infiniteDataPool"
+            }, JsonSerializerOptions),
+            HitOutputs = [JsonSerializer.SerializeToElement(new DatabaseHitOutputOptionsDto
+            {
+                PolyTypeName = "databaseHitOutput"
+            }, JsonSerializerOptions)],
+            ProxySources = [JsonSerializer.SerializeToElement(new FileProxySourceOptionsDto
+            {
+                FileName = Path.Combine(UserDataFolder, "Wordlists", "guest-proxies.ps1"),
+                DefaultType = ProxyType.Http,
+                PolyTypeName = "fileProxySource"
+            }, JsonSerializerOptions)],
+            StartCondition = JsonSerializer.SerializeToElement(new RelativeTimeStartConditionDto
+            {
+                StartAfter = TimeSpan.FromSeconds(1),
+                PolyTypeName = "relativeTimeStartCondition"
+            }, JsonSerializerOptions)
+        };
+
+        // Act
+        var result = await PostJsonAsync<MultiRunJobDto>(
+            client, "/api/v1/job/multi-run", dto);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(HttpStatusCode.Forbidden, result.Error.Response.StatusCode);
+        Assert.Equal(ErrorCode.ScriptFileNotAllowed, result.Error.Content!.ErrorCode);
+        Assert.Empty(await dbContext.Jobs.ToListAsync(TestCancellationToken));
+    }
+
     // Admin can create a proxy check job
     [Fact]
     public async Task CreateProxyCheckJob_Admin_Success()
@@ -1463,6 +1523,85 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         mrJob = jobManager.Jobs.OfType<MultiRunJob>().Single();
         Assert.Equal(dto.Name, mrJob.Name);
+    }
+
+    [Fact]
+    public async Task UpdateMultiRunJob_Guest_ScriptFileProxySource_Forbidden()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        var guest = new GuestEntity { Id = 1, Username = "guest", AccessExpiration = DateTime.MaxValue };
+        dbContext.Guests.Add(guest);
+        var mrJob = CreateMultiRunJob();
+        mrJob.Name = "Test MRJ";
+        mrJob.Id = 1;
+        mrJob.OwnerId = guest.Id;
+        var jobEntity = CreateMultiRunJobEntity(mrJob);
+        jobEntity.Id = mrJob.Id;
+        jobEntity.Owner = guest;
+        dbContext.Jobs.Add(jobEntity);
+        jobManager.AddJob(mrJob);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        RequireLogin();
+        ImpersonateGuest(client, guest);
+
+        var configRepository = GetRequiredService<IConfigRepository>();
+        var config = new Config
+        {
+            Id = Guid.NewGuid().ToString(),
+            Metadata = new ConfigMetadata { Name = "Test Config" }
+        };
+        await configRepository.SaveAsync(config);
+
+        var dto = new UpdateMultiRunJobDto
+        {
+            Id = mrJob.Id,
+            Name = "Test MRJ2",
+            ConfigId = config.Id,
+            Bots = 10,
+            Skip = 5,
+            ProxyMode = JobProxyMode.On,
+            DataPool = JsonSerializer.SerializeToElement(new InfiniteDataPoolOptionsDto
+            {
+                PolyTypeName = "infiniteDataPool"
+            }, JsonSerializerOptions),
+            HitOutputs =
+            [
+                JsonSerializer.SerializeToElement(new DatabaseHitOutputOptionsDto
+                {
+                    PolyTypeName = "databaseHitOutput"
+                }, JsonSerializerOptions)
+            ],
+            ProxySources =
+            [
+                JsonSerializer.SerializeToElement(new FileProxySourceOptionsDto
+                {
+                    FileName = Path.Combine(UserDataFolder, "Wordlists", "guest-proxies.sh"),
+                    DefaultType = ProxyType.Http,
+                    PolyTypeName = "fileProxySource"
+                }, JsonSerializerOptions)
+            ],
+            StartCondition = JsonSerializer.SerializeToElement(new RelativeTimeStartConditionDto
+            {
+                StartAfter = TimeSpan.FromSeconds(1),
+                PolyTypeName = "relativeTimeStartCondition"
+            }, JsonSerializerOptions)
+        };
+
+        // Act
+        var response = await PutJsonAsync<MultiRunJobDto>(
+            client, "/api/v1/job/multi-run", dto);
+
+        // Assert
+        Assert.False(response.IsSuccess);
+        Assert.Equal(HttpStatusCode.Forbidden, response.Error.Response.StatusCode);
+        Assert.Equal(ErrorCode.ScriptFileNotAllowed, response.Error.Content!.ErrorCode);
+
+        mrJob = jobManager.Jobs.OfType<MultiRunJob>().Single();
+        Assert.Equal("Test MRJ", mrJob.Name);
     }
 
     // Admin can update a proxy check job

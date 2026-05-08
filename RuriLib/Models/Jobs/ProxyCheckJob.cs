@@ -260,17 +260,17 @@ public class ProxyCheckJob : Job
             if (SuccessKey is null)
                 throw new NullReferenceException("The success key cannot be null");
 
-            var proxies = CheckOnlyUntested
+            var proxies = (CheckOnlyUntested
                 ? Proxies.Where(p => p.WorkingStatus == ProxyWorkingStatus.Untested)
-                : Proxies;
+                : Proxies).ToList();
 
             // Update the stats
-            Total = proxies.Count();
+            Total = proxies.Count;
             Tested = proxies.Count(p => p.WorkingStatus != ProxyWorkingStatus.Untested);
             Working = proxies.Count(p => p.WorkingStatus == ProxyWorkingStatus.Working);
             NotWorking = proxies.Count(p => p.WorkingStatus == ProxyWorkingStatus.NotWorking);
 
-            if (!proxies.Any())
+            if (proxies.Count == 0)
                 throw new Exception("No proxies provided to check");
 
             Status = JobStatus.Waiting;
@@ -285,7 +285,7 @@ public class ProxyCheckJob : Job
             var workItems = proxies.Select(p => new ProxyCheckInput(p, Url, SuccessKey, Timeout, GeoProvider));
             parallelizer = ParallelizerFactory<ProxyCheckInput, Proxy>
                 .Create(settings.RuriLibSettings.GeneralSettings.ParallelizerType, workItems,
-                workFunction, Bots, Proxies.Count(), 0, BotLimit);
+                workFunction, Bots, proxies.Count, 0, BotLimit);
 
             parallelizer.NewResult += UpdateProxy;
             parallelizer.ProgressChanged += PropagateProgress;

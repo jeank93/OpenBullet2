@@ -1,12 +1,19 @@
 using RuriLib.Functions.Http;
 using RuriLib.Functions.Http.Options;
 using RuriLib.Functions.Networking;
+using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
+using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace RuriLib.Tests.Functions.Http;
 
 public class HttpModelTests
 {
+    private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
+
     [Fact]
     public void HttpOptions_HaveExpectedDefaults()
     {
@@ -74,5 +81,34 @@ public class HttpModelTests
 
         Assert.Equal("example.com", entry.Host);
         Assert.Equal(443, entry.Port);
+    }
+
+    [Fact]
+    public async Task CreateMultipartContent_StringWithoutContentType_OmitsHeader()
+    {
+        using var content = HttpRequestHandler.CreateMultipartContent(
+            new StringHttpContent("field", "hello", string.Empty));
+
+        Assert.Null(content.Headers.ContentType);
+        Assert.Equal("hello", await content.ReadAsStringAsync(TestCancellationToken));
+    }
+
+    [Fact]
+    public void CreateMultipartContent_RawWithoutContentType_OmitsHeader()
+    {
+        using var content = HttpRequestHandler.CreateMultipartContent(
+            new RawHttpContent("field", Encoding.UTF8.GetBytes("hello"), string.Empty));
+
+        Assert.Null(content.Headers.ContentType);
+    }
+
+    [Fact]
+    public void CreateMultipartContent_FileWithoutContentType_OmitsHeader()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("hello"));
+        using var content = HttpRequestHandler.CreateMultipartContent(
+            new FileHttpContent("field", "hello.txt", string.Empty), stream);
+
+        Assert.Null(content.Headers.ContentType);
     }
 }

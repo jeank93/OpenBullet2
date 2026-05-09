@@ -43,6 +43,39 @@ internal abstract class HttpRequestHandler
         return $"------WebKitFormBoundary{builder.ToString().ToLowerInvariant()}";
     }
 
+    internal static HttpContent CreateMultipartContent(MyHttpContent content, Stream? fileStream = null)
+        => content switch
+        {
+            StringHttpContent x => CreateStringContent(x),
+            RawHttpContent x => CreateRawContent(x),
+            FileHttpContent x when fileStream is not null
+                => CreateFileContent(fileStream, x.Name, Path.GetFileName(x.FileName), x.ContentType),
+            FileHttpContent => throw new ArgumentNullException(nameof(fileStream)),
+            _ => throw new NotSupportedException($"Unsupported multipart content type: {content.GetType().Name}")
+        };
+
+    private static HttpContent CreateStringContent(StringHttpContent content)
+    {
+        if (string.IsNullOrWhiteSpace(content.ContentType))
+        {
+            return new ByteArrayContent(Encoding.UTF8.GetBytes(content.Data));
+        }
+
+        return new StringContent(content.Data, Encoding.UTF8, content.ContentType);
+    }
+
+    private static HttpContent CreateRawContent(RawHttpContent content)
+    {
+        var byteContent = new ByteArrayContent(content.Data);
+
+        if (!string.IsNullOrWhiteSpace(content.ContentType))
+        {
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue(content.ContentType);
+        }
+
+        return byteContent;
+    }
+
     protected static StreamContent CreateFileContent(Stream stream, string fieldName, string fileName, string contentType)
     {
         var fileContent = new StreamContent(stream);
@@ -51,7 +84,12 @@ internal abstract class HttpRequestHandler
             Name = $"\"{fieldName}\"",
             FileName = $"\"{fileName}\""
         }; // the extra quotes are key here
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        if (!string.IsNullOrWhiteSpace(contentType))
+        {
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        }
+
         return fileContent;
     }
 
@@ -70,21 +108,30 @@ internal abstract class HttpRequestHandler
             {
                 case StringHttpContent x:
                     writer.WriteLine($"Content-Disposition: form-data; name={x.Name}");
-                    writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    if (!string.IsNullOrWhiteSpace(x.ContentType))
+                    {
+                        writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    }
                     writer.WriteLine();
                     writer.WriteLine(x.Data);
                     break;
 
                 case RawHttpContent x:
                     writer.WriteLine($"Content-Disposition: form-data; name={x.Name}");
-                    writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    if (!string.IsNullOrWhiteSpace(x.ContentType))
+                    {
+                        writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    }
                     writer.WriteLine();
                     writer.WriteLine(Encoding.UTF8.GetString(x.Data));
                     break;
 
                 case FileHttpContent x:
                     writer.WriteLine($"Content-Disposition: form-data; name=\"{x.Name}\"; filename=\"{Path.GetFileName(x.FileName)}\"");
-                    writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    if (!string.IsNullOrWhiteSpace(x.ContentType))
+                    {
+                        writer.WriteLine($"Content-Type: {GetMediaHeaderString(x.ContentType)}");
+                    }
                     writer.WriteLine();
                     writer.WriteLine("[FILE CONTENTS NOT LOGGED]");
                     break;

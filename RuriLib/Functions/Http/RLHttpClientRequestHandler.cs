@@ -195,13 +195,11 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
             switch (c)
             {
                 case StringHttpContent x:
-                    multipartContent.Add(new StringContent(x.Data, Encoding.UTF8, x.ContentType), x.Name);
+                    multipartContent.Add(CreateMultipartContent(x), x.Name);
                     break;
 
                 case RawHttpContent x:
-                    var byteContent = new ByteArrayContent(x.Data);
-                    byteContent.Headers.ContentType = new MediaTypeHeaderValue(x.ContentType);
-                    multipartContent.Add(byteContent, x.Name);
+                    multipartContent.Add(CreateMultipartContent(x), x.Name);
                     break;
 
                 case FileHttpContent x:
@@ -213,7 +211,7 @@ internal class RLHttpClientRequestHandler : HttpRequestHandler
                         }
 
                         fileStream = new FileStream(x.FileName, FileMode.Open);
-                        var fileContent = CreateFileContent(fileStream, x.Name, Path.GetFileName(x.FileName), x.ContentType);
+                        var fileContent = CreateMultipartContent(x, fileStream);
                         multipartContent.Add(fileContent, x.Name);
                     }
                     break;

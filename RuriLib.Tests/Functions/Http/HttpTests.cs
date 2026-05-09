@@ -155,6 +155,32 @@ public class HttpTests
             response.Headers["Authorization"]);
     }
 
+    [Fact]
+    public async Task HttpRequestStandard_HttpsToHttpRedirect_Verify()
+    {
+        await using var httpServer = LocalHttpResponseServer.CreateDelayed(
+            TimeSpan.Zero,
+            Encoding.UTF8.GetBytes("""{"redirected":true}"""),
+            "Content-Type: application/json");
+        await using var httpsServer = new LocalHttpsRedirectServer(
+            LocalHttpsRedirectServer.CreateSelfSignedCertificate("localhost"),
+            new Uri($"{httpServer.Uri}final"));
+        var data = NewBotData();
+
+        var options = new StandardHttpRequestOptions
+        {
+            Url = $"{httpsServer.Uri}start",
+            Method = HttpMethod.GET,
+            HttpLibrary = HttpLibrary.RuriLibHttp
+        };
+
+        await Methods.HttpRequestStandard(data, options);
+
+        Assert.Equal(200, data.RESPONSECODE);
+        Assert.Equal("""{"redirected":true}""", data.SOURCE);
+        Assert.Equal($"{httpServer.Uri}final", data.ADDRESS);
+    }
+
     [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]

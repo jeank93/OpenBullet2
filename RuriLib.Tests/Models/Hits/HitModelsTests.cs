@@ -42,6 +42,32 @@ public class HitModelsTests
     }
 
     [Fact]
+    public void Hit_ToString_OmitsSeparatorWhenCapturedDataIsEmpty()
+    {
+        var hit = new Hit
+        {
+            Data = new DataLine("user:pass", new WordlistType())
+        };
+
+        Assert.Equal("user:pass", hit.ToString());
+    }
+
+    [Fact]
+    public void Hit_ToString_JoinsDataAndCapturedDataWhenBothArePresent()
+    {
+        var hit = new Hit
+        {
+            Data = new DataLine("user:pass", new WordlistType()),
+            CapturedData = new Dictionary<string, object>
+            {
+                ["TOKEN"] = "abc"
+            }
+        };
+
+        Assert.Equal("user:pass | TOKEN = abc", hit.ToString());
+    }
+
+    [Fact]
     public async Task FileSystemHitOutput_Store_WritesUsingEnvironmentNewLine()
     {
         var baseDir = Path.Combine(Path.GetTempPath(), $"ob2-hit-output-{Guid.NewGuid():N}");

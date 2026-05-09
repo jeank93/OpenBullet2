@@ -46,7 +46,8 @@ public class Hit
     /// Returns a compact string representation of the hit.
     /// </summary>
     /// <returns>The formatted hit string.</returns>
-    public override string ToString() => $"{DataString} | {CapturedDataString}";
+    public override string ToString()
+        => string.Join(" | ", new[] { DataString, CapturedDataString }.Where(s => !string.IsNullOrEmpty(s)));
 
     private string ConvertCapturedData()
     {

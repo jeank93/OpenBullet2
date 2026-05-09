@@ -1,8 +1,11 @@
 using RuriLib.Logging;
 using RuriLib.Models.Configs;
+using RuriLib.Models.Data.Rules;
 using RuriLib.Models.Debugger;
+using RuriLib.Models.Environment;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -95,6 +98,82 @@ public class ConfigDebuggerTests
         await Assert.ThrowsAsync<FormatException>(() => debugger.Run());
 
         Assert.Equal(ConfigDebuggerStatus.Idle, debugger.Status);
+    }
+
+    [Fact]
+    public async Task Run_WhenTestDataDoesNotMatchWordlistRegex_LogsWarning()
+    {
+        using var debugger = CreateDebugger(new Config
+        {
+            Id = "wordlist-warning-test",
+            Mode = ConfigMode.Legacy,
+            LoliScript = "PRINT \"done\""
+        }, new DebuggerOptions
+        {
+            TestData = "abc",
+            WordlistType = "StrictNumeric"
+        });
+
+        debugger.RuriLibSettings = CreateSettingsService(settings =>
+        {
+            settings.Environment.WordlistTypes.Add(new WordlistType
+            {
+                Name = "StrictNumeric",
+                Regex = "^[0-9]+$",
+                Verify = true,
+                Separator = string.Empty,
+                Slices = ["DATA"]
+            });
+        });
+        debugger.RNGProvider = new global::RuriLib.Providers.RandomNumbers.DefaultRNGProvider();
+        debugger.PluginRepo = CreatePluginRepository();
+
+        await debugger.Run();
+
+        Assert.Contains(debugger.Logger.Entries, e => e.Message.Contains(
+            "WARNING: The test input data did not respect the validity regex for the selected wordlist type!",
+            StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Run_WhenTestDataDoesNotMatchDataRules_LogsWarning()
+    {
+        using var debugger = CreateDebugger(new Config
+        {
+            Id = "data-rules-warning-test",
+            Mode = ConfigMode.Legacy,
+            LoliScript = "PRINT \"done\"",
+            Settings =
+            {
+                DataSettings =
+                {
+                    DataRules =
+                    [
+                        new SimpleDataRule
+                        {
+                            SliceName = "DATA",
+                            Comparison = StringRule.EqualTo,
+                            StringToCompare = "expected",
+                            CaseSensitive = true
+                        }
+                    ]
+                }
+            }
+        }, new DebuggerOptions
+        {
+            TestData = "actual",
+            WordlistType = "Default"
+        });
+
+        debugger.RuriLibSettings = CreateSettingsService();
+        debugger.RNGProvider = new global::RuriLib.Providers.RandomNumbers.DefaultRNGProvider();
+        debugger.PluginRepo = CreatePluginRepository();
+
+        await debugger.Run();
+
+        Assert.Contains(debugger.Logger.Entries, e => e.Message.Contains(
+            "WARNING: The test input data did not respect the data rules of this config!",
+            StringComparison.Ordinal));
     }
 
     [Fact]
@@ -199,8 +278,15 @@ public class ConfigDebuggerTests
     private static ConfigDebugger CreateDebugger(Config config, DebuggerOptions? options = null)
         => new(config, options ?? new DebuggerOptions(), new BotLogger());
 
-    private static global::RuriLib.Services.RuriLibSettingsService CreateSettingsService()
-        => new(Path.Combine(Path.GetTempPath(), $"ob2-config-debugger-tests-{Guid.NewGuid():N}"));
+    private static global::RuriLib.Services.RuriLibSettingsService CreateSettingsService(
+        Action<global::RuriLib.Services.RuriLibSettingsService>? configure = null)
+    {
+        var settings = new global::RuriLib.Services.RuriLibSettingsService(
+            Path.Combine(Path.GetTempPath(), $"ob2-config-debugger-tests-{Guid.NewGuid():N}"));
+
+        configure?.Invoke(settings);
+        return settings;
+    }
 
     private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-plugin-repo-tests-{Guid.NewGuid():N}"));

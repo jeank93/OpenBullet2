@@ -253,6 +253,66 @@
             </button>
         </div>
     </div>
+    <div class="row mt-4 align-items-end">
+        <div class="col-12 col-lg">
+            <span class="d-block mb-2">Test your data here</span>
+            <app-input-text key="testDataForRules"
+                class="input-small w-100"
+                ngDefaultControl
+                (ngModelChange)="clearRuleTestResults()"
+                [(ngModel)]="testDataForRules"
+                placeholder="my data" />
+        </div>
+        <div class="col-12 col-lg-auto mt-3 ml-2 mt-lg-0">
+            <app-input-dropdown key="testWordlistTypeForRules"
+                itemClass="input-small" optionClass="input-small"
+                ngDefaultControl
+                [options]="wordlistTypes"
+                (ngModelChange)="clearRuleTestResults()"
+                [(ngModel)]="testWordlistTypeForRules" />
+        </div>
+        <div class="col-12 col-lg-auto mt-3 ml-2 mt-lg-0 text-right">
+            <button class="button button-secondary"
+                (click)="clearRuleTestResults()">
+                Clear
+            </button>
+            <button class="button button-accent ml-2"
+                (click)="testDataRules()">
+                Test
+            </button>
+        </div>
+    </div>
+    <div class="row mt-3" *ngIf="ruleTestResult !== null">
+        <div class="col-12">
+            <div class="rule-test-panel">
+                <div class="d-flex align-items-center justify-content-between flex-wrap">
+                    <span class="font-weight-bold">Regex Validation</span>
+                    <span [class]="ruleTestResult.regexValidation.passed ? 'color-good' : 'color-bad'">
+                        <app-boolean-icon [value]="ruleTestResult.regexValidation.passed" [useColors]="true"></app-boolean-icon>
+                        {{ ruleTestResult.regexValidation.passed ? 'Passed' : 'Invalid' }}
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <span class="d-block font-weight-bold">Slices by separator</span>
+                    <div *ngFor="let slice of ruleTestResult.slices" class="rule-test-item monospace">
+                        <span class="color-inactive">{{ slice.name }}</span> = {{ slice.value }}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="d-block font-weight-bold">Results</span>
+                    <div *ngIf="ruleTestResult.results.length === 0" class="rule-test-item color-inactive">
+                        No data rules configured.
+                    </div>
+                    <div *ngFor="let result of ruleTestResult.results" class="rule-test-item">
+                        <span [class]="result.passed ? 'color-good' : 'color-bad'">
+                            <app-boolean-icon [value]="result.passed" [useColors]="true"></app-boolean-icon>
+                        </span>
+                        <span class="ml-2">{{ result.text }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row mt-5 justify-content-between">
         <div class="col-4">
             <h6 class="font-weight-bold">Resources</h6>

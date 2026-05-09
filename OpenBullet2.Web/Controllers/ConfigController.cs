@@ -18,6 +18,8 @@ using RuriLib.Helpers.Blocks;
 using RuriLib.Helpers.Transpilers;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Configs;
+using RuriLib.Models.Data;
+using RuriLib.Models.Data.Rules;
 using RuriLib.Models.Debugger;
 using RuriLib.Models.Trees;
 using RuriLib.Services;
@@ -36,6 +38,7 @@ public class ConfigController : ApiController
     private readonly ILogger<ConfigController> _logger;
     private readonly IObjectMapper _mapper;
     private readonly OpenBulletSettingsService _obSettingsService;
+    private readonly RuriLibSettingsService _rlSettingsService;
     private readonly LoliCodeAutocompletionService _loliCodeAutocompletionService;
     private readonly ConfigDebuggerService _configDebuggerService;
     private readonly PluginRepository _pluginRepository;
@@ -46,6 +49,7 @@ public class ConfigController : ApiController
         PluginRepository pluginRepository, HttpClient httpClient,
         ConfigService configService, IObjectMapper mapper,
         OpenBulletSettingsService obSettingsService,
+        RuriLibSettingsService rlSettingsService,
         LoliCodeAutocompletionService loliCodeAutocompletionService,
         ConfigDebuggerService configDebuggerService,
         ILogger<ConfigController> logger)
@@ -56,6 +60,7 @@ public class ConfigController : ApiController
         _configService = configService;
         _mapper = mapper;
         _obSettingsService = obSettingsService;
+        _rlSettingsService = rlSettingsService;
         _loliCodeAutocompletionService = loliCodeAutocompletionService;
         _configDebuggerService = configDebuggerService;
         _logger = logger;
@@ -523,6 +528,79 @@ public class ConfigController : ApiController
     }
 
     /// <summary>
+    /// Test a data line against a wordlist type and a set of data rules.
+    /// </summary>
+    [TypeFilter<AdminFilter>]
+    [HttpPost("test-data-rules")]
+    [MapToApiVersion("1.0")]
+    public ActionResult<TestDataRulesResultDto> TestDataRules(TestDataRulesDto dto)
+    {
+        var wordlistType = _rlSettingsService.Environment.WordlistTypes
+            .FirstOrDefault(w => w.Name == dto.WordlistType)
+            ?? throw new ApiException(ErrorCode.WordlistNotFound,
+                $"Wordlist type {dto.WordlistType} was not found");
+
+        var dataLine = new DataLine(dto.TestData, wordlistType);
+        var slices = dataLine.GetVariables()
+            .Select(v => new TestDataRuleSliceDto
+            {
+                Name = v.Name,
+                Value = v.AsString()
+            })
+            .ToList();
+
+        var rules = dto.DataRules.Simple
+            .Select(rule => (DataRule)_mapper.Map<SimpleDataRule>(rule))
+            .Concat(dto.DataRules.Regex.Select(rule => (DataRule)_mapper.Map<RegexDataRule>(rule)))
+            .ToList();
+
+        var results = new List<TestDataRuleResultDto>();
+
+        foreach (var rule in rules)
+        {
+            var slice = slices.FirstOrDefault(v => v.Name == rule.SliceName);
+
+            if (slice is null)
+            {
+                results.Add(new TestDataRuleResultDto
+                {
+                    Text = $"Invalid slice name: {rule.SliceName}",
+                    Passed = false
+                });
+                continue;
+            }
+
+            try
+            {
+                results.Add(new TestDataRuleResultDto
+                {
+                    Text = GetRuleText(rule),
+                    Passed = rule.IsSatisfied(slice.Value)
+                });
+            }
+            catch (Exception ex)
+            {
+                results.Add(new TestDataRuleResultDto
+                {
+                    Text = ex.Message,
+                    Passed = false
+                });
+            }
+        }
+
+        return new TestDataRulesResultDto
+        {
+            WordlistType = dto.WordlistType,
+            RegexValidation = new TestDataRegexValidationDto
+            {
+                Passed = dataLine.IsValid
+            },
+            Slices = slices,
+            Results = results
+        };
+    }
+
+    /// <summary>
     /// Get a remote image (used to bypass CORS).
     /// </summary>
     [TypeFilter<AdminFilter>]
@@ -534,6 +612,18 @@ public class ConfigController : ApiController
         var imageStream = await _httpClient.GetStreamAsync(url, cancellationToken);
 
         return File(imageStream, "image/png");
+    }
+
+    private static string GetRuleText(DataRule rule)
+    {
+        return rule switch
+        {
+            RegexDataRule regexDataRule
+                => $"{regexDataRule.SliceName} must{(regexDataRule.Invert ? " not" : "")} match regex {regexDataRule.RegexToMatch}",
+            SimpleDataRule simpleDataRule
+                => $"{simpleDataRule.SliceName} must{(simpleDataRule.Invert ? " not" : "")} respect: {simpleDataRule.Comparison} {simpleDataRule.StringToCompare}",
+            _ => throw new NotImplementedException()
+        };
     }
 
     private static CategoryTreeNodeDto MapCategoryTreeNode(CategoryTreeNode node)

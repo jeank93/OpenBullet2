@@ -10,6 +10,7 @@ import {
   SimpleDataRuleDto,
   StringRule,
 } from 'src/app/main/dtos/config/config.dto';
+import { TestDataRulesResultDto } from 'src/app/main/dtos/config/test-data-rules.dto';
 import { EnvironmentSettingsDto } from 'src/app/main/dtos/settings/environment-settings.dto';
 import { ProxyType } from 'src/app/main/enums/proxy-type';
 import { ConfigService } from 'src/app/main/services/config.service';
@@ -58,6 +59,9 @@ export class ConfigSettingsComponent implements OnInit {
     StringRule.StartsWith,
     StringRule.EndsWith,
   ];
+  testDataForRules = '';
+  testWordlistTypeForRules = '';
+  ruleTestResult: TestDataRulesResultDto | null = null;
 
   constructor(
     private configService: ConfigService,
@@ -66,6 +70,8 @@ export class ConfigSettingsComponent implements OnInit {
   ) {
     this.configService.selectedConfig$.subscribe((config) => {
       this.config = config;
+      this.clearRuleTestResults();
+      this.ensureRuleTestWordlistType();
     });
   }
 
@@ -82,6 +88,7 @@ export class ConfigSettingsComponent implements OnInit {
         ...envSettings.customStatuses.map((s) => s.name),
       ];
       this.wordlistTypes = envSettings.wordlistTypes.map((w) => w.name);
+      this.ensureRuleTestWordlistType();
     });
   }
 
@@ -222,5 +229,49 @@ export class ConfigSettingsComponent implements OnInit {
         this.localSave();
       }
     }
+  }
+
+  testDataRules() {
+    if (this.config === null) {
+      return;
+    }
+
+    this.ruleTestResult = null;
+
+    this.configService.testDataRules({
+      testData: this.testDataForRules,
+      wordlistType: this.testWordlistTypeForRules,
+      dataRules: this.config.settings.dataSettings.dataRules,
+    }).subscribe({
+      next: (result) => {
+        this.ruleTestResult = result;
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Rule Test Error',
+          detail: error?.error?.message ?? 'Could not test the data rules',
+        });
+      },
+    });
+  }
+
+  clearRuleTestResults() {
+    this.ruleTestResult = null;
+  }
+
+  private ensureRuleTestWordlistType() {
+    if (this.wordlistTypes.length === 0) {
+      return;
+    }
+
+    if (this.wordlistTypes.includes(this.testWordlistTypeForRules)) {
+      return;
+    }
+
+    const allowedWordlistType = this.config?.settings.dataSettings.allowedWordlistTypes
+      .find((type) => this.wordlistTypes.includes(type));
+
+    this.testWordlistTypeForRules = allowedWordlistType ?? this.wordlistTypes[0];
   }
 }

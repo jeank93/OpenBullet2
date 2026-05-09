@@ -10,6 +10,7 @@ using OpenBullet2.Web.Dtos.Common;
 using OpenBullet2.Web.Dtos.Config;
 using OpenBullet2.Web.Dtos.Config.Blocks;
 using OpenBullet2.Web.Dtos.Config.Convert;
+using OpenBullet2.Web.Dtos.Config.Settings;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Models.Errors;
 using OpenBullet2.Web.Tests.Extensions;
@@ -17,6 +18,7 @@ using RuriLib.Helpers;
 using RuriLib.Models.Blocks;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Configs.Settings;
+using RuriLib.Models.Data.Rules;
 using RuriLib.Services;
 using Xunit;
 
@@ -1879,6 +1881,99 @@ public class ConfigIntegrationTests(ITestOutputHelper testOutputHelper)
             client, "/api/v1/config/debug", dto);
 
         // Assert
+        Assert.False(result.IsSuccess);
+        Assert.NotNull(result.Error);
+        Assert.NotNull(result.Error.Content);
+        Assert.Equal(ErrorCode.NotAdmin, result.Error.Content.ErrorCode);
+    }
+
+    [Fact]
+    public async Task TestDataRules_Admin_Success()
+    {
+        using var client = Factory.CreateClient();
+
+        var dto = new TestDataRulesDto
+        {
+            TestData = "user:pass",
+            WordlistType = "Credentials",
+            DataRules = new DataRulesDto
+            {
+                Simple =
+                [
+                    new SimpleDataRuleDto
+                    {
+                        SliceName = "USERNAME",
+                        Comparison = StringRule.EqualTo,
+                        StringToCompare = "user",
+                        CaseSensitive = true
+                    },
+                    new SimpleDataRuleDto
+                    {
+                        SliceName = "EMAIL",
+                        Comparison = StringRule.EqualTo,
+                        StringToCompare = "user@example.com",
+                        CaseSensitive = true
+                    }
+                ],
+                Regex =
+                [
+                    new RegexDataRuleDto
+                    {
+                        SliceName = "PASSWORD",
+                        RegexToMatch = "^pa",
+                        Invert = false
+                    }
+                ]
+            }
+        };
+
+        var result = await PostJsonAsync<TestDataRulesResultDto>(
+            client, "/api/v1/config/test-data-rules", dto);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.RegexValidation.Passed);
+        Assert.Contains(result.Value.Slices, s => s.Name == "USERNAME" && s.Value == "user");
+        Assert.Contains(result.Value.Slices, s => s.Name == "PASSWORD" && s.Value == "pass");
+        Assert.Collection(result.Value.Results,
+            x =>
+            {
+                Assert.True(x.Passed);
+                Assert.Equal("USERNAME must respect: EqualTo user", x.Text);
+            },
+            x =>
+            {
+                Assert.False(x.Passed);
+                Assert.Equal("Invalid slice name: EMAIL", x.Text);
+            },
+            x =>
+            {
+                Assert.True(x.Passed);
+                Assert.Equal("PASSWORD must match regex ^pa", x.Text);
+            });
+    }
+
+    [Fact]
+    public async Task TestDataRules_Guest_Forbidden()
+    {
+        using var client = Factory.CreateClient();
+        var guest = new GuestEntity { Username = "guest", AccessExpiration = DateTime.MaxValue };
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        dbContext.Guests.Add(guest);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        RequireLogin();
+        ImpersonateGuest(client, guest);
+
+        var dto = new TestDataRulesDto
+        {
+            TestData = "user:pass",
+            WordlistType = "Credentials",
+            DataRules = new DataRulesDto()
+        };
+
+        var result = await PostJsonAsync<TestDataRulesResultDto>(
+            client, "/api/v1/config/test-data-rules", dto);
+
         Assert.False(result.IsSuccess);
         Assert.NotNull(result.Error);
         Assert.NotNull(result.Error.Content);

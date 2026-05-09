@@ -14,6 +14,7 @@ using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
+using RuriLib.Models.Data.Rules;
 using RuriLib.Models.Data.Resources;
 using RuriLib.Models.Data.Resources.Options;
 using RuriLib.Models.Proxies;
@@ -197,6 +198,7 @@ public class ConfigDebugger : IDisposable
         {
             var wordlistType = RuriLibSettings.Environment.WordlistTypes.First(w => w.Name == Options.WordlistType);
             var dataLine = new DataLine(Options.TestData, wordlistType);
+            LogInputValidationWarnings(dataLine);
             var proxy = Options.UseProxy ? Proxy.Parse(Options.TestProxy, Options.ProxyType) : null;
 
             var providers = new Bots.Providers(RuriLibSettings)
@@ -434,6 +436,55 @@ public class ConfigDebugger : IDisposable
     /// Requests cancellation of the current debug session.
     /// </summary>
     public void Stop() => cts?.Cancel();
+
+    private void LogInputValidationWarnings(DataLine dataLine)
+    {
+        ArgumentNullException.ThrowIfNull(dataLine);
+
+        if (!dataLine.IsValid)
+        {
+            Logger.Log("WARNING: The test input data did not respect the validity regex for the selected wordlist type!",
+                LogColors.DarkOrange);
+        }
+
+        if (!TryValidateDataRules(dataLine, out var dataRulesWarning))
+        {
+            Logger.Log(dataRulesWarning, LogColors.DarkOrange);
+        }
+    }
+
+    private bool TryValidateDataRules(DataLine dataLine, out string dataRulesWarning)
+    {
+        ArgumentNullException.ThrowIfNull(dataLine);
+
+        dataRulesWarning = string.Empty;
+
+        if (Config.Settings.DataSettings.DataRules.Count == 0)
+        {
+            return true;
+        }
+
+        var variables = dataLine.GetVariables();
+
+        foreach (var rule in Config.Settings.DataSettings.DataRules)
+        {
+            var slice = variables.FirstOrDefault(v => v.Name == rule.SliceName);
+
+            if (slice is null)
+            {
+                dataRulesWarning = $"WARNING: Could not validate the test input against the data rules because the slice '{rule.SliceName}' does not exist!";
+                return false;
+            }
+
+            if (!rule.IsSatisfied(slice.AsString()))
+            {
+                dataRulesWarning = "WARNING: The test input data did not respect the data rules of this config!";
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     // Propagate the events
     private void OnNewEntry(object? sender, BotLoggerEntry entry) => NewLogEntry?.Invoke(this, entry);

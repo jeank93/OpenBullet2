@@ -94,6 +94,17 @@ public class BrowserBlocksTests
         Assert.Equal("No pages open!", ex.Message);
     }
 
+    [Fact]
+    public async Task PuppeteerClickAtCoordinates_WithoutBrowser_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
+            PuppeteerPageMethods.PuppeteerClickAtCoordinates(data, 10, 20));
+
+        Assert.Equal("No pages open!", ex.Message);
+    }
+
     private static BotData NewBotData()
         => new(
             new BotProviders(null!)

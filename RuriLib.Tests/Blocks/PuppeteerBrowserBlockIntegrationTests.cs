@@ -99,8 +99,10 @@ public class PuppeteerBrowserBlockIntegrationTests
             await PuppeteerPageMethods.PuppeteerPageType(data, "a");
             await PuppeteerPageMethods.PuppeteerKeyUp(data, "Shift");
             await PuppeteerPageMethods.PuppeteerPageKeyPress(data, "Enter");
+            await PuppeteerPageMethods.PuppeteerClickAtCoordinates(data, 150, 180);
 
             Assert.Contains("ab", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('typing-target').value;"));
+            Assert.Equal("main", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.body.getAttribute('data-coordinate-click');"));
 
             await PuppeteerPageMethods.PuppeteerScrollBy(data, 0, 200);
             Assert.True(int.Parse(await PuppeteerPageMethods.PuppeteerExecuteJs(data, "String(window.scrollY);")) >= 0);
@@ -160,7 +162,9 @@ public class PuppeteerBrowserBlockIntegrationTests
             await PuppeteerPageMethods.PuppeteerNavigateTo(data, BuildDataUrl(PageBlocksHtml()), timeout: 20000);
             await PuppeteerElementMethods.PuppeteerSwitchToFrame(data, FindElementBy.Id, "inner-frame", 0);
             await PuppeteerElementMethods.PuppeteerWaitForElement(data, FindElementBy.Id, "inside", timeout: 5000);
+            await PuppeteerPageMethods.PuppeteerClickAtCoordinates(data, 60, 50);
             Assert.Equal("inside", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('inside').innerText;"));
+            Assert.Equal("frame", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('frame-button').getAttribute('data-coordinate-click');"));
             PuppeteerPageMethods.PuppeteerSwitchToMainFrame(data);
             Assert.Equal("page-block-test", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.body.getAttribute('data-page');"));
         }
@@ -387,9 +391,15 @@ public class PuppeteerBrowserBlockIntegrationTests
 
     private static string PageBlocksHtml()
         => """
-           <body data-page="page-block-test" style="height: 1800px">
+           <body data-page="page-block-test" style="height: 1800px; margin: 0; position: relative;">
              <input id="typing-target" value="">
-             <iframe id="inner-frame" srcdoc="<div id='inside'>inside</div>"></iframe>
+             <button id="coordinate-target"
+                     type="button"
+                     style="position: absolute; left: 120px; top: 150px; width: 60px; height: 40px;"
+                     onclick="document.body.setAttribute('data-coordinate-click', 'main')">Main</button>
+             <iframe id="inner-frame"
+                     style="position: absolute; left: 260px; top: 120px; width: 220px; height: 160px;"
+                     srcdoc="<body style='margin:0; position:relative;'><button id='frame-button' type='button' style='position:absolute; left:20px; top:20px; width:80px; height:40px;' onclick=&quot;this.setAttribute('data-coordinate-click','frame')&quot;>Frame</button><div id='inside'>inside</div></body>"></iframe>
            </body>
            """;
 

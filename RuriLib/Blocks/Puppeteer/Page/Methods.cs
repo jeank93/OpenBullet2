@@ -124,6 +124,29 @@ public static class Methods
     }
 
     /// <summary>
+    /// Clicks the page at the given coordinates.
+    /// </summary>
+    [Block("Clicks the page at the given coordinates", name = "Click at Coordinates")]
+    public static async Task PuppeteerClickAtCoordinates(BotData data, int x, int y,
+        PuppeteerSharp.Input.MouseButton mouseButton = PuppeteerSharp.Input.MouseButton.Left, int clickCount = 1,
+        int timeBetweenClicks = 0)
+    {
+        data.Logger.LogHeader();
+
+        var page = GetPage(data);
+        var frame = GetFrame(data);
+        var (clickX, clickY) = await ResolveClickPoint(frame, x, y);
+        await page.Mouse.ClickAsync(clickX, clickY, new PuppeteerSharp.Input.ClickOptions
+        {
+            Button = mouseButton,
+            Count = clickCount,
+            Delay = timeBetweenClicks
+        });
+
+        data.Logger.Log($"Clicked {clickCount} time(s) with {mouseButton} button at ({x}, {y})", LogColors.DarkSalmon);
+    }
+
+    /// <summary>
     /// Presses a key in the browser page without releasing it.
     /// </summary>
     [Block("Presses a key in the browser page without releasing it", name = "Key Down in Page",
@@ -401,6 +424,22 @@ public static class Methods
 
     private static void SwitchToMainFramePrivate(BotData data)
         => data.SetObject("puppeteerFrame", GetPage(data).MainFrame);
+
+    private static async Task<(decimal X, decimal Y)> ResolveClickPoint(IFrame frame, int x, int y)
+    {
+        if (frame.ParentFrame is null)
+        {
+            return (x, y);
+        }
+
+        var frameElement = await frame.FrameElementAsync();
+        var frameBounds = await frameElement.BoundingBoxAsync()
+            ?? throw new BlockExecutionException("Could not determine the current frame bounds");
+        var frameClientLeft = await frameElement.EvaluateFunctionAsync<decimal>("element => element.clientLeft || 0");
+        var frameClientTop = await frameElement.EvaluateFunctionAsync<decimal>("element => element.clientTop || 0");
+
+        return (frameBounds.X + frameClientLeft + x, frameBounds.Y + frameClientTop + y);
+    }
 
     private static bool UrlsMatch(string actual, string expected)
     {

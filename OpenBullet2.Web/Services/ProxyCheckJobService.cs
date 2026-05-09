@@ -127,9 +127,21 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
     /// <inheritdoc />
     public void UnregisterConnection(string connectionId, int jobId)
     {
-        var job = (ProxyCheckJob)_jobManager.Jobs.First(j => j.Id == jobId);
+        var job = FindTrackedJob(jobId);
 
-        _connections[job].Remove(connectionId);
+        if (job is null || !_connections.TryGetValue(job, out var connections))
+        {
+            _logger.LogDebug("Skipped unregistering connection {ConnectionId} for proxy check job {JobId} because it is no longer tracked",
+                connectionId, jobId);
+            return;
+        }
+
+        connections.Remove(connectionId);
+
+        if (connections.Count == 0)
+        {
+            StopTracking(job);
+        }
 
         _logger.LogDebug("Unregistered connection {ConnectionId} for proxy check job {JobId}",
             connectionId, jobId);
@@ -234,6 +246,23 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
     private ProxyCheckJob GetJob(int jobId)
         => (ProxyCheckJob)_jobManager.Jobs.First(j => j.Id == jobId);
 
+    private ProxyCheckJob? FindTrackedJob(int jobId)
+        => _jobManager.Jobs.OfType<ProxyCheckJob>().FirstOrDefault(j => j.Id == jobId)
+        ?? _connections.Keys.FirstOrDefault(j => j.Id == jobId);
+
+    private void StopTracking(ProxyCheckJob job)
+    {
+        job.OnStatusChanged -= _onStatusChanged;
+        job.OnCompleted -= _onCompleted;
+        job.OnError -= _onError;
+        job.OnTaskError -= _onTaskError;
+        job.OnResult -= _onResult;
+        job.OnTimerTick -= _onTimerTick;
+        job.OnBotsChanged -= _onBotsChanged;
+
+        _connections.Remove(job);
+    }
+
     private async Task OnStatusChangedAsync(object? sender, JobStatus e)
     {
         var message = new JobStatusChangedMessage { NewStatus = e };
@@ -311,7 +340,12 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
     {
         var job = sender as ProxyCheckJob;
 
-        await _hub.Clients.Clients(_connections[job!]).SendAsync(
+        if (job is null || !_connections.TryGetValue(job, out var connections) || connections.Count == 0)
+        {
+            return;
+        }
+
+        await _hub.Clients.Clients(connections).SendAsync(
             method, message);
     }
 
@@ -325,14 +359,9 @@ public sealed class ProxyCheckJobService : IJobService, IDisposable
     {
         if (disposing)
         {
-            foreach (var job in _connections.Keys)
+            foreach (var job in _connections.Keys.ToList())
             {
-                job.OnStatusChanged -= _onStatusChanged;
-                job.OnCompleted -= _onCompleted;
-                job.OnError -= _onError;
-                job.OnTaskError -= _onTaskError;
-                job.OnResult -= _onResult;
-                job.OnBotsChanged -= _onBotsChanged;
+                StopTracking(job);
             }
         }
     }

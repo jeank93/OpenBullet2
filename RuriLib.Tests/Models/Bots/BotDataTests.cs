@@ -46,6 +46,8 @@ public class BotDataTests
 
         Assert.True(disposable.Disposed);
         Assert.False(whitelisted.Disposed);
+        Assert.Null(botData.TryGetObject<DisposableStub>("custom"));
+        Assert.Same(whitelisted, botData.TryGetObject<DisposableStub>("httpClient"));
         Assert.Equal("NONE", botData.STATUS);
         Assert.Equal(string.Empty, botData.SOURCE);
         Assert.Equal(string.Empty, botData.ERROR);
@@ -61,6 +63,24 @@ public class BotDataTests
         var botData = NewBotData();
 
         Assert.Throws<ArgumentException>(() => botData.TryGetObject<object>(string.Empty));
+    }
+
+    [Fact]
+    public void DisposeObjectsExcept_RemovesDisposedObjectsAndKeepsWhitelistedOnes()
+    {
+        var botData = NewBotData();
+        var disposable = new DisposableStub();
+        var whitelisted = new DisposableStub();
+
+        botData.SetObject("custom", disposable);
+        botData.SetObject("httpClient", whitelisted);
+
+        botData.DisposeObjectsExcept(["httpClient"]);
+
+        Assert.True(disposable.Disposed);
+        Assert.False(whitelisted.Disposed);
+        Assert.Null(botData.TryGetObject<DisposableStub>("custom"));
+        Assert.Same(whitelisted, botData.TryGetObject<DisposableStub>("httpClient"));
     }
 
     private static BotData NewBotData()

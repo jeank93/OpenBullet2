@@ -286,7 +286,7 @@ public class BotData
     {
         except ??= [];
 
-        foreach (var obj in _objects.Where(o => o.Value is IDisposable && !except.Contains(o.Key)))
+        foreach (var obj in _objects.Where(o => o.Value is IDisposable && !except.Contains(o.Key)).ToList())
         {
             try
             {
@@ -296,6 +296,8 @@ public class BotData
             {
                 // ignored
             }
+
+            _objects.Remove(obj.Key);
         }
     }
 }

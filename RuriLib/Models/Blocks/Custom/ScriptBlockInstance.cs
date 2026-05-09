@@ -228,13 +228,19 @@ public class ScriptBlockInstance : BlockInstance
                 break;
 
             case Interpreter.NodeJS:
+                var nodeRequireBasePath = JsonConvert.ToString(
+                    Path.GetFullPath(Path.Combine("Scripts", "__ob2_virtual__.js")));
                 var nodeScript = $$"""
                     module.exports = async ({{MakeInputs()}}) => {
-                        {{Script}}
-                        var noderesult = {
-                        {{MakeNodeObject()}}
-                        };
-                        return noderesult;
+                        const { createRequire } = require('module');
+                        const obRequire = createRequire({{nodeRequireBasePath}});
+                        return await (async (require) => {
+                            {{Script}}
+                            var noderesult = {
+                            {{MakeNodeObject()}}
+                            };
+                            return noderesult;
+                        })(obRequire);
                     }
                     """;
 

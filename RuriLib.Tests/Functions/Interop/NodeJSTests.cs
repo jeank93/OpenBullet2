@@ -1,6 +1,7 @@
 using Jering.Javascript.NodeJS;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -114,5 +115,52 @@ callback(null, noderesult);
         var script = BuildScript("var result = x + y;", ["x", "y"], []);
         var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(script, null, null, [3, 5], TestCancellationToken);
         Assert.Throws<KeyNotFoundException>(() => result.GetProperty("result"));
+    }
+
+    [Fact]
+    public async Task InvokeNode_WithCreateRequire_ResolvesDependencyFromScriptsNodeModules()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"{nameof(NodeJsTests)}-{Guid.NewGuid():N}");
+        var scriptsPath = Path.Combine(tempRoot, "Scripts");
+        var dependencyPath = Path.Combine(scriptsPath, "node_modules", "ob2-test-dependency");
+
+        Directory.CreateDirectory(dependencyPath);
+        await File.WriteAllTextAsync(
+            Path.Combine(dependencyPath, "index.js"),
+            "module.exports = { getValue: () => 'resolved from Scripts/node_modules' };",
+            TestCancellationToken);
+
+        var virtualScriptPath = Path.Combine(scriptsPath, "__ob2_virtual__.js");
+        var escapedVirtualScriptPath = JsonSerializer.Serialize(virtualScriptPath);
+        var script = $$"""
+            module.exports = async () => {
+                const { createRequire } = require('module');
+                const obRequire = createRequire({{escapedVirtualScriptPath}});
+                return await (async (require) => {
+                    const dependency = require('ob2-test-dependency');
+                    var result = dependency.getValue();
+                    var noderesult = {
+                      'result': result,
+                    };
+                    return noderesult;
+                })(obRequire);
+            }
+            """;
+
+        try
+        {
+            var result = await StaticNodeJSService.InvokeFromStringAsync<JsonElement>(
+                script,
+                null,
+                null,
+                [],
+                TestCancellationToken);
+
+            Assert.Equal("resolved from Scripts/node_modules", result.GetProperty("result").GetString());
+        }
+        finally
+        {
+            Directory.Delete(tempRoot, recursive: true);
+        }
     }
 }

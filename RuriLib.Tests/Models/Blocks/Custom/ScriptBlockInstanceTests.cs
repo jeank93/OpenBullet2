@@ -68,6 +68,8 @@ public class ScriptBlockInstanceTests
         var output = RenderSyntax(block, definedVariables);
 
         Assert.Contains("module.exports = async (DATA,x) => {", output);
+        Assert.Contains("const { createRequire } = require('module');", output);
+        Assert.Contains("__ob2_virtual__.js", output);
         Assert.Contains("new object[] { input.DATA, x }", output);
         Assert.Contains("string result = ", output);
         Assert.Contains("result = tmp_", output);
@@ -103,6 +105,8 @@ public class ScriptBlockInstanceTests
             RenderSyntax(block, []));
 
         Assert.Contains("var tmp_TEMP = await InvokeNode<dynamic>(data,", syntax);
+        Assert.Contains("createRequire", syntax);
+        Assert.Contains("__ob2_virtual__.js", syntax);
         Assert.Contains("new object[] { input.DATA, x }", syntax);
         Assert.Contains("string result = tmp_TEMP.GetProperty(\"result\").ToString();", syntax);
     }

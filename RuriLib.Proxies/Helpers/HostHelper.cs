@@ -1,7 +1,9 @@
 using RuriLib.Proxies.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,7 +65,8 @@ internal static class HostHelper
 
         try
         {
-            return await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+            var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+            return OrderAddresses(addresses);
         }
         catch (Exception ex)
         {
@@ -75,4 +78,17 @@ internal static class HostHelper
             throw;
         }
     }
+
+    internal static IPAddress[] OrderAddresses(IEnumerable<IPAddress> addresses)
+        => addresses
+            .OrderBy(GetAddressPriority)
+            .ToArray();
+
+    private static int GetAddressPriority(IPAddress address)
+        => address.AddressFamily switch
+        {
+            AddressFamily.InterNetwork => 0,
+            AddressFamily.InterNetworkV6 => 1,
+            _ => 2
+        };
 }

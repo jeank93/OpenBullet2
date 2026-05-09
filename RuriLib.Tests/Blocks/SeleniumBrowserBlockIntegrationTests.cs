@@ -112,8 +112,10 @@ public class SeleniumBrowserBlockIntegrationTests
         SeleniumPageMethods.SeleniumPageType(data, "a");
         SeleniumPageMethods.SeleniumKeyUp(data, "Shift");
         SeleniumPageMethods.SeleniumPageKeyPress(data, "Enter");
+        SeleniumPageMethods.SeleniumClickAtCoordinates(data, 150, 180);
 
         Assert.Contains("ab", SeleniumPageMethods.SeleniumExecuteJs(data, "return document.getElementById('typing-target').value;"));
+        Assert.Equal("main", SeleniumPageMethods.SeleniumExecuteJs(data, "return document.body.getAttribute('data-coordinate-click');"));
 
         SeleniumPageMethods.SeleniumScrollBy(data, 0, 200);
         Assert.True(int.Parse(SeleniumPageMethods.SeleniumExecuteJs(data, "return String(window.scrollY);")) >= 0);
@@ -147,7 +149,9 @@ public class SeleniumBrowserBlockIntegrationTests
 
         SeleniumPageMethods.SeleniumNavigateTo(data, BuildDataUrl(PageBlocksHtml()), timeout: 20);
         SeleniumElementMethods.SeleniumSwitchToFrame(data, FindElementBy.Id, "inner-frame", 0);
+        SeleniumPageMethods.SeleniumClickAtCoordinates(data, 60, 50);
         Assert.Equal("inside", SeleniumPageMethods.SeleniumExecuteJs(data, "return document.getElementById('inside').innerText;"));
+        Assert.Equal("frame", SeleniumPageMethods.SeleniumExecuteJs(data, "return document.getElementById('frame-button').getAttribute('data-coordinate-click');"));
         SeleniumPageMethods.SeleniumSwitchToMainFrame(data);
         Assert.Equal("page-block-test", SeleniumPageMethods.SeleniumExecuteJs(data, "return document.body.getAttribute('data-page');"));
 
@@ -408,9 +412,15 @@ public class SeleniumBrowserBlockIntegrationTests
 
     private static string PageBlocksHtml()
         => """
-           <body data-page="page-block-test" style="height: 1800px">
+           <body data-page="page-block-test" style="height: 1800px; margin: 0; position: relative;">
              <input id="typing-target" value="">
-             <iframe id="inner-frame" srcdoc="<div id='inside'>inside</div>"></iframe>
+             <button id="coordinate-target"
+                     type="button"
+                     style="position: absolute; left: 120px; top: 150px; width: 60px; height: 40px;"
+                     onclick="document.body.setAttribute('data-coordinate-click', 'main')">Main</button>
+             <iframe id="inner-frame"
+                     style="position: absolute; left: 260px; top: 120px; width: 220px; height: 160px;"
+                     srcdoc="<body style='margin:0; position:relative;'><button id='frame-button' type='button' style='position:absolute; left:20px; top:20px; width:80px; height:40px;' onclick=&quot;this.setAttribute('data-coordinate-click','frame')&quot;>Frame</button><div id='inside'>inside</div></body>"></iframe>
            </body>
            """;
 

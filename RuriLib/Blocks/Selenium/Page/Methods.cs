@@ -82,6 +82,52 @@ public static class Methods
     }
 
     /// <summary>
+    /// Clicks the page at the given coordinates.
+    /// </summary>
+    [Block("Clicks the page at the given coordinates", name = "Click at Coordinates")]
+    public static void SeleniumClickAtCoordinates(BotData data, int x, int y)
+    {
+        data.Logger.LogHeader();
+
+        var browser = GetBrowser(data);
+        var clicked = browser.ExecuteScript(
+            """
+            const x = arguments[0];
+            const y = arguments[1];
+            const target = document.elementFromPoint(x, y);
+
+            if (!target) {
+                return false;
+            }
+
+            const eventInit = {
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 0,
+                buttons: 1,
+                detail: 1,
+                view: window
+            };
+
+            target.dispatchEvent(new MouseEvent('mousedown', eventInit));
+            target.dispatchEvent(new MouseEvent('mouseup', eventInit));
+            target.dispatchEvent(new MouseEvent('click', eventInit));
+            return true;
+            """,
+            x,
+            y);
+
+        if (clicked is not bool success || !success)
+        {
+            throw new BlockExecutionException($"Could not click at coordinates ({x}, {y})");
+        }
+
+        data.Logger.Log($"Clicked at ({x}, {y})", LogColors.JuneBud);
+    }
+
+    /// <summary>
     /// Presses a key in the browser page without releasing it.
     /// </summary>
     [Block("Presses a key in the browser page without releasing it", name = "Key Down in Page",

@@ -1269,6 +1269,8 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
             Metadata = new ConfigMetadata { Name = "Test Config" }
         };
         await configRepository.SaveAsync(config);
+        var configService = GetRequiredService<ConfigService>();
+        configService.Configs.Add(config);
 
         // Act
         var dto = new UpdateMultiRunJobDto
@@ -1307,6 +1309,90 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
 
         mrJob = jobManager.Jobs.OfType<MultiRunJob>().Single();
         Assert.Equal(dto.Name, mrJob.Name);
+    }
+
+    // Admin update preserves matching custom input answers
+    [Fact]
+    public async Task UpdateMultiRunJob_Admin_PreservesCustomInputsAnswers()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var mrJob = CreateMultiRunJob();
+        mrJob.Name = "Test MRJ";
+        mrJob.Id = 1;
+        mrJob.CustomInputsAnswers = new Dictionary<string, string>
+        {
+            ["TEST"] = "saved value",
+            ["STALE"] = "old value"
+        };
+        jobManager.AddJob(mrJob);
+
+        var jobEntity = CreateMultiRunJobEntity(mrJob);
+        jobEntity.Id = mrJob.Id;
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        dbContext.Jobs.Add(jobEntity);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        var configRepository = GetRequiredService<IConfigRepository>();
+        var config = new Config
+        {
+            Id = Guid.NewGuid().ToString(),
+            Metadata = new ConfigMetadata { Name = "Test Config" },
+            Settings = new ConfigSettings
+            {
+                InputSettings = new InputSettings
+                {
+                    CustomInputs =
+                    [
+                        new CustomInput
+                        {
+                            VariableName = "TEST",
+                            Description = "Test custom input",
+                            DefaultAnswer = "default"
+                        }
+                    ]
+                }
+            }
+        };
+        await configRepository.SaveAsync(config);
+
+        // Act
+        var dto = new UpdateMultiRunJobDto
+        {
+            Id = mrJob.Id,
+            Name = "Test MRJ2",
+            ConfigId = config.Id,
+            Bots = 10,
+            Skip = 5,
+            ProxyMode = JobProxyMode.On,
+            DataPool = JsonSerializer.SerializeToElement(new InfiniteDataPoolOptionsDto
+            {
+                PolyTypeName = "infiniteDataPool"
+            }, JsonSerializerOptions),
+            HitOutputs = [JsonSerializer.SerializeToElement(new DatabaseHitOutputOptionsDto
+            {
+                PolyTypeName = "databaseHitOutput"
+            }, JsonSerializerOptions)],
+            ProxySources = [JsonSerializer.SerializeToElement(new GroupProxySourceOptionsDto
+            {
+                GroupId = -1,
+                PolyTypeName = "groupProxySource"
+            }, JsonSerializerOptions)],
+            StartCondition = JsonSerializer.SerializeToElement(new RelativeTimeStartConditionDto
+            {
+                StartAfter = TimeSpan.FromSeconds(1),
+                PolyTypeName = "relativeTimeStartCondition"
+            }, JsonSerializerOptions)
+        };
+        var response = await PutJsonAsync<MultiRunJobDto>(
+            client, "/api/v1/job/multi-run", dto);
+
+        // Assert
+        Assert.True(response.IsSuccess);
+
+        var updatedJob = jobManager.Jobs.OfType<MultiRunJob>().Single();
+        Assert.Equal("saved value", updatedJob.CustomInputsAnswers["TEST"]);
     }
 
     // Admin cannot update a multi run job that is not idle

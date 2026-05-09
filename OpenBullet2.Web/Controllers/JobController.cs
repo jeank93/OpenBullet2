@@ -357,17 +357,18 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
 
         await _jobRepo.UpdateAsync(entity, cancellationToken);
 
-        var oldJob = _jobManager.Jobs.First(j => j.Id == dto.Id);
+        var oldJob = _jobManager.Jobs.OfType<MultiRunJob>().First(j => j.Id == dto.Id);
 
-        var newJob = _jobFactory.FromOptions(
+        var newJob = (MultiRunJob)_jobFactory.FromOptions(
             dto.Id, entity.Owner?.Id ?? 0, jobOptions);
+        CopyCustomInputsAnswers(oldJob, newJob);
 
         _jobManager.RemoveJob(oldJob);
         _jobManager.AddJob(newJob);
 
         _logger.LogInformation("Updated the multi run job with id {Id}", dto.Id);
 
-        return await MapMultiRunJobDto((MultiRunJob)newJob, cancellationToken);
+        return await MapMultiRunJobDto(newJob, cancellationToken);
     }
 
     /// <summary>
@@ -1056,6 +1057,16 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         }
 
         return groupNames.GetValueOrDefault(id, "Invalid");
+    }
+
+    private static void CopyCustomInputsAnswers(MultiRunJob oldJob, MultiRunJob newJob)
+    {
+        if (oldJob.CustomInputsAnswers.Count == 0)
+        {
+            return;
+        }
+
+        newJob.CustomInputsAnswers = oldJob.CustomInputsAnswers.ToDictionary();
     }
 
     private static JobOptionsWrapper DeserializeJobOptions(JobEntity entity)

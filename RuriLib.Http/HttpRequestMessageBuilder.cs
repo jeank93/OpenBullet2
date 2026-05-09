@@ -16,7 +16,7 @@ internal static class HttpRequestMessageBuilder
 
     // Builds the first line, for example
     // GET /resource HTTP/1.1
-    public static string BuildFirstLine(HttpRequestMessage request)
+    public static string BuildFirstLine(HttpRequestMessage request, bool absoluteUriInFirstLine = false)
     {
         if (request.Version >= new Version(2, 0))
         {
@@ -28,13 +28,18 @@ internal static class HttpRequestMessageBuilder
             throw new RLHttpException("Uri cannot be null");
         }
 
-        return $"{request.Method.Method} {request.RequestUri.PathAndQuery} HTTP/{request.Version}{_newLine}";
+        var requestTarget = absoluteUriInFirstLine
+            ? request.RequestUri.AbsoluteUri
+            : request.RequestUri.PathAndQuery;
+
+        return $"{request.Method.Method} {requestTarget} HTTP/{request.Version}{_newLine}";
     }
 
     // Builds the headers, for example
     // Host: example.com
     // Connection: Close
-    public static string BuildHeaders(HttpRequestMessage request, CookieContainer? cookies = null)
+    public static string BuildHeaders(HttpRequestMessage request, CookieContainer? cookies = null,
+        IReadOnlyDictionary<string, string>? additionalHeaders = null)
     {
         if (request.RequestUri is null)
         {
@@ -62,6 +67,17 @@ internal static class HttpRequestMessageBuilder
         foreach (var header in request.Headers)
         {
             headers.Add(header.Key, GetHeaderValue(header));
+        }
+
+        if (additionalHeaders is not null)
+        {
+            foreach (var header in additionalHeaders)
+            {
+                if (!headers.Any(h => h.Key.Equals(header.Key, StringComparison.OrdinalIgnoreCase)))
+                {
+                    headers.Add(header);
+                }
+            }
         }
 
         // Add the Cookie header

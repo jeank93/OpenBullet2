@@ -9,6 +9,7 @@ namespace RuriLib.Tests.Utils;
 
 internal sealed class LocalHttpResponseServer : IAsyncDisposable
 {
+    private const string ClientClosedBeforeHeadersMessage = "The client closed the TCP stream before sending HTTP headers";
     private readonly TcpListener listener = new(IPAddress.Loopback, 0);
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly Func<TcpClient, CancellationToken, Task> handler;
@@ -79,8 +80,23 @@ internal sealed class LocalHttpResponseServer : IAsyncDisposable
 
     private async Task AcceptClientAsync()
     {
-        using var client = await listener.AcceptTcpClientAsync(cancellationTokenSource.Token);
-        await handler(client, cancellationTokenSource.Token);
+        while (!cancellationTokenSource.IsCancellationRequested)
+        {
+            using var client = await listener.AcceptTcpClientAsync(cancellationTokenSource.Token);
+
+            try
+            {
+                await handler(client, cancellationTokenSource.Token);
+                return;
+            }
+            catch (InvalidOperationException ex) when (
+                ex.Message == ClientClosedBeforeHeadersMessage
+                && !cancellationTokenSource.IsCancellationRequested)
+            {
+                // Under heavy parallel test load a client can connect and close before sending
+                // request headers. Ignore that transient connection and keep waiting for the real one.
+            }
+        }
     }
 
     private static async Task ReadHeadersAsync(NetworkStream stream, CancellationToken cancellationToken)
@@ -93,7 +109,7 @@ internal sealed class LocalHttpResponseServer : IAsyncDisposable
             var bytesRead = await stream.ReadAsync(buffer, cancellationToken);
             if (bytesRead == 0)
             {
-                throw new InvalidOperationException("The client closed the TCP stream before sending HTTP headers");
+                throw new InvalidOperationException(ClientClosedBeforeHeadersMessage);
             }
 
             builder.Append(Encoding.ASCII.GetString(buffer, 0, bytesRead));

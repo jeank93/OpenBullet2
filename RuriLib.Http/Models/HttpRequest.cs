@@ -56,11 +56,20 @@ public class HttpRequest : IDisposable
     /// Gets the raw bytes that will be sent on the network stream.
     /// </summary>
     /// <param name="cancellationToken">The token to cancel the operation</param>
-    public async Task<byte[]> GetBytesAsync(CancellationToken cancellationToken = default)
+    public Task<byte[]> GetBytesAsync(CancellationToken cancellationToken = default)
+        => GetBytesAsync(AbsoluteUriInFirstLine, null, cancellationToken);
+
+    /// <summary>
+    /// Gets the raw bytes that will be sent on the network stream using
+    /// temporary serialization overrides.
+    /// </summary>
+    public async Task<byte[]> GetBytesAsync(bool absoluteUriInFirstLine,
+        IReadOnlyDictionary<string, string>? additionalHeaders,
+        CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
-        ms.Write(Encoding.ASCII.GetBytes(BuildFirstLine()));
-        ms.Write(Encoding.ASCII.GetBytes(BuildHeaders()));
+        ms.Write(Encoding.ASCII.GetBytes(BuildFirstLine(absoluteUriInFirstLine)));
+        ms.Write(Encoding.ASCII.GetBytes(BuildHeaders(additionalHeaders)));
 
         if (Content != null)
         {
@@ -90,7 +99,7 @@ public class HttpRequest : IDisposable
 
     // Builds the first line, for example
     // GET /resource HTTP/1.1
-    private string BuildFirstLine()
+    private string BuildFirstLine(bool absoluteUriInFirstLine)
     {
         if (Version >= new Version(2, 0))
         {
@@ -102,13 +111,13 @@ public class HttpRequest : IDisposable
             throw new RLHttpException("Uri cannot be null");
         }
 
-        return $"{Method.Method} {(AbsoluteUriInFirstLine ? Uri.AbsoluteUri : Uri.PathAndQuery)} HTTP/{Version}{_newLine}";
+        return $"{Method.Method} {(absoluteUriInFirstLine ? Uri.AbsoluteUri : Uri.PathAndQuery)} HTTP/{Version}{_newLine}";
     }
 
     // Builds the headers, for example
     // Host: example.com
     // Connection: Close
-    private string BuildHeaders()
+    private string BuildHeaders(IReadOnlyDictionary<string, string>? additionalHeaders)
     {
         if (Uri is null)
         {
@@ -134,6 +143,17 @@ public class HttpRequest : IDisposable
 
         // Add the non-content headers
         finalHeaders.AddRange(Headers);
+
+        if (additionalHeaders is not null)
+        {
+            foreach (var header in additionalHeaders)
+            {
+                if (!finalHeaders.Any(h => h.Key.Equals(header.Key, StringComparison.OrdinalIgnoreCase)))
+                {
+                    finalHeaders.Add(header);
+                }
+            }
+        }
 
         // Add the Cookie header if not set manually and container not null
         if (!HeaderExists("Cookie", out _) && Cookies.Count != 0)

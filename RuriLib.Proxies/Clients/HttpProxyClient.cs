@@ -101,6 +101,26 @@ public partial class HttpProxyClient : ProxyClient
         return $"Proxy-Authorization: Basic {data}\r\n";
     }
 
+    /// <summary>
+    /// Gets the value that should be sent in the <c>Proxy-Authorization</c> header
+    /// for plain HTTP requests forwarded through this proxy.
+    /// </summary>
+    public bool TryGetProxyAuthorizationHeaderValue(out string? value)
+    {
+        value = null;
+
+        if (Settings.Credentials == null || string.IsNullOrEmpty(Settings.Credentials.UserName))
+        {
+            return false;
+        }
+
+        value = Convert.ToBase64String(Encoding.UTF8.GetBytes(
+            $"{Settings.Credentials.UserName}:{Settings.Credentials.Password}"));
+
+        value = $"Basic {value}";
+        return true;
+    }
+
     private static async Task<HttpStatusCode> ReceiveResponseAsync(NetworkStream nStream, CancellationToken cancellationToken = default)
     {
         var buffer = new byte[50];

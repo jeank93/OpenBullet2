@@ -217,7 +217,10 @@ public class RLHttpClient : IDisposable
 
     private async Task SendDataAsync(HttpRequest request, CancellationToken cancellationToken = default)
     {
-        var buffer = await request.GetBytesAsync(cancellationToken);
+        var forceAbsoluteUriInFirstLine = ShouldUseAbsoluteUriInFirstLine(request.Uri);
+        var additionalHeaders = GetAdditionalProxyHeaders(request.Uri);
+        var buffer = await request.GetBytesAsync(forceAbsoluteUriInFirstLine || request.AbsoluteUriInFirstLine,
+            additionalHeaders, cancellationToken);
         await _connectionCommonStream!.WriteAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
 
         RawRequests.Add(buffer);
@@ -249,8 +252,17 @@ public class RLHttpClient : IDisposable
             throw new RLHttpException("The request URI is null");
         }
 
-        // Get the stream from the proxies TcpClient
-        _tcpClient = await ProxyClient.ConnectAsync(uri.Host, uri.Port, null, cancellationToken);
+        // Plain HTTP over an HTTP proxy must be forwarded directly to the proxy with an
+        // absolute-form request line instead of using CONNECT tunneling.
+        if (ShouldUseAbsoluteUriInFirstLine(uri) && ProxyClient is HttpProxyClient httpProxyClient)
+        {
+            _tcpClient = await httpProxyClient.ConnectToProxyAsync(null, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _tcpClient = await ProxyClient.ConnectAsync(uri.Host, uri.Port, null, cancellationToken).ConfigureAwait(false);
+        }
+
         _connectionNetworkStream = _tcpClient.GetStream();
 
         // If https, set up a TLS stream
@@ -296,6 +308,27 @@ public class RLHttpClient : IDisposable
             _connectionCommonStream = _connectionNetworkStream;
         }
     }
+
+    private IReadOnlyDictionary<string, string>? GetAdditionalProxyHeaders(Uri? uri)
+    {
+        if (ShouldUseAbsoluteUriInFirstLine(uri)
+            && ProxyClient is HttpProxyClient httpProxyClient
+            && httpProxyClient.TryGetProxyAuthorizationHeaderValue(out var value)
+            && value is not null)
+        {
+            return new Dictionary<string, string>
+            {
+                ["Proxy-Authorization"] = value
+            };
+        }
+
+        return null;
+    }
+
+    private bool ShouldUseAbsoluteUriInFirstLine(Uri? uri)
+        => uri is not null
+        && ProxyClient is HttpProxyClient
+        && uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc/>
     public void Dispose()

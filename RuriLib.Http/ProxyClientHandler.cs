@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
 using RuriLib.Proxies;
+using RuriLib.Proxies.Clients;
 using System.Text;
 using RuriLib.Proxies.Exceptions;
 using System.Collections.Generic;
@@ -216,14 +217,16 @@ public class ProxyClientHandler : HttpMessageHandler
     private async Task SendDataAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
     {
         using var ms = new MemoryStream();
+        var forceAbsoluteUriInFirstLine = ShouldUseAbsoluteUriInFirstLine(request.RequestUri);
+        var additionalHeaders = GetAdditionalProxyHeaders(request.RequestUri);
 
         // Send the first line
-        var buffer = Encoding.ASCII.GetBytes(HttpRequestMessageBuilder.BuildFirstLine(request));
+        var buffer = Encoding.ASCII.GetBytes(HttpRequestMessageBuilder.BuildFirstLine(request, forceAbsoluteUriInFirstLine));
         ms.Write(buffer);
         await _connectionCommonStream!.WriteAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
 
         // Send the headers
-        buffer = Encoding.ASCII.GetBytes(HttpRequestMessageBuilder.BuildHeaders(request, CookieContainer));
+        buffer = Encoding.ASCII.GetBytes(HttpRequestMessageBuilder.BuildHeaders(request, CookieContainer, additionalHeaders));
         ms.Write(buffer);
         await _connectionCommonStream.WriteAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
 
@@ -262,8 +265,17 @@ public class ProxyClientHandler : HttpMessageHandler
         }
 
         // Get the stream from the proxies TcpClient
-        var uri = request.RequestUri;
-        _tcpClient = await ProxyClient.ConnectAsync(uri!.Host, uri.Port, null, cancellationToken);
+        var uri = request.RequestUri ?? throw new RLHttpException("Uri cannot be null");
+
+        if (ShouldUseAbsoluteUriInFirstLine(uri) && ProxyClient is HttpProxyClient httpProxyClient)
+        {
+            _tcpClient = await httpProxyClient.ConnectToProxyAsync(null, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _tcpClient = await ProxyClient.ConnectAsync(uri.Host, uri.Port, null, cancellationToken).ConfigureAwait(false);
+        }
+
         _connectionNetworkStream = _tcpClient.GetStream();
 
         // If https, set up a TLS stream
@@ -308,6 +320,27 @@ public class ProxyClientHandler : HttpMessageHandler
             _connectionCommonStream = _connectionNetworkStream;
         }
     }
+
+    private IReadOnlyDictionary<string, string>? GetAdditionalProxyHeaders(Uri? uri)
+    {
+        if (ShouldUseAbsoluteUriInFirstLine(uri)
+            && ProxyClient is HttpProxyClient httpProxyClient
+            && httpProxyClient.TryGetProxyAuthorizationHeaderValue(out var value)
+            && value is not null)
+        {
+            return new Dictionary<string, string>
+            {
+                ["Proxy-Authorization"] = value
+            };
+        }
+
+        return null;
+    }
+
+    private bool ShouldUseAbsoluteUriInFirstLine(Uri? uri)
+        => uri is not null
+        && ProxyClient is HttpProxyClient
+        && uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase);
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)

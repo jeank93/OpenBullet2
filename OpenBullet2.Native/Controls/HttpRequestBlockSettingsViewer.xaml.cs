@@ -1,7 +1,9 @@
 using OpenBullet2.Native.ViewModels;
 using RuriLib.Models.Blocks.Custom;
 using RuriLib.Models.Blocks.Custom.HttpRequest;
+using RuriLib.Models.Blocks.Custom.HttpRequest.Multipart;
 using System;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace OpenBullet2.Native.Controls;
@@ -69,7 +71,7 @@ public partial class HttpRequestBlockSettingsViewer : UserControl
             case HttpRequestMode.Multipart:
                 var multipartParams = (MultipartRequestParams)vm.HttpRequestBlock.RequestParams;
                 multipartBoundarySetting.Setting = multipartParams.Boundary;
-                // TODO: write this
+                BindMultipartContents(multipartParams);
                 break;
         }
 
@@ -85,6 +87,45 @@ public partial class HttpRequestBlockSettingsViewer : UserControl
         ignoreCertificateValidationSetting.Setting = vm.HttpRequestBlock.Settings["ignoreCertificateValidation"];
         useCustomCipherSuitesSetting.Setting = vm.HttpRequestBlock.Settings["useCustomCipherSuites"];
         customCipherSuitesSetting.Setting = vm.HttpRequestBlock.Settings["customCipherSuites"];
+    }
+
+    private void AddMultipartString(object sender, RoutedEventArgs e)
+    {
+        vm.AddMultipartStringContent();
+        BindMultipartContents((MultipartRequestParams)vm.HttpRequestBlock.RequestParams);
+    }
+
+    private void AddMultipartRaw(object sender, RoutedEventArgs e)
+    {
+        vm.AddMultipartRawContent();
+        BindMultipartContents((MultipartRequestParams)vm.HttpRequestBlock.RequestParams);
+    }
+
+    private void AddMultipartFile(object sender, RoutedEventArgs e)
+    {
+        vm.AddMultipartFileContent();
+        BindMultipartContents((MultipartRequestParams)vm.HttpRequestBlock.RequestParams);
+    }
+
+    private void RemoveMultipartContent(object? sender, EventArgs e)
+    {
+        if (sender is MultipartContentViewer { MultipartContent: { } content, Parent: Panel panel } viewer)
+        {
+            vm.RemoveMultipartContent(content);
+            panel.Children.Remove(viewer);
+        }
+    }
+
+    private void BindMultipartContents(MultipartRequestParams multipartParams)
+    {
+        multipartContentsPanel.Children.Clear();
+
+        foreach (var content in multipartParams.Contents)
+        {
+            var view = new MultipartContentViewer(content);
+            view.OnDeleted += RemoveMultipartContent;
+            multipartContentsPanel.Children.Add(view);
+        }
     }
 }
 
@@ -104,23 +145,34 @@ public class HttpRequestBlockSettingsViewerViewModel(BlockViewModel block) : Blo
 
     public event Action<HttpRequestMode>? ModeChanged;
 
-    private readonly StandardRequestParams cachedStandardParams = new();
-    private readonly RawRequestParams cachedRawParams = new();
-    private readonly BasicAuthRequestParams cachedBasicAuthParams = new();
-    private readonly MultipartRequestParams cachedMultipartParams = new();
+    private StandardRequestParams cachedStandardParams = new();
+    private RawRequestParams cachedRawParams = new();
+    private BasicAuthRequestParams cachedBasicAuthParams = new();
+    private MultipartRequestParams cachedMultipartParams = new();
+    // Seed the per-mode cache from the block's current payload once, so the first
+    // mode switch preserves the object that was originally loaded instead of replacing it.
+    private bool requestParamsCachePrimed;
 
     public HttpRequestMode Mode
     {
-        get => HttpRequestBlock.RequestParams switch
+        get
         {
-            StandardRequestParams => HttpRequestMode.Standard,
-            RawRequestParams => HttpRequestMode.Raw,
-            BasicAuthRequestParams => HttpRequestMode.BasicAuth,
-            MultipartRequestParams => HttpRequestMode.Multipart,
-            _ => throw new NotImplementedException()
-        };
+            PrimeRequestParamsCache();
+
+            return HttpRequestBlock.RequestParams switch
+            {
+                StandardRequestParams => HttpRequestMode.Standard,
+                RawRequestParams => HttpRequestMode.Raw,
+                BasicAuthRequestParams => HttpRequestMode.BasicAuth,
+                MultipartRequestParams => HttpRequestMode.Multipart,
+                _ => throw new NotImplementedException()
+            };
+        }
         set
         {
+            PrimeRequestParamsCache();
+            CacheRequestParams(HttpRequestBlock.RequestParams);
+
             HttpRequestBlock.RequestParams = value switch
             {
                 HttpRequestMode.Standard => cachedStandardParams,
@@ -131,7 +183,11 @@ public class HttpRequestBlockSettingsViewerViewModel(BlockViewModel block) : Blo
             };
 
             ModeChanged?.Invoke(value);
-            OnPropertyChanged();
+            OnPropertyChanged(nameof(Mode));
+            OnPropertyChanged(nameof(StandardMode));
+            OnPropertyChanged(nameof(RawMode));
+            OnPropertyChanged(nameof(BasicAuthMode));
+            OnPropertyChanged(nameof(MultipartMode));
         }
     }
 
@@ -188,6 +244,80 @@ public class HttpRequestBlockSettingsViewerViewModel(BlockViewModel block) : Blo
             }
 
             OnPropertyChanged();
+        }
+    }
+
+    public StringHttpContentSettingsGroup AddMultipartStringContent()
+    {
+        var content = new StringHttpContentSettingsGroup();
+        GetMultipartRequestParams().Contents.Add(content);
+        return content;
+    }
+
+    public RawHttpContentSettingsGroup AddMultipartRawContent()
+    {
+        var content = new RawHttpContentSettingsGroup();
+        GetMultipartRequestParams().Contents.Add(content);
+        return content;
+    }
+
+    public FileHttpContentSettingsGroup AddMultipartFileContent()
+    {
+        var content = new FileHttpContentSettingsGroup();
+        GetMultipartRequestParams().Contents.Add(content);
+        return content;
+    }
+
+    public void RemoveMultipartContent(HttpContentSettingsGroup content)
+        => GetMultipartRequestParams().Contents.Remove(content);
+
+    private MultipartRequestParams GetMultipartRequestParams()
+    {
+        PrimeRequestParamsCache();
+
+        if (HttpRequestBlock.RequestParams is not MultipartRequestParams multipartRequestParams)
+        {
+            throw new InvalidOperationException("Multipart content is only available in multipart mode");
+        }
+
+        return multipartRequestParams;
+    }
+
+    private void PrimeRequestParamsCache()
+    {
+        if (requestParamsCachePrimed)
+        {
+            return;
+        }
+
+        // The block only holds one RequestParams instance at a time, but the editor
+        // lets the user flip between modes and keep each mode's last edited payload alive.
+        CacheRequestParams(HttpRequestBlock.RequestParams);
+        requestParamsCachePrimed = true;
+    }
+
+    private void CacheRequestParams(RequestParams requestParams)
+    {
+        switch (requestParams)
+        {
+            case StandardRequestParams standardRequestParams:
+                cachedStandardParams = standardRequestParams;
+                break;
+
+            case RawRequestParams rawRequestParams:
+                cachedRawParams = rawRequestParams;
+                break;
+
+            case BasicAuthRequestParams basicAuthRequestParams:
+                cachedBasicAuthParams = basicAuthRequestParams;
+                break;
+
+            case MultipartRequestParams multipartRequestParams:
+                cachedMultipartParams = multipartRequestParams;
+                break;
+
+            default:
+                throw new NotImplementedException();
         }
     }
 }

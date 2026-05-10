@@ -149,7 +149,33 @@
             <TabItem>
                 <StackPanel>
                     <local:StringSettingViewer x:Name="multipartBoundarySetting" />
-                    <Label Content="Sorry, you can only edit multipart settings in LoliCode for now" />
+                    <StackPanel Orientation="Horizontal" Margin="5 5 5 0">
+                        <Button x:Name="addMultipartStringButton" Click="AddMultipartString" Margin="0 0 5 0"
+                                Style="{StaticResource StyledSuccessButton}"
+                                Width="80" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterialDesign Kind="Add" />
+                                <TextBlock VerticalAlignment="Center" Margin="5 0">String</TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="addMultipartRawButton" Click="AddMultipartRaw" Margin="0 0 5 0"
+                                Style="{StaticResource StyledSuccessButton}"
+                                Width="70" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterialDesign Kind="Add" />
+                                <TextBlock VerticalAlignment="Center" Margin="5 0">Raw</TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="addMultipartFileButton" Click="AddMultipartFile"
+                                Style="{StaticResource StyledSuccessButton}"
+                                Width="70" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterialDesign Kind="Add" />
+                                <TextBlock VerticalAlignment="Center" Margin="5 0">File</TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel x:Name="multipartContentsPanel" Margin="0 5 0 0" />
                 </StackPanel>
             </TabItem>
         </TabControl>

@@ -135,7 +135,12 @@
                                         <ColumnDefinition Width="auto" />
                                     </Grid.ColumnDefinitions>
                                     <Label Grid.Column="0" VerticalAlignment="Center" Content="Slice Name" />
-                                    <TextBox Grid.Column="1" Text="{Binding SliceName}" Height="30" Margin="5 0" />
+                                    <ComboBox Grid.Column="1"
+                                              IsEditable="True"
+                                              ItemsSource="{Binding DataContext.DataRuleSliceSuggestions, RelativeSource={RelativeSource AncestorType=Page}}"
+                                              Text="{Binding SliceName, UpdateSourceTrigger=PropertyChanged}"
+                                              Height="30"
+                                              Margin="5 0" />
                                     <ComboBox Grid.Column="2" 
                                               ItemsSource="{Binding DataContext.StringRules, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                               SelectedItem="{Binding Comparison}" Height="30" Margin="5 0" />
@@ -169,7 +174,12 @@
                                         <ColumnDefinition Width="auto" />
                                     </Grid.ColumnDefinitions>
                                     <Label Grid.Column="0" VerticalAlignment="Center" Content="Slice Name" />
-                                    <TextBox Grid.Column="1" Text="{Binding SliceName}" Height="30" Margin="5 0" />
+                                    <ComboBox Grid.Column="1"
+                                              IsEditable="True"
+                                              ItemsSource="{Binding DataContext.DataRuleSliceSuggestions, RelativeSource={RelativeSource AncestorType=Page}}"
+                                              Text="{Binding SliceName, UpdateSourceTrigger=PropertyChanged}"
+                                              Height="30"
+                                              Margin="5 0" />
                                     <Label Grid.Column="2" VerticalAlignment="Center" Content="Regex to match" />
                                     <TextBox Grid.Column="3" Text="{Binding RegexToMatch}" Height="30" Margin="5 0" />
                                     <CheckBox Grid.Column="4" Content="Invert"

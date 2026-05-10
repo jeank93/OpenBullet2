@@ -311,6 +311,11 @@ p-table.no-header {
             padding: 0.3rem !important;
             color: var(--fg-primary) !important;
             font-size: 14px !important;
+
+            &.p-highlight {
+                background-color: var(--fg-accent) !important;
+                color: var(--fg-light) !important;
+            }
         }
     }
 

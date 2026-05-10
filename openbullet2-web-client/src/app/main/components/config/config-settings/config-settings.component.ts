@@ -1,6 +1,7 @@
 import { Component, HostListener, OnInit } from '@angular/core';
 import { faPlus, faTriangleExclamation, faWrench, faX } from '@fortawesome/free-solid-svg-icons';
 import { MessageService } from 'primeng/api';
+import { AutoCompleteCompleteEvent } from 'primeng/autocomplete';
 import {
   ConfigDto,
   CustomInputDto,
@@ -62,6 +63,7 @@ export class ConfigSettingsComponent implements OnInit {
   testDataForRules = '';
   testWordlistTypeForRules = '';
   ruleTestResult: TestDataRulesResultDto | null = null;
+  dataRuleSliceSuggestions: string[] = [];
 
   constructor(
     private configService: ConfigService,
@@ -260,6 +262,15 @@ export class ConfigSettingsComponent implements OnInit {
     this.ruleTestResult = null;
   }
 
+  filterDataRuleSliceSuggestions(event: AutoCompleteCompleteEvent) {
+    const trimmedQuery = event.query.trim().toLowerCase();
+    const allSuggestions = this.getDataRuleSliceSuggestions();
+
+    this.dataRuleSliceSuggestions = trimmedQuery === ''
+      ? allSuggestions
+      : allSuggestions.filter(s => s.toLowerCase().includes(trimmedQuery));
+  }
+
   private ensureRuleTestWordlistType() {
     if (this.wordlistTypes.length === 0) {
       return;
@@ -273,5 +284,22 @@ export class ConfigSettingsComponent implements OnInit {
       .find((type) => this.wordlistTypes.includes(type));
 
     this.testWordlistTypeForRules = allowedWordlistType ?? this.wordlistTypes[0];
+  }
+
+  private getDataRuleSliceSuggestions(): string[] {
+    if (this.envSettings === null) {
+      return [];
+    }
+
+    const allowedWordlistTypes = this.config?.settings.dataSettings.allowedWordlistTypes ?? [];
+    const wordlistTypes = allowedWordlistTypes.length > 0
+      ? this.envSettings.wordlistTypes.filter(w => allowedWordlistTypes.includes(w.name))
+      : this.envSettings.wordlistTypes;
+
+    return [...new Set(wordlistTypes
+      .flatMap(w => w.slices.concat(w.slicesAlias))
+      .map(s => s.trim())
+      .filter(s => s.length > 0))]
+      .sort((a, b) => a.localeCompare(b));
   }
 }

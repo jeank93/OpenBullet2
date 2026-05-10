@@ -175,9 +175,17 @@
     </div>
     <div *ngFor="let rule of config.settings.dataSettings.dataRules.simple" class="row my-3 justify-content-between">
         <div class="col align-self-stretch pr-2">
-            <app-input-text key="simpleDataRuleSliceName" class="input-small w-100"
+            <p-autoComplete
+                inputStyleClass="input-small w-100"
+                class="d-block w-100"
                 ngDefaultControl
-                (validityChange)="localSave()"
+                [completeOnFocus]="true"
+                [suggestions]="dataRuleSliceSuggestions"
+                (completeMethod)="filterDataRuleSliceSuggestions($event)"
+                [showEmptyMessage]="false"
+                spellcheck="false"
+                (onBlur)="localSave()"
+                (onSelect)="localSave()"
                 [(ngModel)]="rule.sliceName"
                 placeholder="DATA" />
             <span class="d-block mt-1 text-small color-inactive">Slice name</span>
@@ -222,9 +230,17 @@
     </div>
     <div *ngFor="let rule of config.settings.dataSettings.dataRules.regex" class="row my-3 justify-content-between">
         <div class="col align-self-stretch pr-2">
-            <app-input-text key="simpleDataRuleSliceName" class="input-small w-100"
+            <p-autoComplete
+                inputStyleClass="input-small w-100"
+                class="d-block w-100"
                 ngDefaultControl
-                (validityChange)="localSave()"
+                [completeOnFocus]="true"
+                [suggestions]="dataRuleSliceSuggestions"
+                (completeMethod)="filterDataRuleSliceSuggestions($event)"
+                [showEmptyMessage]="false"
+                spellcheck="false"
+                (onBlur)="localSave()"
+                (onSelect)="localSave()"
                 [(ngModel)]="rule.sliceName"
                 placeholder="DATA" />
             <span class="d-block mt-1 text-small color-inactive">Slice name</span>

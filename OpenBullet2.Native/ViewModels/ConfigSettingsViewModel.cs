@@ -145,8 +145,15 @@ public class ConfigSettingsViewModel : ViewModelBase
             allowedWordlistTypes = value;
             Data.AllowedWordlistTypes = [.. allowedWordlistTypes];
             OnPropertyChanged();
+            OnPropertyChanged(nameof(DataRuleSliceSuggestions));
         }
     }
+
+    public IEnumerable<string> DataRuleSliceSuggestions => GetDataRuleWordlistTypes()
+        .SelectMany(w => w.Slices.Concat(w.SlicesAlias))
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .Distinct()
+        .OrderBy(s => s);
 
     public bool UrlEncodeDataAfterSlicing
     {
@@ -350,6 +357,19 @@ public class ConfigSettingsViewModel : ViewModelBase
 
     private void SaveResources() => Data.Resources = [.. ResourcesCollection];
     private void SaveDataRules() => Data.DataRules = [.. DataRulesCollection];
+
+    private IEnumerable<RuriLib.Models.Environment.WordlistType> GetDataRuleWordlistTypes()
+    {
+        var allowedWordlistTypeNames = AllowedWordlistTypes
+            .Where(t => !string.IsNullOrWhiteSpace(t))
+            .ToHashSet(StringComparer.Ordinal);
+
+        var wordlistTypes = rlSettingsService.Environment.WordlistTypes.AsEnumerable();
+
+        return allowedWordlistTypeNames.Count > 0
+            ? wordlistTypes.Where(w => allowedWordlistTypeNames.Contains(w.Name))
+            : wordlistTypes;
+    }
 
     private void CreateCollections()
     {

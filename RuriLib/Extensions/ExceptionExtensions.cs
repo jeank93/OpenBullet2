@@ -14,12 +14,15 @@ public static class ExceptionExtensions
     public static string PrettyPrint(this Exception ex)
     {
         var sb = new StringBuilder();
-        sb.Append($"{ex.GetType()}: {ex.Message}");
 
-        while (ex is AggregateException && ex.InnerException is not null)
+        for (var current = ex; current is not null; current = current.InnerException)
         {
-            ex = ex.InnerException;
-            sb.Append($" | {ex.GetType()}: {ex.Message}");
+            if (sb.Length > 0)
+            {
+                sb.Append(" | ");
+            }
+
+            sb.Append($"{current.GetType()}: {current.Message}");
         }
 
         return sb.ToString();

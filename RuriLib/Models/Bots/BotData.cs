@@ -286,7 +286,7 @@ public class BotData
     {
         except ??= [];
 
-        foreach (var obj in _objects.Where(o => o.Value is IDisposable && !except.Contains(o.Key)).ToList())
+        foreach (var obj in _objects.Where(o => !except.Contains(o.Key)).ToList())
         {
             try
             {

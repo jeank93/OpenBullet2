@@ -70,9 +70,11 @@ public class BotDataTests
     {
         var botData = NewBotData();
         var disposable = new DisposableStub();
+        var nonDisposable = new NonDisposableStub();
         var whitelisted = new DisposableStub();
 
         botData.SetObject("custom", disposable);
+        botData.SetObject("page", nonDisposable);
         botData.SetObject("httpClient", whitelisted);
 
         botData.DisposeObjectsExcept(["httpClient"]);
@@ -80,6 +82,7 @@ public class BotDataTests
         Assert.True(disposable.Disposed);
         Assert.False(whitelisted.Disposed);
         Assert.Null(botData.TryGetObject<DisposableStub>("custom"));
+        Assert.Null(botData.TryGetObject<NonDisposableStub>("page"));
         Assert.Same(whitelisted, botData.TryGetObject<DisposableStub>("httpClient"));
     }
 
@@ -100,4 +103,6 @@ public class BotDataTests
 
         public void Dispose() => Disposed = true;
     }
+
+    private sealed class NonDisposableStub;
 }

@@ -38,6 +38,7 @@ export class HitsComponent implements OnInit {
   sortBy: HitSortField = HitSortField.Date;
   sortDescending = true;
 
+  useDateFilter = true;
   rangeDates: Date[] = [moment().subtract(7, 'days').toDate(), moment().endOf('day').toDate()];
 
   selectedHit: HitDto | null = null;
@@ -119,10 +120,13 @@ export class HitsComponent implements OnInit {
       this.searchTerm = params['searchTerm'] ?? '';
       this.selectedHitTypes = (params['hitTypes'] as string)?.split(',') ?? [];
       this.configName = params['configName'] ?? 'anyConfig';
-      this.rangeDates = [
-        moment(params['minDate'] ?? moment().subtract(7, 'days').toISOString()).toDate(),
-        moment(params['maxDate'] ?? moment().endOf('day').toISOString()).toDate(),
-      ];
+      this.useDateFilter = params['useDateFilter'] !== 'false';
+      this.rangeDates = this.useDateFilter
+        ? [
+          moment(params['minDate'] ?? moment().subtract(7, 'days').toISOString()).toDate(),
+          moment(params['maxDate'] ?? moment().endOf('day').toISOString()).toDate(),
+        ]
+        : [];
       this.sortBy = params['sortBy'] ?? HitSortField.Date;
       this.sortDescending = params['sortDescending'] === 'true';
 
@@ -191,8 +195,9 @@ export class HitsComponent implements OnInit {
             searchTerm: this.searchTerm === '' ? null : this.searchTerm,
             hitTypes: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
             configName: this.configName === 'anyConfig' ? null : this.configName,
-            minDate: moment(this.rangeDates[0]).toISOString(),
-            maxDate: moment(this.rangeDates[1]).toISOString(),
+            useDateFilter: this.useDateFilter ? null : 'false',
+            minDate: this.getMinDate(),
+            maxDate: this.getMaxDate(),
             sortBy: sortBy === HitSortField.Date ? null : sortBy,
             sortDescending: sortDescending ? 'true' : null,
           },
@@ -207,8 +212,8 @@ export class HitsComponent implements OnInit {
         searchTerm: this.searchTerm,
         types: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
         configName: this.configName === 'anyConfig' ? null : this.configName,
-        minDate: this.rangeDates[0].toISOString(),
-        maxDate: this.rangeDates[1].toISOString(),
+        minDate: this.getMinDate(),
+        maxDate: this.getMaxDate(),
         sortBy: sortBy,
         sortDescending: sortDescending,
       })
@@ -231,8 +236,20 @@ export class HitsComponent implements OnInit {
     this.searchTerm = '';
     this.selectedHitTypes = [];
     this.configName = 'anyConfig';
+    this.useDateFilter = true;
     this.rangeDates = [moment().subtract(7, 'days').toDate(), moment().endOf('day').toDate()];
 
+    this.refreshHits();
+  }
+
+  clearDateFilter() {
+    this.useDateFilter = false;
+    this.rangeDates = [];
+    this.refreshHits();
+  }
+
+  dateRangeSelected() {
+    this.useDateFilter = this.rangeDates.length > 0;
     this.refreshHits();
   }
 
@@ -248,8 +265,8 @@ export class HitsComponent implements OnInit {
       .deleteHits({
         searchTerm: this.searchTerm,
         types: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
-        minDate: this.rangeDates[0].toISOString(),
-        maxDate: this.rangeDates[1].toISOString(),
+        minDate: this.getMinDate(),
+        maxDate: this.getMaxDate(),
         configName: this.configName === 'anyConfig' ? null : this.configName,
         sortBy: null,
         sortDescending: false,
@@ -303,8 +320,8 @@ export class HitsComponent implements OnInit {
         {
           searchTerm: this.searchTerm,
           types: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
-          minDate: this.rangeDates[0].toISOString(),
-          maxDate: this.rangeDates[1].toISOString(),
+          minDate: this.getMinDate(),
+          maxDate: this.getMaxDate(),
           configName: this.configName === 'anyConfig' ? null : this.configName,
           sortBy: null,
           sortDescending: false,
@@ -320,8 +337,8 @@ export class HitsComponent implements OnInit {
         {
           searchTerm: this.searchTerm,
           types: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
-          minDate: this.rangeDates[0].toISOString(),
-          maxDate: this.rangeDates[1].toISOString(),
+          minDate: this.getMinDate(),
+          maxDate: this.getMaxDate(),
           configName: this.configName === 'anyConfig' ? null : this.configName,
           sortBy: null,
           sortDescending: false,
@@ -402,8 +419,8 @@ export class HitsComponent implements OnInit {
       .sendToRecheck({
         searchTerm: this.searchTerm,
         types: this.selectedHitTypes.length === 0 ? null : this.selectedHitTypes.join(','),
-        minDate: this.rangeDates[0].toISOString(),
-        maxDate: this.rangeDates[1].toISOString(),
+        minDate: this.getMinDate(),
+        maxDate: this.getMaxDate(),
         configName: this.configName === 'anyConfig' ? null : this.configName,
         sortBy: null,
         sortDescending: false,
@@ -416,5 +433,13 @@ export class HitsComponent implements OnInit {
         });
         this.router.navigate([`/job/multi-run/${resp.jobId}`]);
       });
+  }
+
+  private getMinDate() {
+    return this.useDateFilter && this.rangeDates[0] ? this.rangeDates[0].toISOString() : null;
+  }
+
+  private getMaxDate() {
+    return this.useDateFilter && this.rangeDates[1] ? this.rangeDates[1].toISOString() : null;
   }
 }

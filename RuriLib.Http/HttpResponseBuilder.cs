@@ -250,10 +250,7 @@ internal class HttpResponseBuilder
     /// </summary>
     internal static void SetCookies(string value, HttpResponse response)
     {
-        // Cookie values, as per the RFC, cannot contain commas. A comma is used
-        // to separate multiple cookies in the same Set-Cookie header. So, we split
-        // the header by commas and set each cookie individually.
-        foreach (var cookie in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var cookie in CookieHeaderParser.SplitCookies(value))
         {
             SetCookie(cookie, response);
         }

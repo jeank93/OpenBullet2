@@ -579,7 +579,7 @@ export class EditMultiRunJobComponent implements DeactivatableComponent {
   addFileSystemHitOutput() {
     this.options!.hitOutputs.push({
       _polyTypeName: HitOutputType.FileSystem,
-      baseDir: '',
+      baseDir: 'UserData/Hits/<CONFIG>/<DATE>',
     });
     this.touched = true;
   }

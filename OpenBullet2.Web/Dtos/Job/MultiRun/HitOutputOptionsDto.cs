@@ -29,9 +29,10 @@ public class DatabaseHitOutputOptionsDto : HitOutputOptionsDto
 public class FileSystemHitOutputOptionsDto : HitOutputOptionsDto
 {
     /// <summary>
-    /// The parent directory inside which the text files will be created.
+    /// The directory template inside which the text files will be created.
+    /// Supports placeholders like &lt;CONFIG&gt;, &lt;WORDLIST&gt; and &lt;DATE&gt;.
     /// </summary>
-    public string BaseDir { get; set; } = "Hits";
+    public string BaseDir { get; set; } = "UserData/Hits/<CONFIG>/<DATE>";
 }
 
 /// <summary>

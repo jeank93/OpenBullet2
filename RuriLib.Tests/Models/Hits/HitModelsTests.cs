@@ -1,11 +1,13 @@
 using RuriLib.Logging;
 using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
+using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Environment;
 using RuriLib.Models.Hits;
 using RuriLib.Models.Hits.HitOutputs;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -98,6 +100,45 @@ public class HitModelsTests
             if (Directory.Exists(baseDir))
             {
                 Directory.Delete(baseDir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task FileSystemHitOutput_Store_WithTemplateBaseDir_UsesConfiguredPlaceholders()
+    {
+        var rootDir = Path.Combine(Path.GetTempPath(), $"ob2-hit-output-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(rootDir);
+        var wordlistPath = Path.Combine(rootDir, "MainWordlist.txt");
+        File.WriteAllText(wordlistPath, "user:pass");
+        var output = new FileSystemHitOutput(Path.Combine(rootDir, "<CONFIG>", "<WORDLIST>", "<DATE>"));
+        var hitDate = new DateTime(2026, 5, 10, 12, 30, 0, DateTimeKind.Local);
+        var hit = new Hit
+        {
+            Type = "SUCCESS",
+            Date = hitDate,
+            Config = new Config
+            {
+                Id = "test",
+                Metadata = new ConfigMetadata { Name = "Config/Name" }
+            },
+            DataPool = new FileDataPool(wordlistPath),
+            Data = new DataLine("user:pass", new WordlistType())
+        };
+
+        try
+        {
+            await output.Store(hit);
+
+            var filePath = Path.Combine(rootDir, "Config_Name", "MainWordlist", hitDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "SUCCESS.txt");
+
+            Assert.True(File.Exists(filePath));
+        }
+        finally
+        {
+            if (Directory.Exists(rootDir))
+            {
+                Directory.Delete(rootDir, true);
             }
         }
     }

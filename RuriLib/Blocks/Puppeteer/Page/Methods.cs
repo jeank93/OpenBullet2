@@ -377,14 +377,18 @@ public static class Methods
     }
 
     /// <summary>
-    /// Evaluates a js expression in the current page and returns a json response.
+    /// Evaluates a js expression in the current frame context and returns a json response.
     /// </summary>
-    [Block("Evaluates a js expression in the current page and returns a json response", name = "Execute JS")]
+    [Block("Evaluates a js expression in the current frame context and returns a json response", name = "Execute JS")]
     public static async Task<string> PuppeteerExecuteJs(BotData data, [MultiLine] string expression)
     {
         data.Logger.LogHeader();
 
         var frame = GetFrame(data);
+        data.Logger.Log(frame.ParentFrame is null
+            ? "Executing JS in the main frame context"
+            : "Executing JS in the current iframe context",
+            LogColors.DarkSalmon);
         await using var response = await frame.EvaluateExpressionHandleAsync(expression);
         var value = await response.JsonValueAsync<object>();
         var json = SerializeJavaScriptResult(value);

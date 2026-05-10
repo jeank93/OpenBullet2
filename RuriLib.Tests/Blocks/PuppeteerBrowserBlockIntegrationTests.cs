@@ -171,7 +171,10 @@ public class PuppeteerBrowserBlockIntegrationTests
             await PuppeteerPageMethods.PuppeteerClickAtCoordinates(data, 60, 50);
             Assert.Equal("inside", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('inside').innerText;"));
             Assert.Equal("frame", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('frame-button').getAttribute('data-coordinate-click');"));
+            Assert.Equal("true", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "String(document.getElementById('g-recaptcha-response') === null);"));
             PuppeteerPageMethods.PuppeteerSwitchToMainFrame(data);
+            await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('g-recaptcha-response').value = 'solved';");
+            Assert.Equal("solved", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.getElementById('g-recaptcha-response').value;"));
             Assert.Equal("page-block-test", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "document.body.getAttribute('data-page');"));
         }
         finally
@@ -399,6 +402,7 @@ public class PuppeteerBrowserBlockIntegrationTests
         => """
            <body data-page="page-block-test" style="height: 1800px; margin: 0; position: relative;">
              <input id="typing-target" value="">
+             <textarea id="g-recaptcha-response" style="display:none;"></textarea>
              <button id="coordinate-target"
                      type="button"
                      style="position: absolute; left: 120px; top: 150px; width: 60px; height: 40px;"

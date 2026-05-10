@@ -309,9 +309,9 @@ public static class Methods
     }
 
     /// <summary>
-    /// Evaluates a js expression in the current page and returns a json response.
+    /// Evaluates a js expression in the current browser context and returns a json response.
     /// </summary>
-    [Block("Evaluates a js expression in the current page and returns a json response", name = "Execute JS")]
+    [Block("Evaluates a js expression in the current browser context and returns a json response", name = "Execute JS")]
     public static string SeleniumExecuteJs(BotData data, [MultiLine] string expression)
     {
         data.Logger.LogHeader();

@@ -283,6 +283,21 @@ public static class Methods
     }
 
     /// <summary>
+    /// Gets the current URL of the page.
+    /// </summary>
+    [Block("Gets the current URL of the page", name = "Get Current URL")]
+    public static string PuppeteerGetCurrentUrl(BotData data)
+    {
+        data.Logger.LogHeader();
+
+        var currentUrl = GetPage(data).Url;
+        data.ADDRESS = currentUrl;
+
+        data.Logger.Log($"Current URL: {currentUrl}", LogColors.DarkSalmon);
+        return currentUrl;
+    }
+
+    /// <summary>
     /// Gets the full DOM of the page.
     /// </summary>
     [Block("Gets the full DOM of the page", name = "Get DOM")]

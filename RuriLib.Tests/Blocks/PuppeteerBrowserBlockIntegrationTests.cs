@@ -112,6 +112,12 @@ public class PuppeteerBrowserBlockIntegrationTests
             Assert.Equal("0", await PuppeteerPageMethods.PuppeteerExecuteJs(data, "String(window.scrollY);"));
             Assert.Contains("typing-target", await PuppeteerPageMethods.PuppeteerGetDOM(data));
 
+            await PuppeteerPageMethods.PuppeteerNavigateTo(data, connection.BuildTargetUrl("html"), timeout: 20000);
+            await PuppeteerPageMethods.PuppeteerExecuteJs(data, "history.replaceState(null, '', '/html?dynamic=1');");
+            Assert.EndsWith("/html", data.ADDRESS);
+            Assert.EndsWith("/html?dynamic=1", PuppeteerPageMethods.PuppeteerGetCurrentUrl(data));
+            Assert.Equal(PuppeteerPageMethods.PuppeteerGetCurrentUrl(data), data.ADDRESS);
+
             var screenshotPath = Path.Combine(Path.GetTempPath(), $"ob2-puppeteer-page-{Guid.NewGuid():N}.jpg");
             try
             {

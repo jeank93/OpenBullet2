@@ -121,6 +121,11 @@ public class SeleniumBrowserBlockIntegrationTests
         Assert.True(int.Parse(SeleniumPageMethods.SeleniumExecuteJs(data, "return String(window.scrollY);")) >= 0);
         Assert.Contains("typing-target", SeleniumPageMethods.SeleniumGetDOM(data));
 
+        SeleniumPageMethods.SeleniumNavigateTo(data, connection.BuildTargetUrl("html"), timeout: 20);
+        SeleniumPageMethods.SeleniumExecuteJs(data, "history.replaceState(null, '', '/html?dynamic=1');");
+        Assert.EndsWith("/html?dynamic=1", SeleniumPageMethods.SeleniumGetCurrentUrl(data));
+        Assert.Equal(SeleniumPageMethods.SeleniumGetCurrentUrl(data), data.ADDRESS);
+
         var screenshotPath = Path.Combine(Path.GetTempPath(), $"ob2-selenium-page-{Guid.NewGuid():N}.jpg");
         try
         {

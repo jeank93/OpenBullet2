@@ -84,6 +84,17 @@ public class BrowserBlocksTests
     }
 
     [Fact]
+    public void SeleniumGetCurrentUrl_WithoutBrowser_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            SeleniumPageMethods.SeleniumGetCurrentUrl(data));
+
+        Assert.Equal("The browser is not open!", ex.Message);
+    }
+
+    [Fact]
     public void SeleniumClickAtCoordinates_WithoutBrowser_Throws()
     {
         var data = NewBotData();
@@ -101,6 +112,17 @@ public class BrowserBlocksTests
 
         var ex = await Assert.ThrowsAsync<BlockExecutionException>(() =>
             PuppeteerPageMethods.PuppeteerNavigateTo(data));
+
+        Assert.Equal("No pages open!", ex.Message);
+    }
+
+    [Fact]
+    public void PuppeteerGetCurrentUrl_WithoutBrowser_Throws()
+    {
+        var data = NewBotData();
+
+        var ex = Assert.Throws<BlockExecutionException>(() =>
+            PuppeteerPageMethods.PuppeteerGetCurrentUrl(data));
 
         Assert.Equal("No pages open!", ex.Message);
     }

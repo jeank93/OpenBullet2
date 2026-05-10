@@ -209,6 +209,21 @@ public static class Methods
     }
 
     /// <summary>
+    /// Gets the current URL of the page.
+    /// </summary>
+    [Block("Gets the current URL of the page", name = "Get Current URL")]
+    public static string SeleniumGetCurrentUrl(BotData data)
+    {
+        data.Logger.LogHeader();
+
+        var currentUrl = GetBrowser(data).Url;
+        data.ADDRESS = currentUrl;
+
+        data.Logger.Log($"Current URL: {currentUrl}", LogColors.JuneBud);
+        return currentUrl;
+    }
+
+    /// <summary>
     /// Gets the full DOM of the page.
     /// </summary>
     [Block("Gets the full DOM of the page", name = "Get DOM")]

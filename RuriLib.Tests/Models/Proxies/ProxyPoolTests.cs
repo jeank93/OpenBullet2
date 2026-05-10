@@ -76,6 +76,28 @@ public class ProxyPoolTests
     }
 
     [Fact]
+    public async Task ReloadAllAsync_RemovesDuplicatesAcrossSources()
+    {
+        ListProxySource firstSource = new([
+            new("127.0.0.1", 8000),
+            new("127.0.0.2", 8001)
+        ]);
+
+        ListProxySource secondSource = new([
+            new("127.0.0.1", 8000),
+            new("127.0.0.3", 8002)
+        ]);
+
+        using var pool = new ProxyPool([firstSource, secondSource]);
+
+        await pool.ReloadAllAsync(false, TestCancellationToken);
+
+        var proxies = pool.Proxies.ToArray();
+        Assert.Equal(3, proxies.Length);
+        Assert.Single(proxies, p => p.Host == "127.0.0.1" && p.Port == 8000);
+    }
+
+    [Fact]
     public async Task GetProxy_Available_ReturnValidProxy()
     {
         ListProxySource source = new(new Proxy[]

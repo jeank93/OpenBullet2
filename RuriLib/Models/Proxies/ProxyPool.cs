@@ -282,6 +282,7 @@ public class ProxyPool : IDisposable
         {
             proxies = results
                 .Where(p => options.AllowedTypes.Contains(p.Type)) // Filter by allowed types
+                .Distinct(ProxyIdentityComparer.Instance)
                 .ToList();
 
             if (shuffle)

@@ -1,6 +1,7 @@
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
+using Org.BouncyCastle.Crypto.Generators;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -712,6 +713,15 @@ public static class Crypto
             ecdsa?.Dispose();
         }
     }
+    #endregion
+
+    #region Scrypt
+    /// <summary>
+    /// Derives a key using the Scrypt password-based key derivation function.
+    /// </summary>
+    public static byte[] Scrypt(byte[] password, byte[] salt, int iterationCount = 16384, int blockSize = 8,
+        int threadCount = 1, int keyLength = 32)
+        => SCrypt.Generate(password, salt, iterationCount, blockSize, threadCount, keyLength);
     #endregion
 
     #region Bcrypt

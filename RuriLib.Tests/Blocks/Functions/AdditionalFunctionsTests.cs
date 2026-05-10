@@ -125,6 +125,54 @@ public class AdditionalFunctionsTests
     }
 
     [Fact]
+    public void ScryptString_ReturnsEncodedHashInsteadOfRawDerivedKey()
+    {
+        var data = NewBotData();
+
+        var hashed = CryptoMethods.ScryptString(
+            data,
+            "test1234",
+            "salt",
+            iterationCount: 1024,
+            blockSize: 15,
+            threadCount: 1);
+
+        Assert.Equal(
+            "$s2$1024$15$1$c2FsdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=$AoifrOvw43HdYrBT/t11pQ8gpIk0Cx9s7cg6W0SU/1o=",
+            hashed);
+    }
+
+    [Fact]
+    public void ScryptDeriveKey_ReturnsExpectedBrowserlingStyleHex()
+    {
+        var data = NewBotData();
+
+        var derived = CryptoMethods.ScryptDeriveKey(
+            data,
+            "test1234",
+            "salt",
+            outputSize: 15,
+            iterationCount: 1024,
+            blockSize: 15,
+            threadCount: 1);
+
+        Assert.Equal("9c4351797ce2d8f0af5c63f20d82a6", derived);
+    }
+
+    [Fact]
+    public void ScryptString_WithVeryLongSalt_TruncatesToLegacySaltLength()
+    {
+        var data = NewBotData();
+        var salt = new string('a', 256);
+
+        var hashed = CryptoMethods.ScryptString(data, "test1234", salt);
+
+        Assert.Equal(
+            "$s2$16384$8$1$YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=$lmoJTLRaLFu78m7K19YNT4NzXKVdWrbH++n2AyVckqM=",
+            hashed);
+    }
+
+    [Fact]
     public void DictionaryMethods_GetKeyReturnsEmptyStringWhenNotFound()
     {
         var data = NewBotData();

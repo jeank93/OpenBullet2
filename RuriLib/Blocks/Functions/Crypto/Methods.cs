@@ -6,7 +6,6 @@ using RuriLib.Functions.Conversion;
 using RuriLib.Functions.Crypto;
 using RuriLib.Logging;
 using RuriLib.Models.Bots;
-using Scrypt;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
@@ -149,30 +148,55 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        var rng = new FakeRng(salt);
-        var encoder = new ScryptEncoder(iterationCount, blockSize, threadCount, rng);
-        var hashed = encoder.Encode(password);
+        var saltBytes = NormalizeLegacyScryptSalt(salt);
+        var hashed = FormatLegacyScryptHash(password, saltBytes, iterationCount, blockSize, threadCount);
         data.Logger.Log($"Computed Scrypt: {hashed}", LogColors.YellowGreen);
         return hashed;
     }
 
-    // Used for Scrypt.NET because it doesn't support a parametrized salt
-    private class FakeRng : RandomNumberGenerator
+    /// <summary>
+    /// Derives a raw key using the Scrypt algorithm and returns it as a HEX-encoded lowercase string.
+    /// </summary>
+    [Block("Derives a raw key using the Scrypt algorithm and returns it as a HEX-encoded lowercase string",
+        name = "Scrypt Derive Key")]
+    public static string ScryptDeriveKey(BotData data, string password, string salt, int outputSize = 32,
+        int iterationCount = 16384, int blockSize = 8, int threadCount = 1)
     {
-        private readonly byte[] _salt;
+        data.Logger.LogHeader();
 
-        public FakeRng(string salt)
-        {
-            this._salt = Encoding.UTF8.GetBytes(salt);
-        }
+        var derived = RuriLib.Functions.Crypto.Crypto.Scrypt(
+            Encoding.UTF8.GetBytes(password),
+            Encoding.UTF8.GetBytes(salt),
+            iterationCount,
+            blockSize,
+            threadCount,
+            outputSize);
+        var hex = HexConverter.ToHexString(derived);
 
-        public override void GetBytes(byte[] data)
-        {
-            for (var i = 0; i < _salt.Length; i++)
-            {
-                data[i] = _salt[i];
-            }
-        }
+        data.Logger.Log($"Derived Scrypt key: {hex}", LogColors.YellowGreen);
+        return hex;
+    }
+
+    private static string FormatLegacyScryptHash(string password, byte[] saltBytes, int iterationCount, int blockSize, int threadCount)
+    {
+        var derived = RuriLib.Functions.Crypto.Crypto.Scrypt(
+            Encoding.UTF8.GetBytes(password),
+            saltBytes,
+            iterationCount,
+            blockSize,
+            threadCount);
+
+        return FormattableString.Invariant(
+            $"$s2${iterationCount}${blockSize}${threadCount}${Convert.ToBase64String(saltBytes)}${Convert.ToBase64String(derived)}");
+    }
+
+    private static byte[] NormalizeLegacyScryptSalt(string salt)
+    {
+        var saltBytes = new byte[32];
+        var providedSaltBytes = Encoding.UTF8.GetBytes(salt);
+        Array.Copy(providedSaltBytes, saltBytes, Math.Min(providedSaltBytes.Length, saltBytes.Length));
+
+        return saltBytes;
     }
 
     /// <summary>

@@ -318,7 +318,12 @@ p-table.no-header {
             }
         }
     }
+}
 
+p-autocomplete.w-100 {
+    .p-autocomplete {
+        width: 100%;
+    }
 }
 
 .code-editor * {

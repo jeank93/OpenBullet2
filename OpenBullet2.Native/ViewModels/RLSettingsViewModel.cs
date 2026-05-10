@@ -609,7 +609,7 @@ public class RLSettingsViewModel : ViewModelBase
         }
     }
 
-    public Task<decimal> CheckCaptchaBalance() => CaptchaServiceFactory.GetService(Captcha).GetBalanceAsync();
+    public Task<decimal> CheckCaptchaBalance() => CaptchaBalanceCache.RefreshBalanceAsync(Captcha);
 
     public Task Save() => _service.Save();
 

@@ -1,6 +1,8 @@
 using CaptchaSharp.Enums;
 using CaptchaSharp.Models;
 using RuriLib.Functions.Captchas;
+using RuriLib.Helpers;
+using RuriLib.Models.Settings;
 using RuriLib.Services;
 using System;
 using System.Threading;
@@ -17,15 +19,17 @@ namespace RuriLib.Providers.Captchas;
 public class CaptchaSharpProvider : ICaptchaProvider
 {
     private readonly CaptchaService _service;
+    private readonly CaptchaSettings _settings;
 
     /// <summary>
     /// Creates a captcha provider from the persisted RuriLib settings.
     /// </summary>
     public CaptchaSharpProvider(RuriLibSettingsService settings)
     {
-        _service = CaptchaServiceFactory.GetService(settings.RuriLibSettings.CaptchaSettings);
-        CheckBalanceBeforeSolving = settings.RuriLibSettings.CaptchaSettings.CheckBalanceBeforeSolving;
-        ServiceType = settings.RuriLibSettings.CaptchaSettings.CurrentService;
+        _settings = Cloner.Clone(settings.RuriLibSettings.CaptchaSettings);
+        _service = CaptchaServiceFactory.GetService(_settings);
+        CheckBalanceBeforeSolving = _settings.CheckBalanceBeforeSolving;
+        ServiceType = _settings.CurrentService;
     }
 
     /// <inheritdoc />
@@ -39,7 +43,7 @@ public class CaptchaSharpProvider : ICaptchaProvider
 
     /// <inheritdoc />
     public Task<decimal> GetBalanceAsync(CancellationToken cancellationToken = default)
-        => _service.GetBalanceAsync(cancellationToken);
+        => CaptchaBalanceCache.GetBalanceAsync(_settings, _service.GetBalanceAsync, cancellationToken);
 
     /// <inheritdoc />
     public Task<StringResponse> SolveTextCaptchaAsync(

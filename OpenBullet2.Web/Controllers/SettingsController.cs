@@ -277,14 +277,16 @@ public class SettingsController : ApiController
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<CaptchaBalanceDto>> CheckCaptchaCredit(
         CaptchaSettings captchaSettings)
-    {
-        var service = CaptchaServiceFactory.GetService(captchaSettings);
+        => await ExecuteCaptchaBalanceCheckAsync(captchaSettings);
 
+    private static async Task<ActionResult<CaptchaBalanceDto>> ExecuteCaptchaBalanceCheckAsync(
+        CaptchaSettings captchaSettings)
+    {
         try
         {
             return new CaptchaBalanceDto
             {
-                Balance = await service.GetBalanceAsync()
+                Balance = await CaptchaBalanceCache.RefreshBalanceAsync(captchaSettings)
             };
         }
         catch (Exception ex)

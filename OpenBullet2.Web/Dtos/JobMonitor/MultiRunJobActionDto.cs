@@ -25,6 +25,20 @@ public class SetBotsActionDto : MultiRunJobActionDto
 }
 
 /// <summary>
+/// Sets the number of data lines to skip before starting.
+/// </summary>
+[PolyType("setSkipAction")]
+[MapsFrom(typeof(SetSkipAction))]
+[MapsTo(typeof(SetSkipAction))]
+public class SetSkipActionDto : MultiRunJobActionDto
+{
+    /// <summary>
+    /// The new skip value.
+    /// </summary>
+    public int Skip { get; set; }
+}
+
+/// <summary>
 /// Reloads proxies.
 /// </summary>
 [PolyType("reloadProxiesAction")]

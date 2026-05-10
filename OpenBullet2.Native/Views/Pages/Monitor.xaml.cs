@@ -403,6 +403,7 @@ internal static class MonitorTextFormatter
         DiscordWebhookAction => "Send message via Discord webhook",
         TelegramBotAction => "Send message via Telegram bot",
         SetBotsAction a => $"Set bots to {a.Amount}",
+        SetSkipAction a => $"Set skip to {a.Skip}",
         ReloadProxiesAction => "Reload proxies",
         _ => $"Unknown action ({action.GetType().Name})"
     };

@@ -60,6 +60,34 @@ public class SetBotsAction : MultiRunJobAction
 }
 
 /// <summary>
+/// Changes the skip value of a target multi-run job.
+/// The new value affects the next start of the job.
+/// </summary>
+public class SetSkipAction : MultiRunJobAction
+{
+    /// <summary>Gets or sets the new skip value.</summary>
+    public int Skip { get; set; }
+
+    /// <inheritdoc />
+    public override Task Execute(MultiRunJob job)
+    {
+        if (Skip < 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        var dataPoolSize = job.DataPool?.Size;
+
+        if (dataPoolSize is null or <= 0 || Skip < dataPoolSize)
+        {
+            job.Skip = Skip;
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
 /// Reloads the proxies of a target multi-run job.
 /// </summary>
 public class ReloadProxiesAction : MultiRunJobAction

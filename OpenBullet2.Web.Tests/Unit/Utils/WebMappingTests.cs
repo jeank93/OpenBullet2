@@ -359,7 +359,8 @@ public class WebMappingTests
             Actions =
             [
                 SerializePoly(new StopJobActionDto { JobId = 12 }),
-                SerializePoly(new WaitActionDto { TimeSpan = TimeSpan.FromSeconds(5) })
+                SerializePoly(new WaitActionDto { TimeSpan = TimeSpan.FromSeconds(5) }),
+                SerializePoly(new SetSkipActionDto { Skip = 250 })
             ]
         };
 
@@ -368,19 +369,21 @@ public class WebMappingTests
         Assert.Equal("Action", action.Name);
         Assert.Equal(12, action.JobId);
         Assert.Equal(2, action.Triggers.Count);
-        Assert.Equal(2, action.Actions.Count);
+        Assert.Equal(3, action.Actions.Count);
         Assert.IsType<JobStatusTrigger>(action.Triggers[0]);
         Assert.IsType<TimeElapsedTrigger>(action.Triggers[1]);
         Assert.IsType<WaitAction>(action.Actions[1]);
+        Assert.IsType<SetSkipAction>(action.Actions[2]);
 
         action.Executions = 4;
         var dto = mapper.Map<TriggeredActionDto>(action);
 
         Assert.Equal(4, dto.Executions);
         Assert.Equal(2, dto.Triggers.Count);
-        Assert.Equal(2, dto.Actions.Count);
+        Assert.Equal(3, dto.Actions.Count);
         Assert.IsType<JobStatusTriggerDto>(dto.Triggers[0]);
         Assert.IsType<WaitActionDto>(dto.Actions[1]);
+        Assert.IsType<SetSkipActionDto>(dto.Actions[2]);
 
         var updated = WebMappingMethods.ApplyTriggeredAction(new UpdateTriggeredActionDto
         {

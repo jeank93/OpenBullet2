@@ -449,6 +449,34 @@
                                 </Border>
                             </DataTemplate>
 
+                            <DataTemplate DataType="{x:Type local:SetSkipActionEditorViewModel}">
+                                <Border Margin="0 0 0 8" Padding="8" BorderThickness="1" BorderBrush="Gray">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock VerticalAlignment="Center" Text="Set skip to" />
+                                            <mah:NumericUpDown Width="120"
+                                                               Margin="10 0 0 0"
+                                                               Minimum="0"
+                                                               Maximum="2147483647"
+                                                               Interval="1"
+                                                               Value="{Binding Skip}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1"
+                                                Tag="{Binding}"
+                                                Click="RemoveAction"
+                                                Style="{StaticResource StyledDangerButton}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Kind="Close" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+
                             <DataTemplate DataType="{x:Type local:SimpleActionEditorViewModel}">
                                 <Border Margin="0 0 0 8" Padding="8" BorderThickness="1" BorderBrush="Gray">
                                     <Grid>

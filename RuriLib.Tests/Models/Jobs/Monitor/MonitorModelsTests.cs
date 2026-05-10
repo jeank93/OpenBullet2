@@ -95,6 +95,24 @@ public class MonitorModelsTests
         Assert.Equal(7, job.Bots);
     }
 
+    [Fact]
+    public async Task SetSkipAction_WhenTargetJobIdIsMissing_UsesCurrentJobId()
+    {
+        var action = new SetSkipAction
+        {
+            Skip = 12
+        };
+        var job = new TestMultiRunJob(CreateSettingsService(), CreatePluginRepository())
+        {
+            Id = 3,
+            Skip = 1
+        };
+
+        await action.Execute(job.Id, [job]);
+
+        Assert.Equal(12, job.Skip);
+    }
+
     private static RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-monitor-tests-{Guid.NewGuid():N}"));
 

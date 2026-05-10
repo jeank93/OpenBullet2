@@ -140,6 +140,7 @@ public enum MonitorActionKind
     DiscordWebhook,
     TelegramBot,
     SetBots,
+    SetSkip,
     ReloadProxies
 }
 
@@ -280,6 +281,7 @@ public class EditTriggeredActionViewModel : ViewModelBase
             if (GetSelectedJobType() == JobType.MultiRun)
             {
                 types.Add(MonitorActionKind.SetBots);
+                types.Add(MonitorActionKind.SetSkip);
                 types.Add(MonitorActionKind.ReloadProxies);
             }
 
@@ -489,6 +491,7 @@ public class EditTriggeredActionViewModel : ViewModelBase
             DiscordWebhookAction a => new DiscordWebhookActionEditorViewModel(a.Webhook, a.Message),
             TelegramBotAction a => new TelegramBotActionEditorViewModel(a.Token, a.ChatId, a.Message),
             SetBotsAction a => new SetBotsActionEditorViewModel(a.Amount),
+            SetSkipAction a => new SetSkipActionEditorViewModel(a.Skip),
             ReloadProxiesAction => new SimpleActionEditorViewModel(MonitorActionKind.ReloadProxies, "Reload the proxies"),
             _ => throw new NotImplementedException($"Unsupported action type {action.GetType().Name}")
         };
@@ -506,6 +509,7 @@ public class EditTriggeredActionViewModel : ViewModelBase
             MonitorActionKind.DiscordWebhook => new DiscordWebhookActionEditorViewModel(string.Empty, string.Empty),
             MonitorActionKind.TelegramBot => new TelegramBotActionEditorViewModel(string.Empty, 0, string.Empty),
             MonitorActionKind.SetBots => new SetBotsActionEditorViewModel(1),
+            MonitorActionKind.SetSkip => new SetSkipActionEditorViewModel(0),
             MonitorActionKind.ReloadProxies => new SimpleActionEditorViewModel(MonitorActionKind.ReloadProxies, "Reload the proxies"),
             _ => throw new NotImplementedException()
         };
@@ -909,6 +913,22 @@ public class SetBotsActionEditorViewModel(int amount) : MonitorActionEditorViewM
     }
 
     public override MonitorAction Build() => new SetBotsAction { Amount = Amount };
+}
+
+public class SetSkipActionEditorViewModel(int skip) : MonitorActionEditorViewModel(MonitorActionKind.SetSkip)
+{
+    private int skip = skip;
+    public int Skip
+    {
+        get => skip;
+        set
+        {
+            skip = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public override MonitorAction Build() => new SetSkipAction { Skip = Skip };
 }
 
 public class SimpleActionEditorViewModel(MonitorActionKind kind, string description) : MonitorActionEditorViewModel(kind)

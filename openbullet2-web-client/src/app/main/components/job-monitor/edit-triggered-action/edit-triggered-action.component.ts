@@ -403,6 +403,12 @@ export class EditTriggeredActionComponent implements DeactivatableComponent {
           amount: 0,
         };
         break;
+      case ActionType.SetSkip:
+        action = {
+          _polyTypeName: ActionType.SetSkip,
+          skip: 0,
+        };
+        break;
       case ActionType.ReloadProxies:
         action = {
           _polyTypeName: ActionType.ReloadProxies,

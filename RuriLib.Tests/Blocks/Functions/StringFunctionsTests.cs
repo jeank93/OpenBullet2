@@ -111,6 +111,36 @@ public class StringFunctionsTests
     }
 
     [Fact]
+    public void GenerateGuid_V4_DefaultFormat_ReturnsVersion4Guid()
+    {
+        var data = NewBotData();
+
+        var result = Methods.GenerateGuid(data);
+
+        Assert.Matches(new Regex("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"), result);
+    }
+
+    [Fact]
+    public void GenerateGuid_V7_CompactFormat_ReturnsVersion7Guid()
+    {
+        var data = NewBotData();
+
+        var result = Methods.GenerateGuid(data, GuidVersion.V7, GuidFormat.N);
+
+        Assert.Matches(new Regex("^[0-9a-f]{12}7[0-9a-f]{19}$"), result);
+    }
+
+    [Fact]
+    public void GenerateGuid_BracesFormat_WrapsGuid()
+    {
+        var data = NewBotData();
+
+        var result = Methods.GenerateGuid(data, GuidVersion.V4, GuidFormat.B);
+
+        Assert.Matches(new Regex("^\\{[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\}$"), result);
+    }
+
+    [Fact]
     public void Split_Separator_ReturnsItems()
     {
         var data = NewBotData();

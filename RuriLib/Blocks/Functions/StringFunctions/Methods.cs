@@ -274,6 +274,31 @@ public static class Methods
         return generated;
     }
 
+    /// <summary>
+    /// Generates a GUID using the selected version and output format.
+    /// </summary>
+    [Block("Generates a GUID using the selected version and output format", name = "Generate GUID")]
+    public static string GenerateGuid(
+        BotData data,
+        [BlockParam("Version", "Choose whether to generate a random GUID (v4) or a time-ordered GUID (v7).")]
+        GuidVersion version = GuidVersion.V4,
+        [BlockParam("Format", "Choose the string format: D = hyphenated, N = compact, B = braces, P = parentheses.")]
+        GuidFormat format = GuidFormat.D)
+    {
+        data.Logger.LogHeader();
+
+        var guid = version switch
+        {
+            GuidVersion.V4 => Guid.NewGuid(),
+            GuidVersion.V7 => Guid.CreateVersion7(),
+            _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+        };
+
+        var formatted = guid.ToString(format.ToString());
+        data.Logger.Log($"Generated {version} GUID: {formatted}", LogColors.YellowGreen);
+        return formatted;
+    }
+
     private static bool TryGetRandomCharset(char token, string customCharset, out string charset)
     {
         charset = token switch
@@ -369,4 +394,46 @@ public static class Methods
         data.Logger.Log($"The character at index {index} is {character}", LogColors.YellowGreen);
         return character;
     }
+}
+
+/// <summary>
+/// Supported GUID generation strategies.
+/// </summary>
+public enum GuidVersion
+{
+    /// <summary>
+    /// Random GUID.
+    /// </summary>
+    V4,
+
+    /// <summary>
+    /// Time-ordered GUID.
+    /// </summary>
+    V7
+}
+
+/// <summary>
+/// Supported GUID string formats.
+/// </summary>
+public enum GuidFormat
+{
+    /// <summary>
+    /// Hyphenated 32-digit format.
+    /// </summary>
+    D,
+
+    /// <summary>
+    /// Compact 32-digit format.
+    /// </summary>
+    N,
+
+    /// <summary>
+    /// Hyphenated format wrapped in braces.
+    /// </summary>
+    B,
+
+    /// <summary>
+    /// Hyphenated format wrapped in parentheses.
+    /// </summary>
+    P
 }

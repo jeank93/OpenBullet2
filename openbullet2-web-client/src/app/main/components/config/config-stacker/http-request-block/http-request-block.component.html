@@ -470,6 +470,17 @@
     <div class="col-12 px-0">
         <div class="mb-1">
             <app-bool-setting
+                [parameter]="descriptor.parameters['ignoreCertificateValidation']"
+                [setting]="block.settings['ignoreCertificateValidation']"
+                [stacker]="stacker"
+                (onChange)="valueChanged()" />
+        </div>
+    </div>
+</div>
+<div class="row mt-2">
+    <div class="col-12 px-0">
+        <div class="mb-1">
+            <app-bool-setting
                 [parameter]="descriptor.parameters['useCustomCipherSuites']"
                 [setting]="block.settings['useCustomCipherSuites']"
                 [stacker]="stacker"

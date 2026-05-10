@@ -129,6 +129,7 @@ public class HttpRequestBlockInstanceTests
             "await HttpRequestStandard(data, new StandardHttpRequestOptions",
             "Url = $\"https://example.com/{globals.path}\"",
             "Content = $\"name={globals.user}\"",
+            "IgnoreCertificateValidation = true",
             "UrlEncodeContent = ObjectExtensions.DynamicAsBool(globals.encodeContent)");
 
         AssertSyntax(CreateStandardRequestBlock(safe: true),
@@ -260,6 +261,7 @@ public class HttpRequestBlockInstanceTests
         (block.Settings["maxNumberOfRedirects"].FixedSetting as IntSetting)!.Value = 5;
         (block.Settings["readResponseContent"].FixedSetting as BoolSetting)!.Value = false;
         (block.Settings["absoluteUriInFirstLine"].FixedSetting as BoolSetting)!.Value = true;
+        (block.Settings["ignoreCertificateValidation"].FixedSetting as BoolSetting)!.Value = true;
         block.Settings["customCookies"].InputMode = SettingInputMode.Variable;
         block.Settings["customCookies"].InputVariableName = "globals.cookies";
         block.Settings["customHeaders"].InputMode = SettingInputMode.Interpolated;

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RuriLib.Functions.Http;
 using RuriLib.Functions.Http.Options;
 using RuriLib.Models.Blocks.Parameters;
@@ -30,14 +31,18 @@ public class HttpRequestBlockDescriptor : BlockDescriptor
         Parameters = new()
         {
             ["url"] = new StringParameter("url", "https://google.com"),
-            ["method"] = new EnumParameter("method", typeof(HttpMethod), HttpMethod.GET.ToString()),
+            ["method"] = new EnumParameter("method", typeof(HttpMethod), nameof(HttpMethod.GET)),
             ["autoRedirect"] = new BoolParameter("autoRedirect", true),
             ["maxNumberOfRedirects"] = new IntParameter("maxNumberOfRedirects", 8),
             ["readResponseContent"] = new BoolParameter("readResponseContent", true),
             ["urlEncodeContent"] = new BoolParameter("urlEncodeContent", false),
             ["absoluteUriInFirstLine"] = new BoolParameter("absoluteUriInFirstLine", false),
-            ["httpLibrary"] = new EnumParameter("httpLibrary", typeof(HttpLibrary), HttpLibrary.RuriLibHttp.ToString()),
-            ["securityProtocol"] = new EnumParameter("securityProtocol", typeof(SecurityProtocol), SecurityProtocol.SystemDefault.ToString()),
+            ["httpLibrary"] = new EnumParameter("httpLibrary", typeof(HttpLibrary), nameof(HttpLibrary.RuriLibHttp)),
+            ["securityProtocol"] = new EnumParameter("securityProtocol", typeof(SecurityProtocol), nameof(SecurityProtocol.SystemDefault)),
+            ["ignoreCertificateValidation"] = new BoolParameter("ignoreCertificateValidation", true)
+            {
+                Description = "Bypass TLS certificate validity checks."
+            },
             ["useCustomCipherSuites"] = new BoolParameter("useCustomCipherSuites", false),
             ["alwaysSendContent"] = new BoolParameter("alwaysSendContent", false),
             ["decodeHtml"] = new BoolParameter("decodeHtml", false),
@@ -66,7 +71,7 @@ public class HttpRequestBlockDescriptor : BlockDescriptor
                 SettingInputMode.Fixed),
             ["customCookies"] = new DictionaryOfStringsParameter("customCookies", null, SettingInputMode.Interpolated),
             ["customHeaders"] = new DictionaryOfStringsParameter("customHeaders",
-                new()
+                new Dictionary<string, string>
                 {
                     ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
                     ["Pragma"] = "no-cache",

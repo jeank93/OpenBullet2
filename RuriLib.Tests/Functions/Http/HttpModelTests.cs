@@ -25,6 +25,7 @@ public class HttpModelTests
         Assert.Equal(8, options.MaxNumberOfRedirects);
         Assert.True(options.ReadResponseContent);
         Assert.Equal(SecurityProtocol.SystemDefault, options.SecurityProtocol);
+        Assert.True(options.IgnoreCertificateValidation);
         Assert.False(options.UseCustomCipherSuites);
         Assert.NotEmpty(options.CustomCipherSuites);
     }
@@ -40,6 +41,7 @@ public class HttpModelTests
         Assert.Equal(8, options.MaxNumberOfRedirects);
         Assert.Equal(HttpLibrary.RuriLibHttp, options.HttpLibrary);
         Assert.Equal(SecurityProtocol.SystemDefault, options.SecurityProtocol);
+        Assert.True(options.IgnoreCertificateValidation);
         Assert.Empty(options.CustomCookies);
         Assert.Empty(options.CustomHeaders);
         Assert.Equal(10000, options.TimeoutMilliseconds);

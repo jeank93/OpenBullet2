@@ -172,6 +172,7 @@
 
         <local:EnumSettingViewer x:Name="httpLibrarySetting" />
         <local:EnumSettingViewer x:Name="securityProtocolSetting" />
+        <local:BoolSettingViewer x:Name="ignoreCertificateValidationSetting" />
         <local:BoolSettingViewer x:Name="useCustomCipherSuitesSetting" />
         <local:ListOfStringsSettingViewer x:Name="customCipherSuitesSetting" />
         

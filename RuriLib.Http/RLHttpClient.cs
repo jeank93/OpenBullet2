@@ -270,16 +270,18 @@ public class RLHttpClient : IDisposable
         {
             try
             {
-                var sslStream = new SslStream(_connectionNetworkStream, false, ServerCertificateCustomValidationCallback);
+                var sslStream = new SslStream(_connectionNetworkStream, false);
 
                 var sslOptions = new SslClientAuthenticationOptions
                 {
                     TargetHost = uri.Host,
                     EnabledSslProtocols = SslProtocols,
-                    CertificateRevocationCheckMode = CertRevocationMode
+                    CertificateRevocationCheckMode = CertRevocationMode,
+                    RemoteCertificateValidationCallback = ServerCertificateCustomValidationCallback
                 };
 
-                if (CertRevocationMode != X509RevocationMode.Online)
+                if (sslOptions.RemoteCertificateValidationCallback is null
+                    && CertRevocationMode != X509RevocationMode.Online)
                 {
                     sslOptions.RemoteCertificateValidationCallback =
                         (_, _, _, _) => true;

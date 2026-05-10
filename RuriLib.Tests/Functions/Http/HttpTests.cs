@@ -181,6 +181,51 @@ public class HttpTests
         Assert.Equal($"{httpServer.Uri}final", data.ADDRESS);
     }
 
+    [Fact]
+    public async Task HttpRequestStandard_SystemNetSelfSignedCertificate_RespectsIgnoreCertificateValidation()
+    {
+        await using var httpServer = LocalHttpResponseServer.CreateDelayed(
+            TimeSpan.Zero,
+            Encoding.UTF8.GetBytes("""{"redirected":true}"""),
+            "Content-Type: application/json");
+
+        var failingData = NewBotData();
+
+        await using (var failingHttpsServer = new LocalHttpsRedirectServer(
+            LocalHttpsRedirectServer.CreateSelfSignedCertificate("localhost"),
+            new Uri($"{httpServer.Uri}final")))
+        {
+            var failingOptions = new StandardHttpRequestOptions
+            {
+                Url = $"{failingHttpsServer.Uri}start",
+                Method = HttpMethod.GET,
+                HttpLibrary = HttpLibrary.SystemNet,
+                IgnoreCertificateValidation = false
+            };
+
+            await Assert.ThrowsAsync<System.Net.Http.HttpRequestException>(
+                () => Methods.HttpRequestStandard(failingData, failingOptions));
+        }
+
+        var passingData = NewBotData();
+
+        await using (var passingHttpsServer = new LocalHttpsRedirectServer(
+            LocalHttpsRedirectServer.CreateSelfSignedCertificate("localhost"),
+            new Uri($"{httpServer.Uri}final")))
+        {
+            var passingOptions = new StandardHttpRequestOptions
+            {
+                Url = $"{passingHttpsServer.Uri}start",
+                Method = HttpMethod.GET,
+                HttpLibrary = HttpLibrary.SystemNet
+            };
+
+            await Methods.HttpRequestStandard(passingData, passingOptions);
+        }
+
+        Assert.Equal(302, passingData.RESPONSECODE);
+    }
+
     [Theory]
     [InlineData(HttpLibrary.RuriLibHttp)]
     [InlineData(HttpLibrary.SystemNet)]

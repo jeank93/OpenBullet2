@@ -88,6 +88,12 @@ internal sealed class LocalHttpsRedirectServer : IAsyncDisposable
         catch (SocketException)
         {
         }
+        catch (IOException)
+        {
+        }
+        catch (AuthenticationException)
+        {
+        }
         finally
         {
             certificate.Dispose();

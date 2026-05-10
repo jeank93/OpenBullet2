@@ -174,6 +174,7 @@ internal abstract class HttpRequestHandler
         AutoRedirect = options.AutoRedirect,
         MaxNumberOfRedirects = options.MaxNumberOfRedirects,
         SecurityProtocol = options.SecurityProtocol,
+        IgnoreCertificateValidation = options.IgnoreCertificateValidation,
         UseCustomCipherSuites = options.UseCustomCipherSuites,
         CustomCipherSuites = ParseCipherSuites(options.CustomCipherSuites),
         CertRevocationMode = data.Providers.Security.X509RevocationMode,

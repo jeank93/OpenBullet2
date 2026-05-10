@@ -40,6 +40,7 @@ public class HttpFactory
             CookieContainer = cookies ?? new CookieContainer(),
             UseCookies = cookies != null,
             SslProtocols = ToSslProtocols(options.SecurityProtocol),
+            ServerCertificateCustomValidationCallback = GetCertificateValidationCallback(options),
             UseCustomCipherSuites = options.UseCustomCipherSuites,
             AllowedCipherSuites = options.CustomCipherSuites,
             CertRevocationMode = options.CertRevocationMode,
@@ -63,6 +64,7 @@ public class HttpFactory
             AllowAutoRedirect = options.AutoRedirect,
             MaxNumberOfRedirects = options.MaxNumberOfRedirects,
             SslProtocols = ToSslProtocols(options.SecurityProtocol),
+            ServerCertificateCustomValidationCallback = GetCertificateValidationCallback(options),
             UseCustomCipherSuites = options.UseCustomCipherSuites,
             AllowedCipherSuites = options.CustomCipherSuites,
             CertRevocationMode = options.CertRevocationMode,
@@ -183,6 +185,7 @@ public class HttpFactory
         {
             CertificateRevocationCheckMode = options.CertRevocationMode,
             EnabledSslProtocols = ToSslProtocols(options.SecurityProtocol),
+            RemoteCertificateValidationCallback = GetCertificateValidationCallback(options),
             CipherSuitesPolicy = options.UseCustomCipherSuites
                 ? new CipherSuitesPolicy(options.CustomCipherSuites)
                 : null
@@ -194,6 +197,9 @@ public class HttpFactory
             httpHandler.AllowAutoRedirect = options.AutoRedirect;
             httpHandler.SslProtocols = ToSslProtocols(options.SecurityProtocol);
             httpHandler.CheckCertificateRevocationList = options.CertRevocationMode == X509RevocationMode.Online;
+            httpHandler.ServerCertificateCustomValidationCallback = options.IgnoreCertificateValidation
+                ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                : null;
             httpHandler.UseCookies = true;
             httpHandler.CookieContainer = cookieContainer;
 
@@ -216,6 +222,11 @@ public class HttpFactory
 
         return handler;
     }
+
+    private static RemoteCertificateValidationCallback? GetCertificateValidationCallback(HttpOptions options)
+        => options.IgnoreCertificateValidation
+            ? static (_, _, _, _) => true
+            : null;
 
     /// <summary>
     /// Converts the <paramref name="protocol"/> to an SslProtocols enum. Multiple protocols are not supported and SystemDefault is None.

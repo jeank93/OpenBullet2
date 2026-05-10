@@ -43,6 +43,11 @@ public class HttpRequestOptions
     public SecurityProtocol SecurityProtocol { get; set; } = SecurityProtocol.SystemDefault;
 
     /// <summary>
+    /// Gets or sets whether TLS certificate validity checks should be bypassed.
+    /// </summary>
+    public bool IgnoreCertificateValidation { get; set; } = true;
+
+    /// <summary>
     /// Gets or sets the custom cookies to send.
     /// </summary>
     public Dictionary<string, string> CustomCookies { get; set; } = new();

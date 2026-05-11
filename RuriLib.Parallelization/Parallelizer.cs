@@ -243,7 +243,7 @@ public abstract class Parallelizer<TInput, TOutput> : IDisposable
     {
         if (degreeOfParallelism < 1)
         {
-            throw new ArgumentException("The degree of parallelism must be greater than 1");
+            throw new ArgumentException("The degree of parallelism must be at least 1");
         }
 
         if (degreeOfParallelism > maxDegreeOfParallelism)

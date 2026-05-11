@@ -221,6 +221,41 @@ public class ParallelizerTests
     }
 
     [Fact]
+    public async Task Run_MaxDegreeOfParallelismOne_RefillsQueueAndProcessesAllItems()
+    {
+        const int count = 100;
+        var progressCount = 0;
+        var results = new ConcurrentBag<ResultDetails<int, bool>>();
+        var completed = false;
+        Exception? exception = null;
+
+        var parallelizer = ParallelizerFactory<int, bool>.Create(
+            type: _type,
+            workItems: Enumerable.Range(1, count),
+            workFunction: _parityCheck,
+            degreeOfParallelism: 1,
+            totalAmount: count,
+            skip: 0,
+            maxDegreeOfParallelism: 1);
+
+        parallelizer.ProgressChanged += (_, _) => Interlocked.Increment(ref progressCount);
+        parallelizer.NewResult += (_, result) => results.Add(result);
+        parallelizer.Completed += (_, _) => completed = true;
+        parallelizer.Error += (_, ex) => exception = ex;
+
+        await parallelizer.Start();
+
+        using var cts = CreateTestTimeout();
+        await parallelizer.WaitCompletion(cts.Token);
+
+        Assert.Equal(count, progressCount);
+        Assert.Equal(count, results.Count);
+        Assert.True(completed);
+        Assert.Null(exception);
+        Assert.Equal(ParallelizerStatus.Idle, parallelizer.Status);
+    }
+
+    [Fact]
     public async Task Run_WorkItemsFewerThanTotalAmount_CompletesWhenEnumerationEnds()
     {
         var progressCount = 0;

@@ -202,7 +202,7 @@ public class TaskBasedParallelizer<TInput, TOutput> : Parallelizer<TInput, TOutp
                 }
 
                 // If the current batch is running out
-                if (_queue.Count < MaxDegreeOfParallelism)
+                if (_queue.Count <= MaxDegreeOfParallelism)
                 {
                     // Queue more items until the BatchSize is reached OR until the enumeration finished
                     while (_queue.Count < BatchSize && items.MoveNext())

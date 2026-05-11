@@ -85,6 +85,7 @@ public class ProxyCheckJob : Job
     public int CPM => parallelizer?.CPM ?? 0;
 
     // Private fields
+    private bool disposed;
     private Parallelizer<ProxyCheckInput, Proxy>? parallelizer;
     private Timer? tickTimer;
     private CancellationTokenSource? startCts;
@@ -241,6 +242,7 @@ public class ProxyCheckJob : Job
 
         try
         {
+            ResetForNewRun();
             startCts = new CancellationTokenSource();
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken, startCts.Token);
@@ -461,6 +463,7 @@ public class ProxyCheckJob : Job
 
     private void PropagateCompleted(object? _, EventArgs e)
     {
+        StopTimer();
         OnCompleted?.Invoke(this, e);
         logger?.LogInfo(Id, "Execution completed");
     }
@@ -476,6 +479,7 @@ public class ProxyCheckJob : Job
     private void StopTimer()
     {
         tickTimer?.Dispose();
+        tickTimer = null;
     }
 
     private void ResetStats()
@@ -513,6 +517,77 @@ public class ProxyCheckJob : Job
 
         // This is fire and forget
         _ = ProxyOutput?.StoreAsync(proxy);
+    }
+
+    private void ResetForNewRun()
+    {
+        StopTimer();
+        DisposeParallelizer();
+    }
+
+    private void DisposeParallelizer()
+    {
+        if (parallelizer is null)
+        {
+            return;
+        }
+
+        try
+        {
+            parallelizer.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+        finally
+        {
+            parallelizer = null;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposed || !disposing)
+        {
+            return;
+        }
+
+        StopTimer();
+        startCts?.Dispose();
+        startCts = null;
+        DisposeParallelizer();
+
+        if (ProxyOutput is IDisposable proxyOutput)
+        {
+            try
+            {
+                proxyOutput.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        ProxyOutput = null;
+
+        if (GeoProvider is IDisposable geoProvider)
+        {
+            try
+            {
+                geoProvider.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        GeoProvider = null;
+        disposed = true;
+        base.Dispose(disposing);
     }
     #endregion
 }

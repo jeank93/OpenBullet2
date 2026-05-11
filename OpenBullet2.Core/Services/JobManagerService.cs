@@ -94,27 +94,34 @@ public class JobManagerService : IDisposable
     public void RemoveJob(Job job)
     {
         _jobs.Remove(job);
+        UnbindEvents(job);
 
-        if (job is MultiRunJob mrj)
+        try
         {
-            try
-            {
-                mrj.OnCompleted -= SaveRecord;
-                mrj.OnTimerTick -= SaveRecord;
-                mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
-                mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
-                mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
-            }
-            catch
-            {
-
-            }
+            job.Dispose();
+        }
+        catch
+        {
+            // ignored
         }
     }
 
     public void Clear()
     {
-        UnbindAllEvents();
+        foreach (var job in _jobs.ToList())
+        {
+            UnbindEvents(job);
+
+            try
+            {
+                job.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
         _jobs.Clear();
     }
 
@@ -239,27 +246,29 @@ public class JobManagerService : IDisposable
         }
     }
 
-    private void UnbindAllEvents()
+    private void UnbindEvents(Job job)
     {
-        foreach (var job in _jobs)
+        if (job is MultiRunJob mrj)
         {
-            if (job is MultiRunJob mrj)
+            try
             {
-                try
-                {
-                    mrj.OnCompleted -= SaveRecord;
-                    mrj.OnTimerTick -= SaveRecord;
-                    mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
-                    mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
-                    mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
-                }
-                catch
-                {
-
-                }
+                mrj.OnCompleted -= SaveRecord;
+                mrj.OnTimerTick -= SaveRecord;
+                mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
+                mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
+                mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
+            }
+            catch
+            {
+                // ignored
             }
         }
     }
 
-    public void Dispose() => UnbindAllEvents();
+    public void Dispose()
+    {
+        Clear();
+        _jobSemaphore.Dispose();
+        _recordSemaphore.Dispose();
+    }
 }

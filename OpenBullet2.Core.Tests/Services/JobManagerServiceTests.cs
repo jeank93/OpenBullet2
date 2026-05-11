@@ -74,6 +74,42 @@ public sealed class JobManagerServiceTests
         Assert.Null(exception);
     }
 
+    [Fact]
+    public void RemoveJob_DisposesRemovedJob()
+    {
+        using var database = new TestDatabase();
+        using var manager = new JobManagerService(
+            database.Services.GetRequiredService<IServiceScopeFactory>(),
+            (JobFactoryService)RuntimeHelpers.GetUninitializedObject(typeof(JobFactoryService)));
+
+        var job = new DisposableTestJob(CreateSettingsService(), CreatePluginRepository());
+        manager.AddJob(job);
+
+        manager.RemoveJob(job);
+
+        Assert.True(job.IsDisposed);
+    }
+
+    [Fact]
+    public void Clear_DisposesTrackedJobs()
+    {
+        using var database = new TestDatabase();
+        using var manager = new JobManagerService(
+            database.Services.GetRequiredService<IServiceScopeFactory>(),
+            (JobFactoryService)RuntimeHelpers.GetUninitializedObject(typeof(JobFactoryService)));
+
+        var job1 = new DisposableTestJob(CreateSettingsService(), CreatePluginRepository());
+        var job2 = new DisposableTestJob(CreateSettingsService(), CreatePluginRepository());
+        manager.AddJob(job1);
+        manager.AddJob(job2);
+
+        manager.Clear();
+
+        Assert.True(job1.IsDisposed);
+        Assert.True(job2.IsDisposed);
+        Assert.Empty(manager.Jobs);
+    }
+
     private static RuriLibSettingsService CreateSettingsService()
         => new(Path.Combine(Path.GetTempPath(), $"ob2-jobmanager-settings-{Guid.NewGuid():N}"));
 
@@ -156,6 +192,18 @@ public sealed class JobManagerServiceTests
 
         public override void Reload()
         {
+        }
+    }
+
+    private sealed class DisposableTestJob(RuriLibSettingsService settings, PluginRepository pluginRepo)
+        : Job(settings, pluginRepo)
+    {
+        public bool IsDisposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
         }
     }
 }

@@ -2265,6 +2265,41 @@ public class JobIntegrationTests(ITestOutputHelper testOutputHelper)
         Assert.Empty(jobEntities);
     }
 
+    [Fact]
+    public async Task DeleteJob_Admin_NotIdle_BadRequest()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var jobManager = GetRequiredService<JobManagerService>();
+        var mrJob = CreateMultiRunJob();
+        mrJob.Name = "Test MRJ";
+        mrJob.Id = 1;
+        mrJob.GetType().GetProperty("Status")!.SetValue(mrJob, JobStatus.Running);
+        jobManager.AddJob(mrJob);
+        var jobEntity = CreateMultiRunJobEntity(mrJob);
+        jobEntity.Id = mrJob.Id;
+        var dbContext = GetRequiredService<ApplicationDbContext>();
+        dbContext.Jobs.Add(jobEntity);
+        await dbContext.SaveChangesAsync(TestCancellationToken);
+
+        // Act
+        var queryParams = new
+        {
+            id = mrJob.Id
+        };
+        var error = await DeleteAsync(
+            client, "/api/v1/job".ToUri(queryParams));
+
+        // Assert
+        Assert.NotNull(error);
+        Assert.Equal(HttpStatusCode.BadRequest, error.Response.StatusCode);
+        Assert.Equal(ErrorCode.JobNotIdle, error.Content!.ErrorCode);
+        Assert.Single(jobManager.Jobs);
+
+        var jobEntities = await dbContext.Jobs.ToListAsync(TestCancellationToken);
+        Assert.Single(jobEntities);
+    }
+
     // Guest cannot delete a job not owned by them
     [Fact]
     public async Task DeleteJob_Guest_NotOwned_NotFound()

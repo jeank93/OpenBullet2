@@ -93,6 +93,7 @@ public class MultiRunJob : Job
     // Private fields
     private readonly string[] badStatuses = ["FAIL", "RETRY", "BAN", "ERROR", "INVALID"];
     private readonly object hitsLock = new();
+    private bool disposed;
     private Parallelizer<MultiRunInput, CheckResult>? parallelizer;
     private ProxyPool? proxyPool;
     private Timer? tickTimer;
@@ -560,6 +561,7 @@ public class MultiRunJob : Job
 
         try
         {
+            ResetForNewRun();
             startCts = new CancellationTokenSource();
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                 cancellationToken, startCts.Token);
@@ -821,7 +823,7 @@ public class MultiRunJob : Job
         {
             StopTimers();
             logger?.LogInfo(Id, "Execution stopped");
-            DisposeGlobals();
+            DisposeRunResources();
         }
     }
 
@@ -849,7 +851,7 @@ public class MultiRunJob : Job
         {
             StopTimers();
             logger?.LogInfo(Id, "Execution aborted");
-            DisposeGlobals();
+            DisposeRunResources();
         }
     }
 
@@ -970,6 +972,7 @@ public class MultiRunJob : Job
 
     private void PropagateCompleted(object? _, EventArgs e)
     {
+        StopTimers();
         OnCompleted?.Invoke(this, e);
         logger?.LogInfo(Id, "Execution completed");
     }
@@ -1013,7 +1016,9 @@ public class MultiRunJob : Job
     private void StopTimers()
     {
         tickTimer?.Dispose();
+        tickTimer = null;
         proxyReloadTimer?.Dispose();
+        proxyReloadTimer = null;
     }
 
     private void ResetStats()
@@ -1167,42 +1172,58 @@ public class MultiRunJob : Job
         }
     }
 
-    private void DisposeGlobals()
+    private void ResetForNewRun()
     {
-        if (httpClient is not null)
+        StopTimers();
+        DisposeParallelizer();
+        DisposeRunResources();
+    }
+
+    private void DisposeRunResources()
+    {
+        TryDispose(ref httpClient);
+        TryDispose(ref asyncLocker);
+        TryDispose(ref proxyPool);
+        DisposeResources();
+        globalVariables = null;
+        legacyGlobalVariables = null;
+        legacyGlobalCookies = null;
+    }
+
+    private void DisposeParallelizer()
+    {
+        TryDispose(ref parallelizer);
+    }
+
+    private void DisposeOwnedComponents()
+    {
+        foreach (var hitOutput in HitOutputs.OfType<IDisposable>())
         {
             try
             {
-                httpClient.Dispose();
+                hitOutput.Dispose();
             }
             catch
             {
-
+                // ignored
             }
         }
 
-        if (asyncLocker is not null)
+        foreach (var proxySource in ProxySources)
         {
             try
             {
-                asyncLocker.Dispose();
+                proxySource.Dispose();
             }
             catch
             {
-
+                // ignored
             }
         }
+    }
 
-        proxyPool?.Dispose();
-
-        if (ProxySources is not null)
-        {
-            for (int i = 0; i < ProxySources.Count; i++)
-            {
-                ProxySources[i]?.Dispose();
-            }
-        }
-
+    private void DisposeResources()
+    {
         if (resources is not null)
         {
             foreach (var resource in resources.Where(r => r.Value is IDisposable)
@@ -1214,10 +1235,49 @@ public class MultiRunJob : Job
                 }
                 catch
                 {
-
+                    // ignored
                 }
             }
+
+            resources = null;
         }
+    }
+
+    private static void TryDispose<T>(ref T? disposable) where T : class, IDisposable
+    {
+        if (disposable is null)
+        {
+            return;
+        }
+
+        try
+        {
+            disposable.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+        finally
+        {
+            disposable = null;
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        if (disposed || !disposing)
+        {
+            return;
+        }
+
+        StopTimers();
+        DisposeParallelizer();
+        DisposeRunResources();
+        DisposeOwnedComponents();
+        disposed = true;
+        base.Dispose(disposing);
     }
     #endregion
 }

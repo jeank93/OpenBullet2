@@ -7,14 +7,10 @@ using System.Threading.Tasks;
 
 namespace RuriLib.Models.Jobs;
 
-// Todo: Implement IDisposable and dispose the following when a job is deleted or edited
-// - GroupProxySource
-// - DatabaseHitOutput
-// - DatabaseProxyCheckOutput
 /// <summary>
 /// Base class for executable jobs.
 /// </summary>
-public abstract class Job
+public abstract class Job : IDisposable
 {
     // Public properties
     /// <summary>Gets or sets the job identifier.</summary>
@@ -49,6 +45,7 @@ public abstract class Job
     protected readonly IJobLogger? logger;
 
     // Private fields
+    private bool disposed;
     private bool waitFinished;
     private CancellationTokenSource? cts; // Cancellation token for cancelling the StartCondition wait
 
@@ -138,5 +135,42 @@ public abstract class Job
     public virtual Task Abort()
     {
         throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Disposes the job resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes the job resources.
+    /// </summary>
+    /// <param name="disposing">Whether managed resources should be disposed.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed || !disposing)
+        {
+            return;
+        }
+
+        if (!waitFinished && cts is not null && !cts.IsCancellationRequested)
+        {
+            try
+            {
+                cts.Cancel();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        cts?.Dispose();
+        cts = null;
+        disposed = true;
     }
 }

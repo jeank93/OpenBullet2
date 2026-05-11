@@ -475,6 +475,12 @@ public class JobController(IJobRepository jobRepo, ILogger<JobController> logger
         EnsureOwnership(entity);
         EnsureOwnership(job);
 
+        if (job.Status is not JobStatus.Idle)
+        {
+            throw new ResourceInUseException(ErrorCode.JobNotIdle,
+                $"Job {id} is not idle");
+        }
+
         await _jobRepo.DeleteAsync(entity, cancellationToken);
         _jobManager.RemoveJob(job);
 

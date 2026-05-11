@@ -9,6 +9,7 @@ using RuriLib.Models.Hits;
 using RuriLib.Models.Hits.HitOutputs;
 using RuriLib.Models.Jobs;
 using RuriLib.Models.Proxies.ProxySources;
+using RuriLib.Models.Variables;
 using RuriLib.Parallelization.Models;
 using RuriLib.Providers.RandomNumbers;
 using RuriLib.Services;
@@ -16,6 +17,7 @@ using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace OpenBullet2.Console;
@@ -117,6 +119,7 @@ Feel free to contribute to the versatility of this project by adding the missing
         };
 
         debugger.Run().GetAwaiter().GetResult();
+        RenderDebuggerVariableRecap(debugger.Options.Variables);
 
         WriteLine("Single-run debug session completed.", "#7fffd4");
     }
@@ -250,6 +253,60 @@ Feel free to contribute to the versatility of this project by adding the missing
 
         panel.BorderStyle = new Style(foreground: Spectre.Console.Color.Aqua);
         AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
+
+    private static void RenderDebuggerVariableRecap(IEnumerable<Variable> variables)
+    {
+        var orderedVariables = variables
+            .OrderByDescending(v => v.MarkedForCapture)
+            .ThenBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (orderedVariables.Count == 0)
+        {
+            return;
+        }
+
+        var captures = orderedVariables.Where(v => v.MarkedForCapture).ToList();
+        var regularVariables = orderedVariables.Where(v => !v.MarkedForCapture).ToList();
+
+        if (captures.Count > 0)
+        {
+            RenderVariablesTable("Captures", captures);
+        }
+
+        if (regularVariables.Count > 0)
+        {
+            RenderVariablesTable("Variables", regularVariables);
+        }
+    }
+
+    private static void RenderVariablesTable(string title, List<Variable> variables)
+    {
+        var table = new Table
+        {
+            Border = TableBorder.Rounded,
+            Expand = true
+        };
+
+        table.Title = new TableTitle($"[white]{Markup.Escape(title)}[/]");
+        table.BorderColor(Spectre.Console.Color.White);
+        table.AddColumn("[white]Name[/]");
+        table.AddColumn("[white]Type[/]");
+        table.AddColumn("[white]Value[/]");
+
+        foreach (var variable in variables)
+        {
+            var nameColor = variable.MarkedForCapture ? "#ff6347" : "#ffd700";
+
+            table.AddRow(
+                $"[{nameColor}]{Markup.Escape(variable.Name)}[/]",
+                $"[grey]{Markup.Escape(variable.Type.ToString())}[/]",
+                $"[white]{Markup.Escape(variable.AsString())}[/]");
+        }
+
+        AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
     }
 

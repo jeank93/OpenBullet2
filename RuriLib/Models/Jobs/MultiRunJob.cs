@@ -1,5 +1,6 @@
 using IronPython.Hosting;
 using Microsoft.CodeAnalysis.Scripting;
+using PuppeteerSharp;
 using RuriLib.Helpers.CSharp;
 using RuriLib.Helpers.Transpilers;
 using RuriLib.Logging;
@@ -415,6 +416,7 @@ public class MultiRunJob : Job
                 // Close the browser if needed
                 if (botData.ConfigSettings.BrowserSettings.QuitBrowserStatuses.Contains(botData.STATUS))
                 {
+                    await ClosePuppeteerBrowserIfOpen(botData).ConfigureAwait(false);
                     botData.DisposeObjectsExcept(new[] { "httpClient", "ironPyEngine" });
                 }
                 else
@@ -1262,6 +1264,30 @@ public class MultiRunJob : Job
         {
             disposable = null;
         }
+    }
+
+    private static async Task ClosePuppeteerBrowserIfOpen(BotData botData)
+    {
+        var browser = botData.TryGetObject<IBrowser>("puppeteer");
+
+        if (browser is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!browser.IsClosed)
+            {
+                await browser.CloseAsync().ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            // ignored, the remaining tracked objects still need to be cleared
+        }
+
+        await botData.DisposeObjectAsync("puppeteer").ConfigureAwait(false);
     }
 
     /// <inheritdoc />

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RuriLib.Models.Bots;
 
@@ -276,6 +277,39 @@ public class BotData
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         return _objects.TryGetValue(name, out var value) && value is T t ? t : null;
+    }
+
+    /// <summary>
+    /// Disposes a tracked runtime object and removes it from the object map.
+    /// </summary>
+    /// <param name="name">The object key.</param>
+    public async ValueTask DisposeObjectAsync(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        if (!_objects.TryGetValue(name, out var value))
+        {
+            return;
+        }
+
+        try
+        {
+            switch (value)
+            {
+                case IAsyncDisposable asyncDisposable:
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    break;
+                case IDisposable disposable:
+                    disposable.Dispose();
+                    break;
+            }
+        }
+        catch
+        {
+            // ignored
+        }
+
+        _objects.Remove(name);
     }
 
     /// <summary>

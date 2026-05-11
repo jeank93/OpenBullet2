@@ -5,6 +5,7 @@ using RuriLib.Models.Data;
 using RuriLib.Models.Environment;
 using RuriLib.Tests.Utils.Mockup;
 using System;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace RuriLib.Tests.Models.Bots;
@@ -86,6 +87,20 @@ public class BotDataTests
         Assert.Same(whitelisted, botData.TryGetObject<DisposableStub>("httpClient"));
     }
 
+    [Fact]
+    public async Task DisposeObjectAsync_DisposesAsyncDisposableAndRemovesIt()
+    {
+        var botData = NewBotData();
+        var asyncDisposable = new AsyncDisposableStub();
+
+        botData.SetObject("resource", asyncDisposable);
+
+        await botData.DisposeObjectAsync("resource");
+
+        Assert.True(asyncDisposable.Disposed);
+        Assert.Null(botData.TryGetObject<AsyncDisposableStub>("resource"));
+    }
+
     private static BotData NewBotData()
         => new(
             new global::RuriLib.Models.Bots.Providers(null!)
@@ -102,6 +117,17 @@ public class BotDataTests
         public bool Disposed { get; private set; }
 
         public void Dispose() => Disposed = true;
+    }
+
+    private sealed class AsyncDisposableStub : IAsyncDisposable
+    {
+        public bool Disposed { get; private set; }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class NonDisposableStub;

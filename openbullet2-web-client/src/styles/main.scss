@@ -326,7 +326,11 @@ p-autocomplete.w-100 {
     }
 }
 
-.code-editor * {
+.code-editor .monaco-editor .view-lines,
+.code-editor .monaco-editor .view-line,
+.code-editor .monaco-editor .view-line span,
+.code-editor .monaco-editor .inputarea,
+.code-editor .monaco-editor textarea {
     font-family: 'Chivo Mono' !important;
     font-variant-ligatures: none !important;
 }

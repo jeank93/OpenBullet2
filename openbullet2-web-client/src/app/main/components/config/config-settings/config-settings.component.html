@@ -175,36 +175,45 @@
     </div>
     <div *ngFor="let rule of config.settings.dataSettings.dataRules.simple" class="row my-3 justify-content-between">
         <div class="col align-self-stretch pr-2">
-            <p-autoComplete
-                inputStyleClass="input-small w-100"
-                class="d-block w-100"
-                ngDefaultControl
-                [completeOnFocus]="true"
-                [suggestions]="dataRuleSliceSuggestions"
-                (completeMethod)="filterDataRuleSliceSuggestions($event)"
-                [showEmptyMessage]="false"
-                spellcheck="false"
-                (onBlur)="localSave()"
-                (onSelect)="localSave()"
-                [(ngModel)]="rule.sliceName"
-                placeholder="DATA" />
+            <div [class.data-rule-field-invalid]="isSimpleDataRuleSliceNameInvalid(rule)">
+                <p-autoComplete
+                    inputStyleClass="input-small w-100"
+                    class="d-block w-100"
+                    ngDefaultControl
+                    [completeOnFocus]="true"
+                    [suggestions]="dataRuleSliceSuggestions"
+                    (completeMethod)="filterDataRuleSliceSuggestions($event)"
+                    [showEmptyMessage]="false"
+                    spellcheck="false"
+                    (ngModelChange)="onDataRuleChanged()"
+                    (onBlur)="localSave()"
+                    (onSelect)="localSave()"
+                    [(ngModel)]="rule.sliceName"
+                    placeholder="DATA" />
+            </div>
             <span class="d-block mt-1 text-small color-inactive">Slice name</span>
+            <span *ngIf="getSimpleDataRuleSliceNameError(rule) as error" class="data-rule-error">{{ error }}</span>
         </div>
         <div class="col-auto">
             <app-input-dropdown key="simpleDataRuleComparison"
                 itemClass="input-small" optionClass="input-small"
                 (validityChange)="localSave()"
+                (ngModelChange)="onDataRuleChanged()"
                 ngDefaultControl
                 [options]="stringRules"
                 [(ngModel)]="rule.comparison" />
         </div>
         <div class="col align-self-stretch px-2">
-            <app-input-text key="simpleDataRuleStringToCompare" class="input-small w-100"
-                ngDefaultControl
-                (validityChange)="localSave()"
-                [(ngModel)]="rule.stringToCompare"
-                placeholder="" />
+            <div [class.data-rule-field-invalid]="isSimpleDataRuleStringToCompareInvalid(rule)">
+                <app-input-text key="simpleDataRuleStringToCompare" class="input-small w-100"
+                    ngDefaultControl
+                    (validityChange)="localSave()"
+                    (ngModelChange)="onDataRuleChanged()"
+                    [(ngModel)]="rule.stringToCompare"
+                    placeholder="" />
+            </div>
             <span class="d-block mt-1 text-small color-inactive">Compared value</span>
+            <span *ngIf="getSimpleDataRuleStringToCompareError(rule) as error" class="data-rule-error">{{ error }}</span>
         </div>
         <div class="col-auto">
             <p-checkbox
@@ -230,29 +239,37 @@
     </div>
     <div *ngFor="let rule of config.settings.dataSettings.dataRules.regex" class="row my-3 justify-content-between">
         <div class="col align-self-stretch pr-2">
-            <p-autoComplete
-                inputStyleClass="input-small w-100"
-                class="d-block w-100"
-                ngDefaultControl
-                [completeOnFocus]="true"
-                [suggestions]="dataRuleSliceSuggestions"
-                (completeMethod)="filterDataRuleSliceSuggestions($event)"
-                [showEmptyMessage]="false"
-                spellcheck="false"
-                (onBlur)="localSave()"
-                (onSelect)="localSave()"
-                [(ngModel)]="rule.sliceName"
-                placeholder="DATA" />
+            <div [class.data-rule-field-invalid]="isRegexDataRuleSliceNameInvalid(rule)">
+                <p-autoComplete
+                    inputStyleClass="input-small w-100"
+                    class="d-block w-100"
+                    ngDefaultControl
+                    [completeOnFocus]="true"
+                    [suggestions]="dataRuleSliceSuggestions"
+                    (completeMethod)="filterDataRuleSliceSuggestions($event)"
+                    [showEmptyMessage]="false"
+                    spellcheck="false"
+                    (ngModelChange)="onDataRuleChanged()"
+                    (onBlur)="localSave()"
+                    (onSelect)="localSave()"
+                    [(ngModel)]="rule.sliceName"
+                    placeholder="DATA" />
+            </div>
             <span class="d-block mt-1 text-small color-inactive">Slice name</span>
+            <span *ngIf="getRegexDataRuleSliceNameError(rule) as error" class="data-rule-error">{{ error }}</span>
         </div>
         <div class="col align-self-stretch pr-2">
-            <app-input-text key="simpleDataRuleRegexToMatch"
-                class="input-small w-100 monospace"
-                ngDefaultControl
-                (validityChange)="localSave()"
-                [(ngModel)]="rule.regexToMatch"
-                placeholder="^.*$" />
+            <div [class.data-rule-field-invalid]="isRegexDataRulePatternInvalid(rule)">
+                <app-input-text key="simpleDataRuleRegexToMatch"
+                    class="input-small w-100 monospace"
+                    ngDefaultControl
+                    (validityChange)="localSave()"
+                    (ngModelChange)="onDataRuleChanged()"
+                    [(ngModel)]="rule.regexToMatch"
+                    placeholder="^.*$" />
+            </div>
             <span class="d-block mt-1 text-small color-inactive">Regular Expression to match</span>
+            <span *ngIf="getRegexDataRulePatternError(rule) as error" class="data-rule-error">{{ error }}</span>
         </div>
         <div class="col-auto">
             <p-checkbox
@@ -288,6 +305,9 @@
                 [(ngModel)]="testWordlistTypeForRules" />
         </div>
         <div class="col-12 col-lg-auto mt-3 ml-2 mt-lg-0 text-right">
+            <span *ngIf="hasInvalidDataRules()" class="d-block mb-2 data-rule-error">
+                Fix the highlighted data rules before testing them.
+            </span>
             <button class="button button-secondary"
                 (click)="clearRuleTestResults()">
                 Clear

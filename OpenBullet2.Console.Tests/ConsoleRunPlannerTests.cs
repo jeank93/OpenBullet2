@@ -124,4 +124,16 @@ public class ConsoleRunPlannerTests
         Assert.Contains(errors, e => e.Contains("--bots", StringComparison.Ordinal));
         Assert.Contains(errors, e => e.Contains("--skip", StringComparison.Ordinal));
     }
+
+    [Theory]
+    [InlineData(5, 2, 5)]
+    [InlineData(0, 3, 3)]
+    [InlineData(0, 0, 1)]
+    [InlineData(-1, 1, 1)]
+    public void ResolveBots_UsesRequestedOrSuggestedWithMinimumOne(int requestedBots, int suggestedBots, int expected)
+    {
+        var resolved = ConsoleRunPlanner.ResolveBots(requestedBots, suggestedBots);
+
+        Assert.Equal(expected, resolved);
+    }
 }

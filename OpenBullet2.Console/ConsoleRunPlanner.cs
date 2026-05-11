@@ -1,4 +1,5 @@
 using RuriLib.Models.Debugger;
+using System;
 using System.Collections.Generic;
 
 namespace OpenBullet2.Console;
@@ -82,4 +83,9 @@ internal static class ConsoleRunPlanner
             PersistLog = false,
             StepByStep = options.StepByStep
         };
+
+    public static int ResolveBots(int requestedBots, int suggestedBots)
+        => requestedBots > 0
+            ? requestedBots
+            : Math.Max(1, suggestedBots);
 }

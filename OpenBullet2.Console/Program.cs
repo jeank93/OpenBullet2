@@ -128,6 +128,9 @@ Feel free to contribute to the versatility of this project by adding the missing
         RuriLibSettingsService rlSettings, PluginRepository pluginRepo, ConsoleOptions opts,
         Dictionary<string, string> customInputsAnswers)
     {
+        var effectiveBots = ConsoleRunPlanner.ResolveBots(
+            opts.BotsNumber,
+            config.Settings.GeneralSettings.SuggestedBots);
         var dataPool = BuildDataPool(opts);
 
         job = new MultiRunJob(rlSettings, pluginRepo)
@@ -139,13 +142,13 @@ Feel free to contribute to the versatility of this project by adding the missing
                 ? []
                 : [new FileProxySource(opts.ProxyFile) { DefaultType = opts.ProxyType }],
             Providers = new Providers(rlSettings),
-            Bots = opts.BotsNumber,
+            Bots = effectiveBots,
             DataPool = dataPool,
             HitOutputs = [new FileSystemHitOutput("UserData/Hits")],
-            BotLimit = opts.BotsNumber,
+            BotLimit = effectiveBots,
             Skip = opts.Skip,
             CustomInputsAnswers = customInputsAnswers,
-            CurrentBotDatas = new BotData[opts.BotsNumber]
+            CurrentBotDatas = new BotData[effectiveBots]
         };
 
         job.OnCompleted += (_, _) => completed = true;

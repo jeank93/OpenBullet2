@@ -80,7 +80,7 @@ public static class Methods
 
         // Thunderbird autoconfig
         candidates.Clear();
-        var thunderbirdUrl = $"https://live.mozillamessaging.com/autoconfig/v1.1/{domain}";
+        var thunderbirdUrl = $"https://autoconfig.thunderbird.net/v1.1/{domain}";
         try
         {
             var xml = await GetString(data, thunderbirdUrl).ConfigureAwait(false);

@@ -271,6 +271,12 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
 
     this.errorSubscription = this.multiRunJobHubService.error$.subscribe((error) => {
       if (error !== null) {
+        this.writeLog({
+          timestamp: new Date(),
+          message: `Job error (${error.type}): ${error.message}`,
+          color: 'var(--fg-error)',
+        });
+
         this.messageService.add({
           key: 'tc',
           severity: 'error',

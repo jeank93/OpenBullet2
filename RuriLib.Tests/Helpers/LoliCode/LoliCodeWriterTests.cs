@@ -86,4 +86,17 @@ public class LoliCodeWriterTests
 
         Assert.Equal($"  name = \"hello\"{writer.NewLine}", writer.ToString());
     }
+
+    [Fact]
+    public void AppendSetting_DefaultInterpolatedDictionary_DoesNotWriteLine()
+    {
+        var parameter = new DictionaryOfStringsParameter("headers",
+            new Dictionary<string, string> { ["Accept"] = "*/*" }, SettingInputMode.Interpolated);
+        var setting = parameter.ToBlockSetting();
+        using var writer = new LoliCodeWriter();
+
+        writer.AppendSetting(setting, parameter);
+
+        Assert.Equal(string.Empty, writer.ToString());
+    }
 }

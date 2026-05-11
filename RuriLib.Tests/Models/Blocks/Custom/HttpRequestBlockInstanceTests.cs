@@ -57,6 +57,17 @@ public class HttpRequestBlockInstanceTests
     }
 
     [Fact]
+    public void ToLC_DefaultCustomCookiesAndHeaders_AreOmitted()
+    {
+        var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");
+
+        var output = block.ToLC();
+
+        Assert.DoesNotContain("customCookies =", output);
+        Assert.DoesNotContain("customHeaders =", output);
+    }
+
+    [Fact]
     public void FromLC_MultipartPost_BuildBlock()
     {
         var block = BlockFactory.GetBlock<HttpRequestBlockInstance>("HttpRequest");

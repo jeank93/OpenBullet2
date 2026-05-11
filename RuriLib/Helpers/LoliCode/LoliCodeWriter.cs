@@ -79,35 +79,54 @@ public class LoliCodeWriter : StringWriter
             return this;
         }
 
-        var isDefaultValue = setting.FixedSetting switch
-        {
-            StringSetting x => parameter is StringParameter stringParameter
-                && x.Value == stringParameter.DefaultValue,
-            IntSetting x => parameter is IntParameter intParameter
-                && x.Value == intParameter.DefaultValue,
-            FloatSetting x => parameter is FloatParameter floatParameter
-                && x.Value == floatParameter.DefaultValue,
-            BoolSetting x => parameter is BoolParameter boolParameter
-                && x.Value == boolParameter.DefaultValue,
-            ByteArraySetting x => parameter is ByteArrayParameter byteArrayParameter
-                && Compare(x.Value, byteArrayParameter.DefaultValue),
-            ListOfStringsSetting x => parameter is ListOfStringsParameter listParameter
-                && Compare(x.Value, listParameter.DefaultValue),
-            DictionaryOfStringsSetting x => parameter is DictionaryOfStringsParameter dictionaryParameter
-                && Compare(x.Value?.Keys, dictionaryParameter.DefaultValue?.Keys)
-                && Compare(x.Value?.Values, dictionaryParameter.DefaultValue?.Values),
-            EnumSetting x => parameter is EnumParameter enumParameter
-                && x.Value == enumParameter.DefaultValue,
-            _ => throw new NotImplementedException(),
-        };
+        var isDefaultValue = IsDefaultValue(setting, parameter);
 
-        if (setting.InputMode != SettingInputMode.Fixed || !isDefaultValue || printDefaults)
+        if (setting.InputMode == SettingInputMode.Variable || !isDefaultValue || printDefaults)
         {
             AppendLine($"{parameter.Name} = {GetSettingValue(setting)}", spaces);
         }
 
         return this;
     }
+
+    private static bool IsDefaultValue(BlockSetting setting, BlockParameter parameter)
+        => setting.InputMode switch
+        {
+            SettingInputMode.Fixed => setting.FixedSetting switch
+            {
+                StringSetting x => parameter is StringParameter stringParameter
+                    && x.Value == stringParameter.DefaultValue,
+                IntSetting x => parameter is IntParameter intParameter
+                    && x.Value == intParameter.DefaultValue,
+                FloatSetting x => parameter is FloatParameter floatParameter
+                    && x.Value == floatParameter.DefaultValue,
+                BoolSetting x => parameter is BoolParameter boolParameter
+                    && x.Value == boolParameter.DefaultValue,
+                ByteArraySetting x => parameter is ByteArrayParameter byteArrayParameter
+                    && Compare(x.Value, byteArrayParameter.DefaultValue),
+                ListOfStringsSetting x => parameter is ListOfStringsParameter listParameter
+                    && Compare(x.Value, listParameter.DefaultValue),
+                DictionaryOfStringsSetting x => parameter is DictionaryOfStringsParameter dictionaryParameter
+                    && Compare(x.Value?.Keys, dictionaryParameter.DefaultValue?.Keys)
+                    && Compare(x.Value?.Values, dictionaryParameter.DefaultValue?.Values),
+                EnumSetting x => parameter is EnumParameter enumParameter
+                    && x.Value == enumParameter.DefaultValue,
+                _ => throw new NotImplementedException(),
+            },
+            SettingInputMode.Interpolated => setting.InterpolatedSetting switch
+            {
+                InterpolatedStringSetting x => parameter is StringParameter stringParameter
+                    && x.Value == stringParameter.DefaultValue,
+                InterpolatedListOfStringsSetting x => parameter is ListOfStringsParameter listParameter
+                    && Compare(x.Value, listParameter.DefaultValue),
+                InterpolatedDictionaryOfStringsSetting x => parameter is DictionaryOfStringsParameter dictionaryParameter
+                    && Compare(x.Value?.Keys, dictionaryParameter.DefaultValue?.Keys)
+                    && Compare(x.Value?.Values, dictionaryParameter.DefaultValue?.Values),
+                _ => false
+            },
+            SettingInputMode.Variable => false,
+            _ => false
+        };
 
     private static bool Compare<T>(IEnumerable<T>? first, IEnumerable<T>? second)
     {

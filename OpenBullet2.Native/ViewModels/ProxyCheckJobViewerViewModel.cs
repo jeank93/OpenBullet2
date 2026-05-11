@@ -54,6 +54,7 @@ public class ProxyCheckJobViewerViewModel : ViewModelBase, IDisposable
         ProxyCheckJob.OnResult += UpdateViewModel;
         ProxyCheckJob.OnStatusChanged += UpdateStatus;
         ProxyCheckJob.OnProgress += UpdateViewModel;
+        ProxyCheckJob.OnBotsChanged += OnBotsChanged;
 
         ProxyCheckJob.OnResult += OnResult;
         ProxyCheckJob.OnTaskError += OnTaskError;
@@ -90,6 +91,8 @@ public class ProxyCheckJobViewerViewModel : ViewModelBase, IDisposable
     {
         Job.UpdateStatus();
 
+        NewMessage?.Invoke(this, $"Status changed to {status}", Colors.SkyBlue);
+
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanSkipWait));
         OnPropertyChanged(nameof(CanResume));
@@ -122,6 +125,9 @@ public class ProxyCheckJobViewerViewModel : ViewModelBase, IDisposable
         var message = $"Task error ({details.Item.Proxy})! {details.Exception.Message}";
         NewMessage?.Invoke(this, message, Colors.Tomato);
     }
+
+    private void OnBotsChanged(object? sender, EventArgs e)
+        => NewMessage?.Invoke(this, $"Bots changed to {ProxyCheckJob.Bots}", Colors.SkyBlue);
 
     private void OnError(object? sender, Exception ex)
         => NewMessage?.Invoke(this, $"Job error: {ex.Message}", Colors.Tomato);
@@ -156,6 +162,7 @@ public class ProxyCheckJobViewerViewModel : ViewModelBase, IDisposable
             ProxyCheckJob.OnResult -= UpdateViewModel;
             ProxyCheckJob.OnStatusChanged -= UpdateStatus;
             ProxyCheckJob.OnProgress -= UpdateViewModel;
+            ProxyCheckJob.OnBotsChanged -= OnBotsChanged;
 
             ProxyCheckJob.OnResult -= OnResult;
             ProxyCheckJob.OnTaskError -= OnTaskError;

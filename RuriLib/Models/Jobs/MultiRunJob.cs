@@ -140,6 +140,8 @@ public class MultiRunJob : Job
     public event EventHandler<ResultDetails<MultiRunInput, CheckResult>>? OnResult;
     /// <summary>Raised when the job encounters an error.</summary>
     public event EventHandler<Exception>? OnError;
+    /// <summary>Raised when the job emits a log entry.</summary>
+    public event EventHandler<BotLoggerEntry>? OnLogEntry;
     /// <summary>Raised when progress changes.</summary>
     public event EventHandler<float>? OnProgress;
     /// <summary>Raised when the job status changes.</summary>
@@ -716,14 +718,26 @@ public class MultiRunJob : Job
             {
                 var startupScript = new ScriptBuilder().Build(config.StartupCSharpScript,
                     config.Settings.ScriptSettings, pluginRepo);
+                var startupLogger = new BotLogger();
+                startupLogger.NewEntry += PropagateLogEntry;
                 var startupBotData =
-                    new BotData(providers, config.Settings, new BotLogger(),
+                    new BotData(providers, config.Settings, startupLogger,
                         new DataLine(string.Empty, wordlistType), null, false)
                     {
                         CancellationToken = linkedCts.Token
                     };
-                var startupGlobals = new ScriptGlobals(startupBotData, globalVariables);
-                await startupScript.RunAsync(startupGlobals, null, linkedCts.Token).ConfigureAwait(false);
+
+                try
+                {
+                    startupLogger.Log("Executing startup script...");
+                    var startupGlobals = new ScriptGlobals(startupBotData, globalVariables);
+                    await startupScript.RunAsync(startupGlobals, null, linkedCts.Token).ConfigureAwait(false);
+                    startupLogger.Log("Executing main script...");
+                }
+                finally
+                {
+                    startupLogger.NewEntry -= PropagateLogEntry;
+                }
             }
 
             linkedCts.Token.ThrowIfCancellationRequested();
@@ -950,6 +964,9 @@ public class MultiRunJob : Job
         OnTaskError?.Invoke(this, details);
         logger?.LogException(Id, details.Exception);
     }
+
+    private void PropagateLogEntry(object? _, BotLoggerEntry entry)
+        => OnLogEntry?.Invoke(this, entry);
 
     private void PropagateError(object? _, Exception ex)
     {

@@ -2,11 +2,11 @@ using RuriLib.Models.Configs;
 using RuriLib.Models.Data;
 using RuriLib.Models.Jobs;
 using RuriLib.Models.Jobs.StartConditions;
+using RuriLib.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -101,6 +101,36 @@ public class MultiRunJobTests
         await job.Start(TestCancellationToken);
 
         Assert.Equal(3, job.CurrentBotDatas.Length);
+    }
+
+    [Fact]
+    public async Task Start_WithStartupScript_RaisesStartupLogEntries()
+    {
+        var settings = CreateSettingsService();
+        var entries = new List<BotLoggerEntry>();
+        var job = new MultiRunJob(settings, CreatePluginRepository())
+        {
+            Bots = 1,
+            Providers = new global::RuriLib.Models.Bots.Providers(settings),
+            StartCondition = new ImmediateStartCondition(),
+            Config = new Config
+            {
+                Id = "test",
+                Mode = ConfigMode.CSharp,
+                CSharpScript = string.Empty,
+                StartupCSharpScript = "data.Logger.Log(\"startup\", LogColors.Tomato);",
+                Settings = new ConfigSettings()
+            },
+            DataPool = new TestDataPool(["data"], settings.Environment.WordlistTypes[0].Name)
+        };
+
+        job.OnLogEntry += (_, entry) => entries.Add(entry);
+
+        await job.Start(TestCancellationToken);
+
+        Assert.Contains(entries, e => e.Message == "Executing startup script...");
+        Assert.Contains(entries, e => e.Message == "startup" && e.Color == LogColors.Tomato);
+        Assert.Contains(entries, e => e.Message == "Executing main script...");
     }
 
     [Fact]
@@ -215,8 +245,7 @@ public class MultiRunJobTests
         => new(Path.Combine(Path.GetTempPath(), $"ob2-multirun-settings-{Guid.NewGuid():N}"));
 
     private static global::RuriLib.Services.PluginRepository CreatePluginRepository()
-        => (global::RuriLib.Services.PluginRepository)RuntimeHelpers
-            .GetUninitializedObject(typeof(global::RuriLib.Services.PluginRepository));
+        => new(Path.Combine(Path.GetTempPath(), $"ob2-multirun-plugins-{Guid.NewGuid():N}"));
 
     private static async Task WaitUntilIdleAsync(MultiRunJob job)
     {

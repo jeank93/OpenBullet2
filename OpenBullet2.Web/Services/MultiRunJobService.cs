@@ -8,6 +8,7 @@ using OpenBullet2.Web.Extensions;
 using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.SignalR;
 using OpenBullet2.Web.Utils;
+using RuriLib.Logging;
 using RuriLib.Models.Hits;
 using RuriLib.Models.Jobs;
 using RuriLib.Parallelization.Models;
@@ -28,6 +29,7 @@ public sealed class MultiRunJobService : IJobService, IDisposable
     private readonly EventHandler _onCompleted;
     private readonly EventHandler<Exception> _onError;
     private readonly EventHandler<Hit> _onHit;
+    private readonly EventHandler<BotLoggerEntry> _onLogEntry;
     private readonly EventHandler<ResultDetails<MultiRunInput, CheckResult>> _onResult;
 
     // Event handlers
@@ -65,6 +67,11 @@ public sealed class MultiRunJobService : IJobService, IDisposable
 
         _onResult = EventHandlers.TryAsync<ResultDetails<MultiRunInput, CheckResult>>(
             OnResultAsync,
+            SendErrorAsync
+        );
+
+        _onLogEntry = EventHandlers.TryAsync<BotLoggerEntry>(
+            OnLogEntryAsync,
             SendErrorAsync
         );
 
@@ -112,6 +119,7 @@ public sealed class MultiRunJobService : IJobService, IDisposable
             mrJob.OnError += _onError;
             mrJob.OnTaskError += _onTaskError;
             mrJob.OnResult += _onResult;
+            mrJob.OnLogEntry += _onLogEntry;
             mrJob.OnTimerTick += _onTimerTick;
             mrJob.OnHit += _onHit;
             mrJob.OnBotsChanged += _onBotsChanged;
@@ -257,6 +265,7 @@ public sealed class MultiRunJobService : IJobService, IDisposable
         job.OnError -= _onError;
         job.OnTaskError -= _onTaskError;
         job.OnResult -= _onResult;
+        job.OnLogEntry -= _onLogEntry;
         job.OnTimerTick -= _onTimerTick;
         job.OnHit -= _onHit;
         job.OnBotsChanged -= _onBotsChanged;
@@ -325,6 +334,13 @@ public sealed class MultiRunJobService : IJobService, IDisposable
         };
 
         await NotifyClientsAsync(sender, message, MultiRunJobMethods.NewResult);
+    }
+
+    private async Task OnLogEntryAsync(object? sender, BotLoggerEntry e)
+    {
+        var message = new MrjNewLogMessage { NewMessage = e };
+
+        await NotifyClientsAsync(sender, message, MultiRunJobMethods.NewLogEntry);
     }
 
     private async Task OnTimerTickAsync(object? sender, EventArgs e)

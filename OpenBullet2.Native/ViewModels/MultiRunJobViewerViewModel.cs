@@ -7,6 +7,7 @@ using OpenBullet2.Core.Services;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Utils;
 using RuriLib.Extensions;
+using RuriLib.Logging;
 using RuriLib.Models.Bots;
 using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Hits;
@@ -243,10 +244,12 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
         MultiRunJob.OnResult += UpdateViewModel;
         MultiRunJob.OnStatusChanged += UpdateStatus;
         MultiRunJob.OnProgress += UpdateViewModel;
+        MultiRunJob.OnBotsChanged += OnBotsChanged;
 
         MultiRunJob.OnResult += OnResult;
         MultiRunJob.OnResult += PlayHitSound;
         MultiRunJob.OnTaskError += OnTaskError;
+        MultiRunJob.OnLogEntry += OnLogEntry;
         MultiRunJob.OnError += OnError;
         MultiRunJob.OnHit += OnHit;
 
@@ -305,6 +308,8 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
     private void UpdateStatus(object? sender, JobStatus status)
     {
         Job.UpdateStatus();
+
+        NewMessage?.Invoke(this, $"Status changed to {status}", Colors.SkyBlue);
 
         OnPropertyChanged(nameof(CanChangeOptions));
         OnPropertyChanged(nameof(CanStart));
@@ -391,8 +396,28 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
         NewMessage?.Invoke(this, message, Colors.Tomato);
     }
 
+    private void OnBotsChanged(object? sender, EventArgs e)
+        => NewMessage?.Invoke(this, $"Bots changed to {MultiRunJob.Bots}", Colors.SkyBlue);
+
+    private void OnLogEntry(object? sender, BotLoggerEntry entry)
+        => NewMessage?.Invoke(this, entry.Message, ParseLogColor(entry.Color));
+
     private void OnError(object? sender, Exception ex)
         => NewMessage?.Invoke(this, $"Job error: {ex.Message}", Colors.Tomato);
+
+    private static Color ParseLogColor(string color)
+    {
+        try
+        {
+            return ColorConverter.ConvertFromString(color) is Color parsed
+                ? parsed
+                : Colors.White;
+        }
+        catch
+        {
+            return Colors.White;
+        }
+    }
     #endregion
 
     private void PlayHitSound(object? sender, ResultDetails<MultiRunInput, CheckResult> details)
@@ -501,10 +526,12 @@ public class MultiRunJobViewerViewModel : ViewModelBase, IDisposable
             MultiRunJob.OnResult -= UpdateViewModel;
             MultiRunJob.OnStatusChanged -= UpdateStatus;
             MultiRunJob.OnProgress -= UpdateViewModel;
+            MultiRunJob.OnBotsChanged -= OnBotsChanged;
 
             MultiRunJob.OnResult -= OnResult;
             MultiRunJob.OnResult -= PlayHitSound;
             MultiRunJob.OnTaskError -= OnTaskError;
+            MultiRunJob.OnLogEntry -= OnLogEntry;
             MultiRunJob.OnError -= OnError;
             MultiRunJob.OnHit -= OnHit;
         }

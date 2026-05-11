@@ -1,14 +1,14 @@
 using RuriLib.Logging;
 
-namespace OpenBullet2.Web.Dtos.ConfigDebugger;
+namespace OpenBullet2.Web.Dtos.Job.MultiRun;
 
 /// <summary>
-/// A new message was logged.
+/// A new multi-run job log entry was emitted.
 /// </summary>
-public class DbgNewLogMessage
+public class MrjNewLogMessage
 {
     /// <summary>
-    /// The new log message.
+    /// The new log entry.
     /// </summary>
     public required BotLoggerEntry NewMessage { get; set; }
 }

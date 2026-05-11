@@ -88,7 +88,8 @@ internal sealed class TestTcpServer : IAsyncDisposable
         });
     }
 
-    public static TestTcpServer CreateHttpServer(string responseBody, bool gzip = false)
+    public static TestTcpServer CreateHttpServer(string responseBody, bool gzip = false, bool keepAlive = false,
+        bool chunked = false, TimeSpan? keepAliveDuration = null)
     {
         ArgumentNullException.ThrowIfNull(responseBody);
 
@@ -103,8 +104,18 @@ internal sealed class TestTcpServer : IAsyncDisposable
                 payload = Compress(payload);
             }
 
-            var headers =
-                $"HTTP/1.1 200 OK\r\nContent-Length: {payload.Length}\r\nConnection: close\r\n";
+            var headers = "HTTP/1.1 200 OK\r\n";
+
+            if (chunked)
+            {
+                headers += "Transfer-Encoding: chunked\r\n";
+            }
+            else
+            {
+                headers += $"Content-Length: {payload.Length}\r\n";
+            }
+
+            headers += keepAlive ? "Connection: keep-alive\r\n" : "Connection: close\r\n";
 
             if (gzip)
             {
@@ -114,7 +125,23 @@ internal sealed class TestTcpServer : IAsyncDisposable
             headers += "\r\n";
 
             await networkStream.WriteAsync(Encoding.UTF8.GetBytes(headers), cancellationToken);
-            await networkStream.WriteAsync(payload, cancellationToken);
+
+            if (chunked)
+            {
+                var chunkHeader = Encoding.ASCII.GetBytes($"{payload.Length:X}\r\n");
+                await networkStream.WriteAsync(chunkHeader, cancellationToken);
+                await networkStream.WriteAsync(payload, cancellationToken);
+                await networkStream.WriteAsync("\r\n0\r\n\r\n"u8.ToArray(), cancellationToken);
+            }
+            else
+            {
+                await networkStream.WriteAsync(payload, cancellationToken);
+            }
+
+            if (keepAlive)
+            {
+                await Task.Delay(keepAliveDuration ?? TimeSpan.FromSeconds(5), cancellationToken);
+            }
         });
     }
 

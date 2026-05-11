@@ -164,6 +164,63 @@ public class TcpRequestBlocksTests
     }
 
     [Fact]
+    public async Task TcpSendReadHttp_ContentLengthKeepAlive_DoesNotWaitForSocketClose()
+    {
+        await using var server = TestTcpServer.CreateHttpServer(
+            "tcp-http-keepalive",
+            keepAlive: true,
+            keepAliveDuration: TimeSpan.FromSeconds(5));
+        var data = NewBotData();
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, server.Host, server.Port, useSSL: false);
+
+            var response = await TcpMethods.TcpSendReadHttp(
+                data,
+                $"GET / HTTP/1.1\\r\\nHost: {server.Host}:{server.Port}\\r\\n\\r\\n",
+                timeoutMilliseconds: 1000);
+
+            Assert.Contains("HTTP/1.1 200 OK", response, StringComparison.Ordinal);
+            Assert.Contains("Connection: keep-alive", response, StringComparison.OrdinalIgnoreCase);
+            Assert.EndsWith("tcp-http-keepalive", response, StringComparison.Ordinal);
+        }
+        finally
+        {
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
+    [Fact]
+    public async Task TcpSendReadHttp_ChunkedKeepAlive_DoesNotWaitForSocketClose()
+    {
+        await using var server = TestTcpServer.CreateHttpServer(
+            "tcp-http-chunked",
+            keepAlive: true,
+            chunked: true,
+            keepAliveDuration: TimeSpan.FromSeconds(5));
+        var data = NewBotData();
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, server.Host, server.Port, useSSL: false);
+
+            var response = await TcpMethods.TcpSendReadHttp(
+                data,
+                $"GET / HTTP/1.1\\r\\nHost: {server.Host}:{server.Port}\\r\\n\\r\\n",
+                timeoutMilliseconds: 1000);
+
+            Assert.Contains("HTTP/1.1 200 OK", response, StringComparison.Ordinal);
+            Assert.Contains("Transfer-Encoding: chunked", response, StringComparison.OrdinalIgnoreCase);
+            Assert.EndsWith("tcp-http-chunked", response, StringComparison.Ordinal);
+        }
+        finally
+        {
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
+    [Fact]
     public async Task TcpDisconnect_MakesFurtherSocketReadsFail()
     {
         await using var server = TestTcpServer.CreateResponseServer("BYE", Encoding.ASCII);
@@ -220,6 +277,33 @@ public class TcpRequestBlocksTests
             var response = await TcpMethods.TcpSendReadBytes(data, payload, bytesToRead: payload.Length);
 
             Assert.Equal(payload, response);
+        }
+        finally
+        {
+            Methods.ServerCertificateValidationCallback = null;
+            TcpMethods.TcpDisconnect(data);
+        }
+    }
+
+    [Fact]
+    public async Task TcpConnect_ReconnectFromSslToPlainWithoutDisconnect_UsesNewConnection()
+    {
+        using var certificate = TestTcpServer.CreateSelfSignedCertificate("localhost");
+        await using var tlsServer = TestTcpServer.CreateTlsEchoServer(certificate);
+        await using var plainServer = TestTcpServer.CreateEchoServer();
+        var data = NewBotData();
+        Methods.ServerCertificateValidationCallback = (_, _, _, _) => true;
+
+        try
+        {
+            await TcpMethods.TcpConnect(data, "localhost", tlsServer.Port, useSSL: true);
+            var tlsResponse = await TcpMethods.TcpSendRead(data, "TLS");
+
+            await TcpMethods.TcpConnect(data, plainServer.Host, plainServer.Port, useSSL: false);
+            var plainResponse = await TcpMethods.TcpSendRead(data, "PLAIN");
+
+            Assert.Equal("TLS\r\n", tlsResponse);
+            Assert.Equal("PLAIN\r\n", plainResponse);
         }
         finally
         {

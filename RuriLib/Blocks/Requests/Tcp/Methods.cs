@@ -6,9 +6,9 @@ using RuriLib.Models.Bots;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Globalization;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -31,6 +31,7 @@ public static class Methods
     public static async Task TcpConnect(BotData data, string host, int port, bool useSSL, int timeoutMilliseconds = 10000)
     {
         data.Logger.LogHeader();
+        DisposeTcpObjects(data, clearReferences: true);
 
         var tcpClient = await TcpClientFactory.GetClientAsync(host, port,
                 TimeSpan.FromMilliseconds(timeoutMilliseconds), data.UseProxy ? data.Proxy : null, data.CancellationToken)
@@ -41,6 +42,7 @@ public static class Methods
 
         var netStream = tcpClient.GetStream();
 
+        data.SetObject("tcpClient", tcpClient);
         data.SetObject("netStream", netStream);
 
         if (useSSL)
@@ -59,11 +61,11 @@ public static class Methods
     }
 
     /// <summary>
-    /// Sends a message (ASCII) on the previously opened socket and read the response (ASCII) right after.
+    /// Sends a message on the previously opened socket and read the response right after.
     /// </summary>
-    [Block("Sends a message (ASCII) on the previously opened socket and read the response (ASCII) right after")]
+    [Block("Sends a message on the previously opened socket and read the response right after")]
     public static async Task<string> TcpSendRead(BotData data, string message, bool unescape = true, bool terminateWithCRLF = true,
-        int bytesToRead = 4096, int timeoutMilliseconds = 60000, [BlockParam("Use UTF8", "Enable to use UTF-8 encoding")] bool useUTF8 = false)
+        int bytesToRead = 4096, int timeoutMilliseconds = 60000, [BlockParam("Use UTF8", "Enable to use UTF-8 encoding instead of ASCII")] bool useUTF8 = false)
     {
         data.Logger.LogHeader();
 
@@ -129,11 +131,11 @@ public static class Methods
     }
 
     /// <summary>
-    /// Sends a message(ASCII) on the previously opened socket.
+    /// Sends a message on the previously opened socket.
     /// </summary>
-    [Block("Sends a message(ASCII) on the previously opened socket")]
+    [Block("Sends a message on the previously opened socket")]
     public static async Task TcpSend(BotData data, string message, bool unescape = true, bool terminateWithCRLF = true,
-        [BlockParam("Use UTF8", "Enable to use UTF-8 encoding")] bool useUTF8 = false)
+        [BlockParam("Use UTF8", "Enable to use UTF-8 encoding instead of ASCII")] bool useUTF8 = false)
     {
         data.Logger.LogHeader();
 
@@ -173,11 +175,11 @@ public static class Methods
     }
 
     /// <summary>
-    /// Reads a message (ASCII) from the previously opened socket.
+    /// Reads a message from the previously opened socket.
     /// </summary>
-    [Block("Reads a message (ASCII) from the previously opened socket")]
+    [Block("Reads a message from the previously opened socket")]
     public static async Task<string> TcpRead(BotData data, int bytesToRead = 4096,
-        int timeoutMilliseconds = 60000, [BlockParam("Use UTF8", "Enable to use UTF-8 encoding")] bool useUTF8 = false)
+        int timeoutMilliseconds = 60000, [BlockParam("Use UTF8", "Enable to use UTF-8 encoding instead of ASCII")] bool useUTF8 = false)
     {
         data.Logger.LogHeader();
 
@@ -223,7 +225,7 @@ public static class Methods
     /// Sends an HTTP message on the previously opened socket and reads the response.
     /// </summary>
     [Block("Sends an HTTP message on the previously opened socket and reads the response",
-        extraInfo = "Use this block instead of SendMessage or it will only read the headers")]
+        extraInfo = "Use this block instead of SendMessage for HTTP or it will only read the headers")]
     public static async Task<string> TcpSendReadHttp(BotData data, string message, bool unescape = true,
         int timeoutMilliseconds = 60000)
     {
@@ -231,7 +233,7 @@ public static class Methods
 
         using var cts = new CancellationTokenSource(timeoutMilliseconds);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, data.CancellationToken);
-        var netStream = GetStream(data);
+        var stream = GetStream(data);
 
         // Unescape codes like \r\n
         if (unescape)
@@ -247,23 +249,26 @@ public static class Methods
 
         // Send the message
         var txBytes = Encoding.UTF8.GetBytes(message);
-        await netStream.WriteAsync(txBytes.AsMemory(0, txBytes.Length), linkedCts.Token).ConfigureAwait(false);
+        await stream.WriteAsync(txBytes.AsMemory(0, txBytes.Length), linkedCts.Token).ConfigureAwait(false);
 
         // Receive data
-        string payload;
-        using var ms = new MemoryStream();
-        await netStream.CopyToAsync(ms, linkedCts.Token).ConfigureAwait(false); // Read the whole response stream
-        ms.Position = 0;
-        var rxBytes = ms.ToArray();
+        var rxBytes = await ReadHttpResponseAsync(stream, linkedCts.Token).ConfigureAwait(false);
+        var index = BinaryMatch(rxBytes, "\r\n\r\n"u8.ToArray());
+        if (index < 0)
+        {
+            throw new InvalidOperationException("The server sent an invalid HTTP response");
+        }
 
-        // Find where the headers are finished
-        var index = BinaryMatch(rxBytes, "\r\n\r\n"u8.ToArray()) + 4;
+        index += 4;
         var headers = Encoding.UTF8.GetString(rxBytes, 0, index);
-        ms.Position = index;
+
+        string payload;
+        var bodyBytes = new ArraySegment<byte>(rxBytes, index, rxBytes.Length - index).ToArray();
 
         // If gzip, decompress
         if (headers.IndexOf("Content-Encoding: gzip", StringComparison.OrdinalIgnoreCase) > 0)
         {
+            await using var ms = new MemoryStream(bodyBytes);
             await using var decompressionStream = new GZipStream(ms, CompressionMode.Decompress);
             using var decompressedMemory = new MemoryStream();
             await decompressionStream.CopyToAsync(decompressedMemory, linkedCts.Token).ConfigureAwait(false);
@@ -272,7 +277,7 @@ public static class Methods
         }
         else
         {
-            payload = Encoding.UTF8.GetString(rxBytes, index, rxBytes.Length - index);
+            payload = Encoding.UTF8.GetString(bodyBytes);
         }
 
         var response = $"{headers}{payload}";
@@ -291,8 +296,7 @@ public static class Methods
     {
         data.Logger.LogHeader();
 
-        data.TryGetObject<SslStream>("sslStream")?.Dispose();
-        data.TryGetObject<NetworkStream>("netStream")?.Dispose();
+        DisposeTcpObjects(data, clearReferences: false);
 
         data.Logger.Log("Disconnected", LogColors.Mauve);
     }
@@ -308,6 +312,292 @@ public static class Methods
 
         return data.TryGetObject<NetworkStream>("netStream")
                ?? throw new BlockExecutionException("You have to create a connection first!");
+    }
+
+    private static void DisposeTcpObjects(BotData data, bool clearReferences)
+    {
+        TryDispose(data.TryGetObject<SslStream>("sslStream"));
+        TryDispose(data.TryGetObject<NetworkStream>("netStream"));
+        TryDispose(data.TryGetObject<TcpClient>("tcpClient"));
+
+        if (clearReferences)
+        {
+            data.SetObject("sslStream", null, disposeExisting: false);
+            data.SetObject("netStream", null, disposeExisting: false);
+            data.SetObject("tcpClient", null, disposeExisting: false);
+        }
+    }
+
+    private static void TryDispose(IDisposable? disposable)
+    {
+        try
+        {
+            disposable?.Dispose();
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    private static async Task<byte[]> ReadHttpResponseAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[4096];
+        using var responseStream = new MemoryStream();
+
+        var headersEndIndex = -1;
+        while (headersEndIndex < 0)
+        {
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (bytesRead == 0)
+            {
+                throw new InvalidOperationException("The server closed the TCP stream before sending HTTP headers");
+            }
+
+            await responseStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+            headersEndIndex = BinaryMatch(responseStream.ToArray(), "\r\n\r\n"u8.ToArray());
+        }
+
+        headersEndIndex += 4;
+        var partialResponse = responseStream.ToArray();
+        var headers = Encoding.UTF8.GetString(partialResponse, 0, headersEndIndex);
+        var bodyPrefix = new ArraySegment<byte>(partialResponse, headersEndIndex, partialResponse.Length - headersEndIndex)
+            .ToArray();
+
+        if (ResponseHasNoBody(headers))
+        {
+            return partialResponse[..headersEndIndex];
+        }
+
+        if (HasChunkedTransferEncoding(headers))
+        {
+            var chunkedBody = await ReadChunkedBodyAsync(stream, bodyPrefix, cancellationToken).ConfigureAwait(false);
+            return ConcatBytes(partialResponse[..headersEndIndex], chunkedBody);
+        }
+
+        if (TryGetContentLength(headers, out var contentLength))
+        {
+            var body = await ReadFixedLengthBodyAsync(stream, bodyPrefix, contentLength, cancellationToken)
+                .ConfigureAwait(false);
+            return ConcatBytes(partialResponse[..headersEndIndex], body);
+        }
+
+        await stream.CopyToAsync(responseStream, cancellationToken).ConfigureAwait(false);
+        return responseStream.ToArray();
+    }
+
+    private static async Task<byte[]> ReadFixedLengthBodyAsync(Stream stream, byte[] bodyPrefix, int contentLength,
+        CancellationToken cancellationToken)
+    {
+        if (contentLength < 0)
+        {
+            throw new InvalidOperationException("The server sent an invalid Content-Length header");
+        }
+
+        using var bodyStream = new MemoryStream(contentLength);
+
+        var prefetchedBytes = Math.Min(bodyPrefix.Length, contentLength);
+        if (prefetchedBytes > 0)
+        {
+            await bodyStream.WriteAsync(bodyPrefix.AsMemory(0, prefetchedBytes), cancellationToken).ConfigureAwait(false);
+        }
+
+        var remainingBytes = contentLength - prefetchedBytes;
+        if (remainingBytes == 0)
+        {
+            return bodyStream.ToArray();
+        }
+
+        var buffer = new byte[Math.Min(4096, remainingBytes)];
+        while (remainingBytes > 0)
+        {
+            var bytesToRead = Math.Min(buffer.Length, remainingBytes);
+            var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, bytesToRead), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (bytesRead == 0)
+            {
+                throw new InvalidOperationException("The server closed the TCP stream before sending the full HTTP body");
+            }
+
+            await bodyStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+            remainingBytes -= bytesRead;
+        }
+
+        return bodyStream.ToArray();
+    }
+
+    private static async Task<byte[]> ReadChunkedBodyAsync(Stream stream, byte[] bodyPrefix,
+        CancellationToken cancellationToken)
+    {
+        var reader = new PrefetchedBodyReader(stream, bodyPrefix);
+        using var bodyStream = new MemoryStream();
+
+        while (true)
+        {
+            var chunkLengthLine = await ReadAsciiLineAsync(reader, cancellationToken)
+                .ConfigureAwait(false);
+            var separatorIndex = chunkLengthLine.IndexOf(';');
+            var chunkLengthValue = separatorIndex >= 0
+                ? chunkLengthLine[..separatorIndex]
+                : chunkLengthLine;
+
+            if (!int.TryParse(chunkLengthValue, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var chunkLength))
+            {
+                throw new InvalidOperationException("The server sent an invalid chunked HTTP response");
+            }
+
+            if (chunkLength == 0)
+            {
+                while (!string.IsNullOrEmpty(await ReadAsciiLineAsync(reader, cancellationToken)
+                           .ConfigureAwait(false)))
+                {
+                }
+
+                return bodyStream.ToArray();
+            }
+
+            await CopyExactBytesAsync(reader, bodyStream, chunkLength, cancellationToken).ConfigureAwait(false);
+            await ConsumeExpectedCrlfAsync(reader, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<string> ReadAsciiLineAsync(PrefetchedBodyReader reader, CancellationToken cancellationToken)
+    {
+        using var lineStream = new MemoryStream();
+        var singleByte = new byte[1];
+
+        while (true)
+        {
+            var bytesRead = await reader.ReadAsync(singleByte.AsMemory(0, 1), cancellationToken).ConfigureAwait(false);
+
+            if (bytesRead == 0)
+            {
+                throw new InvalidOperationException("The server closed the TCP stream unexpectedly");
+            }
+
+            lineStream.WriteByte(singleByte[0]);
+
+            var lineBytes = lineStream.GetBuffer();
+            var lineLength = (int)lineStream.Length;
+            if (lineLength >= 2 && lineBytes[lineLength - 2] == '\r' && lineBytes[lineLength - 1] == '\n')
+            {
+                return Encoding.ASCII.GetString(lineBytes, 0, lineLength - 2);
+            }
+        }
+    }
+
+    private static async Task ConsumeExpectedCrlfAsync(PrefetchedBodyReader reader, CancellationToken cancellationToken)
+    {
+        var crlf = new byte[2];
+        await ReadExactBytesAsync(reader, crlf, cancellationToken).ConfigureAwait(false);
+
+        if (crlf[0] != '\r' || crlf[1] != '\n')
+        {
+            throw new InvalidOperationException("The server sent an invalid chunked HTTP response");
+        }
+    }
+
+    private static async Task CopyExactBytesAsync(PrefetchedBodyReader reader, MemoryStream destination, int bytesToCopy,
+        CancellationToken cancellationToken)
+    {
+        if (bytesToCopy == 0)
+        {
+            return;
+        }
+
+        var buffer = new byte[Math.Min(4096, bytesToCopy)];
+        var remainingBytes = bytesToCopy;
+
+        while (remainingBytes > 0)
+        {
+            var bytesRead = await reader.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, remainingBytes)),
+                cancellationToken).ConfigureAwait(false);
+
+            if (bytesRead == 0)
+            {
+                throw new InvalidOperationException("The server closed the TCP stream before sending the full HTTP body");
+            }
+
+            await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+            remainingBytes -= bytesRead;
+        }
+    }
+
+    private static async Task ReadExactBytesAsync(PrefetchedBodyReader reader, byte[] destination,
+        CancellationToken cancellationToken)
+    {
+        var totalBytesRead = 0;
+
+        while (totalBytesRead < destination.Length)
+        {
+            var bytesRead = await reader.ReadAsync(destination.AsMemory(totalBytesRead, destination.Length - totalBytesRead),
+                cancellationToken).ConfigureAwait(false);
+
+            if (bytesRead == 0)
+            {
+                throw new InvalidOperationException("The server closed the TCP stream before sending the full HTTP body");
+            }
+
+            totalBytesRead += bytesRead;
+        }
+    }
+
+    private static bool ResponseHasNoBody(string headers)
+    {
+        var firstLineEnd = headers.IndexOf("\r\n", StringComparison.Ordinal);
+        var firstLine = firstLineEnd >= 0 ? headers[..firstLineEnd] : headers;
+        var parts = firstLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length < 2 || !int.TryParse(parts[1], out var statusCode))
+        {
+            return false;
+        }
+
+        return statusCode is >= 100 and < 200 or 204 or 304;
+    }
+
+    private static bool HasChunkedTransferEncoding(string headers)
+        => TryGetHeaderValue(headers, "Transfer-Encoding", out var transferEncoding)
+           && transferEncoding.Contains("chunked", StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryGetContentLength(string headers, out int contentLength)
+    {
+        contentLength = 0;
+
+        return TryGetHeaderValue(headers, "Content-Length", out var value)
+               && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out contentLength);
+    }
+
+    private static bool TryGetHeaderValue(string headers, string headerName, out string value)
+    {
+        foreach (var line in headers.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separatorIndex = line.IndexOf(':');
+            if (separatorIndex <= 0)
+            {
+                continue;
+            }
+
+            if (line[..separatorIndex].Equals(headerName, StringComparison.OrdinalIgnoreCase))
+            {
+                value = line[(separatorIndex + 1)..].Trim();
+                return true;
+            }
+        }
+
+        value = string.Empty;
+        return false;
+    }
+
+    private static byte[] ConcatBytes(byte[] first, byte[] second)
+    {
+        var result = new byte[first.Length + second.Length];
+        Buffer.BlockCopy(first, 0, result, 0, first.Length);
+        Buffer.BlockCopy(second, 0, result, first.Length, second.Length);
+        return result;
     }
 
     private static int BinaryMatch(byte[] input, byte[] pattern)
@@ -330,5 +620,25 @@ public static class Methods
             }
         }
         return -1;
+    }
+
+    private sealed class PrefetchedBodyReader(Stream stream, byte[] bodyPrefix)
+    {
+        private readonly Stream stream = stream;
+        private readonly byte[] bodyPrefix = bodyPrefix;
+        private int prefixOffset;
+
+        public async Task<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        {
+            if (prefixOffset < bodyPrefix.Length)
+            {
+                var bytesFromPrefix = Math.Min(destination.Length, bodyPrefix.Length - prefixOffset);
+                bodyPrefix.AsMemory(prefixOffset, bytesFromPrefix).CopyTo(destination);
+                prefixOffset += bytesFromPrefix;
+                return bytesFromPrefix;
+            }
+
+            return await stream.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

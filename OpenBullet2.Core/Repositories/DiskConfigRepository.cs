@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Configs;
+using RuriLib.Models.Configs;
 using RuriLib.Helpers;
 using System.Collections.Generic;
 using System.IO;
@@ -50,7 +50,7 @@ public class DiskConfigRepository : IConfigRepository
         }
 
         var tasks = Directory.GetFiles(BaseFolder).Where(file => file.EndsWith(".opk"))
-            .Select(async file => 
+            .Select(async file =>
             {
                 try
                 {
@@ -64,7 +64,7 @@ public class DiskConfigRepository : IConfigRepository
             });
 
         var results = await Task.WhenAll(tasks);
-        return results.Where(r => r != null);
+        return results.OfType<Config>();
     }
 
     /// <inheritdoc/>
@@ -76,7 +76,7 @@ public class DiskConfigRepository : IConfigRepository
         {
             throw new FileNotFoundException();
         }
-        
+
         await using var fileStream = new FileStream(file, FileMode.Open, FileAccess.Read);
 
         var config = await ConfigPacker.UnpackAsync(fileStream);
@@ -94,7 +94,7 @@ public class DiskConfigRepository : IConfigRepository
         {
             throw new FileNotFoundException();
         }
-        
+
         await using FileStream fileStream = new(file, FileMode.Open, FileAccess.Read);
         using var ms = new MemoryStream();
         await fileStream.CopyToAsync(ms);
@@ -104,7 +104,7 @@ public class DiskConfigRepository : IConfigRepository
     }
 
     /// <inheritdoc/>
-    public async Task<Config> CreateAsync(string id = null)
+    public async Task<Config> CreateAsync(string? id = null)
     {
         var config = new Config { Id = id ?? Guid.NewGuid().ToString() };
 
@@ -161,7 +161,9 @@ public class DiskConfigRepository : IConfigRepository
 
                 // Write the required plugins in the config's metadata
                 config.Metadata.Plugins = stack.Select(b => b.Descriptor.AssemblyFullName)
-                    .Where(n => n != null && !n.Contains("RuriLib")).ToList();
+                    .Where(n => !string.IsNullOrWhiteSpace(n) && !n.Contains("RuriLib"))
+                    .Distinct()
+                    .ToList();
             }
             catch
             {
@@ -178,7 +180,9 @@ public class DiskConfigRepository : IConfigRepository
         var file = GetFileName(config);
 
         if (File.Exists(file))
+        {
             File.Delete(file);
+        }
     }
 
     private string GetFileName(Config config)

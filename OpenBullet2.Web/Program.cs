@@ -19,12 +19,12 @@ using RuriLib.Logging;
 using RuriLib.Providers.RandomNumbers;
 using RuriLib.Providers.UserAgents;
 using RuriLib.Services;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentValidation;
-using Microsoft.OpenApi.Models;
+using Mapster;
+using Microsoft.OpenApi;
 using OpenBullet2.Core.Models.Proxies;
 using Serilog;
 
@@ -36,10 +36,8 @@ Globals.UserDataFolder = builder.Configuration.GetSection("Settings")
 // Configuration tweaks
 var workerThreads = builder.Configuration.GetSection("Resources").GetValue("WorkerThreads", 1000);
 var ioThreads = builder.Configuration.GetSection("Resources").GetValue("IOThreads", 1000);
-var connectionLimit = builder.Configuration.GetSection("Resources").GetValue("ConnectionLimit", 1000);
 
 ThreadPool.SetMinThreads(workerThreads, ioThreads);
-ServicePointManager.DefaultConnectionLimit = connectionLimit;
 
 builder.Services.Configure<FormOptions>(x =>
 {
@@ -89,23 +87,12 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "ApiKeyScheme"
     });
-    
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+
+    c.AddSecurityRequirement(_ => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Api Key"
-                },
-                Scheme = "ApiKeyScheme",
-                Name = "X-Api-Key",
-                In = ParameterLocation.Header,
-                
-            },
-            new List<string>()
+            new OpenApiSecuritySchemeReference("Api Key", null!, null!),
+            []
         }
     });
 });
@@ -115,7 +102,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? string.Empty,
         b => b.MigrationsAssembly("OpenBullet2.Core")));
 
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
+builder.Services.AddSingleton(_ => WebMapperConfig.Create());
+builder.Services.AddScoped<IObjectMapper, MapsterObjectMapper>();
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration));
@@ -130,20 +118,19 @@ builder.Services.AddScoped<IJobRepository, DbJobRepository>();
 builder.Services.AddScoped<IGuestRepository, DbGuestRepository>();
 builder.Services.AddScoped<IRecordRepository, DbRecordRepository>();
 builder.Services.AddScoped<IWordlistRepository>(service =>
-    new HybridWordlistRepository(service.GetService<ApplicationDbContext>(),
+    new HybridWordlistRepository(service.GetRequiredService<ApplicationDbContext>(),
         $"{Globals.UserDataFolder}/Wordlists"));
 
 builder.Services.AddScoped<DataPoolFactoryService>();
 builder.Services.AddScoped<ProxySourceFactoryService>();
 
 // Singleton
-builder.Services.AddSingleton(sp => sp); // The service provider itself
 builder.Services.AddSingleton<IAuthTokenService, AuthTokenService>();
 builder.Services.AddSingleton<IAnnouncementService, AnnouncementService>();
 builder.Services.AddSingleton<IUpdateService, UpdateService>();
 builder.Services.AddSingleton<PerformanceMonitorService>();
 builder.Services.AddSingleton<IConfigRepository>(service =>
-    new DiskConfigRepository(service.GetService<RuriLibSettingsService>(),
+    new DiskConfigRepository(service.GetRequiredService<RuriLibSettingsService>(),
         $"{Globals.UserDataFolder}/Configs"));
 builder.Services.AddSingleton<ConfigService>();
 builder.Services.AddSingleton(service =>
@@ -153,9 +140,12 @@ builder.Services.AddSingleton(service =>
 builder.Services.AddSingleton<ProxyReloadService>();
 builder.Services.AddSingleton<JobFactoryService>();
 builder.Services.AddSingleton<ProxyCheckOutputFactory>();
+builder.Services.AddSingleton<TriggeredActionExecutor>();
 builder.Services.AddSingleton<JobManagerService>();
 builder.Services.AddSingleton(service =>
-    new JobMonitorService(service.GetService<JobManagerService>(),
+    new JobMonitorService(service.GetRequiredService<JobManagerService>(),
+        service.GetRequiredService<TriggeredActionExecutor>(),
+        service.GetRequiredService<ILogger<JobMonitorService>>(),
         $"{Globals.UserDataFolder}/triggeredActions.json", false));
 builder.Services.AddSingleton<HitStorageService>();
 builder.Services.AddSingleton(_ => new RuriLibSettingsService(Globals.UserDataFolder));
@@ -166,7 +156,7 @@ builder.Services.AddSingleton<IRandomUAProvider>(
     _ => new IntoliRandomUAProvider("user-agents.json"));
 builder.Services.AddSingleton<IRNGProvider, DefaultRNGProvider>();
 builder.Services.AddSingleton<IJobLogger>(service =>
-    new FileJobLogger(service.GetService<RuriLibSettingsService>(),
+    new FileJobLogger(service.GetRequiredService<RuriLibSettingsService>(),
         $"{Globals.UserDataFolder}/Logs/Jobs"));
 builder.Services.AddSingleton<ConfigDebuggerService>();
 builder.Services.AddSingleton<ProxyCheckJobService>();

@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Entities;
 using OpenBullet2.Native.Helpers;
 using OpenBullet2.Native.Views.Pages;
 using RuriLib.Models.Environment;
@@ -12,51 +12,53 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 
-namespace OpenBullet2.Native.Views.Dialogs
+namespace OpenBullet2.Native.Views.Dialogs;
+
+/// <summary>
+/// Interaction logic for AddWordlistDialog.xaml
+/// </summary>
+public partial class AddWordlistDialog : Page
 {
-    /// <summary>
-    /// Interaction logic for AddWordlistDialog.xaml
-    /// </summary>
-    public partial class AddWordlistDialog : Page
+    private readonly object caller;
+    private readonly EnvironmentSettings env;
+
+    public AddWordlistDialog(object caller, RuriLibSettingsService rlSettingsService)
     {
-        private readonly object caller;
-        private readonly EnvironmentSettings env;
+        this.caller = caller;
+        InitializeComponent();
 
-        public AddWordlistDialog(object caller)
+        env = rlSettingsService.Environment;
+
+        typeCombobox.ItemsSource = env.WordlistTypes.Select(t => t.Name);
+        typeCombobox.SelectedIndex = 0;
+    }
+
+    private void SearchInFolder(object sender, MouseButtonEventArgs e)
+    {
+        var ofd = new OpenFileDialog
         {
-            this.caller = caller;
-            InitializeComponent();
+            Filter = "Wordlist files | *.txt",
+            FilterIndex = 1
+        };
 
-            env = SP.GetService<RuriLibSettingsService>().Environment;
+        ofd.ShowDialog();
+        locationTextbox.Text = ofd.FileName;
+        nameTextbox.Text = Path.GetFileNameWithoutExtension(ofd.FileName);
 
-            typeCombobox.ItemsSource = env.WordlistTypes.Select(t => t.Name);
-            typeCombobox.SelectedIndex = 0;
+        // Set the recognized wordlist type
+        try
+        {
+            var first = File.ReadLines(ofd.FileName).First();
+            typeCombobox.Text = env.RecognizeWordlistType(first);
         }
+        catch { }
+    }
 
-        private void SearchInFolder(object sender, MouseButtonEventArgs e)
+    private async void Accept(object sender, RoutedEventArgs e)
+    {
+        try
         {
-            var ofd = new OpenFileDialog
-            {
-                Filter = "Wordlist files | *.txt",
-                FilterIndex = 1
-            };
-
-            ofd.ShowDialog();
-            locationTextbox.Text = ofd.FileName;
-            nameTextbox.Text = Path.GetFileNameWithoutExtension(ofd.FileName);
-
-            // Set the recognized wordlist type
-            try
-            {
-                var first = File.ReadLines(ofd.FileName).First();
-                typeCombobox.Text = env.RecognizeWordlistType(first);
-            }
-            catch { }
-        }
-
-        private void Accept(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(nameTextbox.Text)) 
+            if (string.IsNullOrWhiteSpace(nameTextbox.Text))
             {
                 Alert.Error("Invalid name", "The name cannot be blank");
                 return;
@@ -82,14 +84,18 @@ namespace OpenBullet2.Native.Views.Dialogs
 
             if (caller is Wordlists page)
             {
-                page.AddWordlist(entity);
+                await page.AddWordlistAsync(entity);
             }
             else if (caller is MultiRunJobOptionsDialog dialog)
             {
-                dialog.AddWordlist(entity);
+                await dialog.AddWordlistAsync(entity);
             }
 
             ((MainDialog)Parent).Close();
+        }
+        catch (Exception ex)
+        {
+            Alert.Exception(ex);
         }
     }
 }

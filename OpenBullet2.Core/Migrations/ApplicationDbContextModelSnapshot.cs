@@ -15,7 +15,7 @@ namespace OpenBullet2.Core.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.6");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.6");
 
             modelBuilder.Entity("OpenBullet2.Core.Entities.GuestEntity", b =>
                 {
@@ -47,18 +47,22 @@ namespace OpenBullet2.Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("CapturedData")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConfigCategory")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConfigId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConfigName")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Data")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Date")
@@ -68,6 +72,7 @@ namespace OpenBullet2.Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Proxy")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Type")
@@ -77,6 +82,7 @@ namespace OpenBullet2.Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("WordlistName")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

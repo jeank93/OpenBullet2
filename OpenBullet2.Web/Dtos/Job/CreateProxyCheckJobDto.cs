@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Web.Dtos.Job.ProxyCheck;
+using OpenBullet2.Web.Dtos.Job.ProxyCheck;
 using System.Text.Json;
 
 namespace OpenBullet2.Web.Dtos.Job;

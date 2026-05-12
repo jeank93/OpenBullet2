@@ -20,6 +20,7 @@ import { Subscription } from 'rxjs';
 import { ConfigMode } from 'src/app/main/dtos/config/config-info.dto';
 import { JobStatus } from 'src/app/main/dtos/job/job-status';
 import { MRJNewHitMessage } from 'src/app/main/dtos/job/messages/multi-run/hit.dto';
+import { MRJNewLogMessage } from 'src/app/main/dtos/job/messages/multi-run/new-log.dto';
 import { MRJNewResultMessage } from 'src/app/main/dtos/job/messages/multi-run/new-result.dto';
 import { JobProxyMode } from 'src/app/main/dtos/job/multi-run-job-options.dto';
 import { MRJDataStatsDto, MRJHitDto, MultiRunJobDto } from 'src/app/main/dtos/job/multi-run-job.dto';
@@ -151,6 +152,7 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
   // Subscriptions
   resultSubscription: Subscription | null = null;
   hitSubscription: Subscription | null = null;
+  logSubscription: Subscription | null = null;
   tickSubscription: Subscription | null = null;
   statusSubscription: Subscription | null = null;
   botsSubscription: Subscription | null = null;
@@ -227,6 +229,12 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.logSubscription = this.multiRunJobHubService.log$.subscribe((log) => {
+      if (log !== null) {
+        this.onNewLogEntry(log);
+      }
+    });
+
     this.tickSubscription = this.multiRunJobHubService.tick$.subscribe((tick) => {
       if (tick !== null) {
         this.dataStats = tick.dataStats;
@@ -271,6 +279,12 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
 
     this.errorSubscription = this.multiRunJobHubService.error$.subscribe((error) => {
       if (error !== null) {
+        this.writeLog({
+          timestamp: new Date(),
+          message: `Job error (${error.type}): ${error.message}`,
+          color: 'var(--fg-error)',
+        });
+
         this.messageService.add({
           key: 'tc',
           severity: 'error',
@@ -305,6 +319,7 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
 
     this.resultSubscription?.unsubscribe();
     this.hitSubscription?.unsubscribe();
+    this.logSubscription?.unsubscribe();
     this.tickSubscription?.unsubscribe();
     this.statusSubscription?.unsubscribe();
     this.botsSubscription?.unsubscribe();
@@ -416,6 +431,14 @@ export class MultiRunJobComponent implements OnInit, OnDestroy {
       // to avoid spamming the sound
       this.hitSoundPlayer.nativeElement.play();
     }
+  }
+
+  onNewLogEntry(log: MRJNewLogMessage) {
+    this.writeLog({
+      timestamp: new Date(log.newMessage.timestamp),
+      message: log.newMessage.message,
+      color: log.newMessage.color,
+    });
   }
 
   onStatusChanged(status: JobStatus) {

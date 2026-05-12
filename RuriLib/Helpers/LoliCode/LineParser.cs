@@ -1,227 +1,299 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace RuriLib.Helpers.LoliCode
+namespace RuriLib.Helpers.LoliCode;
+
+/// <summary>
+/// Has methods to parse LoliCode tokens.
+/// </summary>
+public static partial class LineParser
 {
     /// <summary>
-    /// Has methods to parse LoliCode tokens.
+    /// Parses a generic LoliCode token (anything until a space character) and moves forward.
     /// </summary>
-    public static class LineParser
+    public static string ParseToken(ref string input)
     {
-        /// <summary>
-        /// Parses a generic LoliCode token (anything until a space character) and moves forward.
-        /// </summary>
-        public static string ParseToken(ref string input)
+        input = input.TrimStart();
+
+        var match = TokenRegex().Match(input);
+
+        if (!match.Success)
         {
-            input = input.TrimStart();
-
-            var match = Regex.Match(input, "[^ ]*");
-
-            if (!match.Success)
-                throw new Exception("Could not parse the token");
-
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            return match.Value;
+            throw new Exception("Could not parse the token");
         }
 
-        /// <summary>
-        /// Parses an <see cref="int"/> value and moves forward.
-        /// </summary>
-        public static int ParseInt(ref string input)
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
+
+        return match.Value;
+    }
+
+    /// <summary>
+    /// Parses an <see cref="int" /> value and moves forward.
+    /// </summary>
+    public static int ParseInt(ref string input)
+    {
+        input = input.TrimStart();
+
+        var match = IntRegex().Match(input);
+
+        if (!match.Success)
         {
-            input = input.TrimStart();
-
-            var match = Regex.Match(input, "-?[0-9]*");
-
-            if (!match.Success)
-                throw new Exception("Could not parse the int");
-
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            return int.Parse(match.Value);
+            throw new Exception("Could not parse the int");
         }
 
-        /// <summary>
-        /// Parses a <see cref="float"/> value and moves forward.
-        /// </summary>
-        public static float ParseFloat(ref string input)
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
+
+        return int.Parse(match.Value);
+    }
+
+    /// <summary>
+    /// Parses a <see cref="float" /> value and moves forward.
+    /// </summary>
+    public static float ParseFloat(ref string input)
+    {
+        input = input.TrimStart();
+
+        var match = FloatRegex().Match(input);
+
+        if (!match.Success)
         {
-            input = input.TrimStart();
-
-            var match = Regex.Match(input, "-?[0-9\\.]*");
-
-            if (!match.Success)
-                throw new Exception("Could not parse the int");
-
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            return float.Parse(match.Value, CultureInfo.InvariantCulture);
+            throw new Exception("Could not parse the float");
         }
 
-        /// <summary>
-        /// Parses a <see cref="byte[]"/> value and moves forward.
-        /// </summary>
-        public static byte[] ParseByteArray(ref string input)
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
+
+        return float.Parse(match.Value, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Parses an array of <see cref="byte" /> value and moves forward.
+    /// </summary>
+    public static byte[] ParseByteArray(ref string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
         {
-            if (string.IsNullOrWhiteSpace(input))
+            return [];
+        }
+
+        input = input.TrimStart();
+
+        var match = ByteArrayRegex().Match(input);
+
+        if (!match.Success)
+        {
+            throw new Exception("Could not parse the byte array");
+        }
+
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
+
+        return Convert.FromBase64String(match.Value);
+    }
+
+    /// <summary>
+    /// Parses a <see cref="bool" /> value and moves forward.
+    /// </summary>
+    public static bool ParseBool(ref string input)
+    {
+        input = input.TrimStart();
+
+        var match = BoolRegex().Match(input);
+
+        if (!match.Success)
+        {
+            throw new Exception("Could not parse the bool");
+        }
+
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
+
+        return bool.Parse(match.Value);
+    }
+
+    /// <summary>
+    /// Parses a list of strings value and moves forward.
+    /// </summary>
+    public static List<string> ParseList(ref string input)
+    {
+        input = input.TrimStart();
+
+        var list = new List<string>();
+
+        // Syntax of a list of strings: ["one", "two"]
+        if (!StartsWith(ref input, '['))
+        {
+            throw new Exception("Could not parse the list");
+        }
+
+        input = input[1..];
+        input = input.TrimStart();
+
+        // "one", "two"]
+        while (!StartsWith(ref input, ']'))
+        {
+            EnsureHasInput(input, "Could not parse the list");
+
+            // , "two"]
+            list.Add(ParseLiteral(ref input));
+            input = input.TrimStart();
+
+            EnsureHasInput(input, "Could not parse the list");
+
+            //  "two"]
+            if (input[0] == ',')
             {
-                return Array.Empty<byte>();
+                input = input[1..];
             }
-            
+
+            // "two"]
             input = input.TrimStart();
-
-            var match = Regex.Match(input, "[A-Za-z0-9+/=]+");
-
-            if (!match.Success)
-                throw new Exception("Could not parse the byte array");
-
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            return Convert.FromBase64String(match.Value);
         }
 
-        /// <summary>
-        /// Parses a <see cref="bool"/> value and moves forward.
-        /// </summary>
-        public static bool ParseBool(ref string input)
+        // Parse the final ]
+        input = input[1..];
+        input = input.TrimStart();
+
+        return list;
+    }
+
+    /// <summary>
+    /// Parses a dictionary of strings value and moves forward.
+    /// </summary>
+    public static Dictionary<string, string> ParseDictionary(ref string input)
+    {
+        input = input.TrimStart();
+
+        var dict = new Dictionary<string, string>();
+
+        // Syntax of a dictionary of strings: { ("key1", "value1"), ("key2", "value2") }
+        if (!StartsWith(ref input, '{'))
         {
-            input = input.TrimStart();
-
-            var match = Regex.Match(input, "^([Tt]rue)|([Ff]alse)");
-
-            if (!match.Success)
-                throw new Exception("Could not parse the bool");
-
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            return bool.Parse(match.Value);
+            throw new Exception("Could not parse the dictionary");
         }
 
-        /// <summary>
-        /// Parses a list of strings value and moves forward.
-        /// </summary>
-        public static List<string> ParseList(ref string input)
+        input = input[1..];
+        input = input.TrimStart();
+
+        // ("key1", "value1"), ("key2", "value2") }
+        while (!StartsWith(ref input, '}'))
         {
-            input = input.TrimStart();
+            EnsureHasInput(input, "Could not parse the dictionary");
 
-            var list = new List<string>();
-
-            // Syntax of a list of strings: ["one", "two"]
-            if (input[0] != '[')
-                throw new Exception("Could not parse the list");
-
-            input = input.Substring(1);
-            input = input.TrimStart();
-
-            // "one", "two"]
-            while (input[0] != ']')
+            if (input[0] != '(')
             {
-                // , "two"]
-                list.Add(ParseLiteral(ref input));
-                input = input.TrimStart();
-
-                //  "two"]
-                if (input[0] == ',')
-                    input = input.Substring(1);
-
-                // "two"]
-                input = input.TrimStart();
-            }
-
-            // Parse the final ]
-            input = input[1..];
-            input = input.TrimStart();
-
-            return list;
-        }
-
-        /// <summary>
-        /// Parses a dictionary of strings value and moves forward.
-        /// </summary>
-        public static Dictionary<string, string> ParseDictionary(ref string input)
-        {
-            input = input.TrimStart();
-
-            var dict = new Dictionary<string, string>();
-
-            // Syntax of a dictionary of strings: { ("key1", "value1"), ("key2", "value2") }
-            if (input[0] != '{')
                 throw new Exception("Could not parse the dictionary");
-
-            input = input[1..];
-            input = input.TrimStart();
-
-            // ("key1", "value1"), ("key2", "value2") }
-            while (input[0] != '}')
-            {
-                if (input[0] != '(')
-                    throw new Exception("Could not parse the dictionary");
-
-                input = input[1..];
-                input = input.TrimStart();
-
-                // "key1", "value1"), ("key2", "value2") }
-                var key = ParseLiteral(ref input);
-
-                // , "value1"), ("key2", "value2") }
-                if (input[0] != ',')
-                    throw new Exception("Could not parse the dictionary");
-
-                input = input[1..];
-                input = input.TrimStart();
-
-                // "value1"), ("key2", "value2") }
-                var value = ParseLiteral(ref input);
-
-                dict.Add(key, value);
-
-                // Parse the )
-                input = input[1..];
-                input = input.TrimStart();
-
-                // , ("key2", "value2") }
-                if (input[0] == ',')
-                    input = input[1..];
-
-                //  ("key2", "value2") }
-                input = input.TrimStart();
             }
 
-            // Parse the final }
             input = input[1..];
             input = input.TrimStart();
 
-            return dict;
+            // "key1", "value1"), ("key2", "value2") }
+            var key = ParseLiteral(ref input);
+
+            EnsureHasInput(input, "Could not parse the dictionary");
+
+            // , "value1"), ("key2", "value2") }
+            if (input[0] != ',')
+            {
+                throw new Exception("Could not parse the dictionary");
+            }
+
+            input = input[1..];
+            input = input.TrimStart();
+
+            // "value1"), ("key2", "value2") }
+            var value = ParseLiteral(ref input);
+
+            dict.Add(key, value);
+
+            EnsureHasInput(input, "Could not parse the dictionary");
+
+            if (input[0] != ')')
+            {
+                throw new Exception("Could not parse the dictionary");
+            }
+
+            // Parse the )
+            input = input[1..];
+            input = input.TrimStart();
+
+            EnsureHasInput(input, "Could not parse the dictionary");
+
+            // , ("key2", "value2") }
+            if (input[0] == ',')
+            {
+                input = input[1..];
+            }
+
+            //  ("key2", "value2") }
+            input = input.TrimStart();
         }
 
-        /// <summary>
-        /// Parses a literal from the original <paramref name="input"/> and moves forward.
-        /// </summary>
-        public static string ParseLiteral(ref string input)
+        // Parse the final }
+        input = input[1..];
+        input = input.TrimStart();
+
+        return dict;
+    }
+
+    /// <summary>
+    /// Parses a literal from the original <paramref name="input" /> and moves forward.
+    /// </summary>
+    public static string ParseLiteral(ref string input)
+    {
+        input = input.TrimStart();
+
+        var match = LiteralRegex().Match(input);
+
+        if (!match.Success)
         {
-            input = input.TrimStart();
+            throw new Exception("Could not parse the literal");
+        }
 
-            var match = Regex.Match(input, "\"(\\\\.|[^\\\"])*\"");
+        input = input[match.Value.Length..];
+        input = input.TrimStart();
 
-            if (!match.Success)
-                throw new Exception("Could not parse the literal");
+        // Wrap the literal in json and deserialize it
+        var json = $"{{\"literal\":{match.Value}}}";
+        var obj = JObject.Parse(json);
+        return (string)obj["literal"]!;
+    }
 
-            input = input[match.Value.Length..];
-            input = input.TrimStart();
-
-            // Wrap the literal in json and deserialize it
-            var json = $"{{\"literal\":{match.Value}}}";
-            var obj = JObject.Parse(json);
-            return (string)obj["literal"];
+    private static void EnsureHasInput(string input, string message)
+    {
+        if (string.IsNullOrEmpty(input))
+        {
+            throw new Exception(message);
         }
     }
+
+    private static bool StartsWith(ref string input, char c)
+    {
+        EnsureHasInput(input, $"Could not parse the {(c == '[' ? "list" : c == '{' ? "dictionary" : "input")}");
+        return input[0] == c;
+    }
+
+    [GeneratedRegex("[A-Za-z0-9+/=]+")]
+    private static partial Regex ByteArrayRegex();
+
+    [GeneratedRegex("\"(\\\\.|[^\\\"])*\"")]
+    private static partial Regex LiteralRegex();
+
+    [GeneratedRegex("^([Tt]rue)|([Ff]alse)")]
+    private static partial Regex BoolRegex();
+
+    [GeneratedRegex("-?[0-9\\.]*")]
+    private static partial Regex FloatRegex();
+
+    [GeneratedRegex("-?[0-9]*")]
+    private static partial Regex IntRegex();
+
+    [GeneratedRegex("[^ ]*")]
+    private static partial Regex TokenRegex();
 }

@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Jobs;
+using RuriLib.Models.Jobs;
 using RuriLib.Models.Proxies;
 using System.Text.Json;
 

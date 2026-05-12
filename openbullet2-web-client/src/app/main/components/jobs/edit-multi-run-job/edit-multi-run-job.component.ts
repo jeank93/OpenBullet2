@@ -33,6 +33,7 @@ import { DeactivatableComponent } from 'src/app/shared/guards/can-deactivate-for
 import { parseTimeSpan } from 'src/app/shared/utils/dates';
 import { FieldValidity } from 'src/app/shared/utils/forms';
 import { TimeSpan } from 'src/app/shared/utils/timespan';
+import { OBSettingsDto } from 'src/app/main/dtos/settings/ob-settings.dto';
 import { AddWordlistComponent } from '../../wordlists/add-wordlist/add-wordlist.component';
 import { UploadWordlistComponent } from '../../wordlists/upload-wordlist/upload-wordlist.component';
 import { SelectConfigComponent } from '../select-config/select-config.component';
@@ -102,6 +103,7 @@ export class EditMultiRunJobComponent implements DeactivatableComponent {
   mode: EditMode = EditMode.Edit;
   jobId: number | null = null;
   options: MultiRunJobOptionsDto | null = null;
+  obSettings: OBSettingsDto | null = null;
   proxyGroups: ProxyGroupDto[] | null = null;
   wordlistTypes: string[] = [];
   botLimit = 200;
@@ -179,6 +181,10 @@ export class EditMultiRunJobComponent implements DeactivatableComponent {
     settingsService.getEnvironmentSettings().subscribe((settings) => {
       this.wordlistTypes = settings.wordlistTypes.map((wt) => wt.name);
       this.dataPoolWordlistType = settings.wordlistTypes[0].name;
+    });
+
+    settingsService.getSettings().subscribe((settings) => {
+      this.obSettings = settings;
     });
 
     settingsService.getSystemSettings().subscribe((settings) => {
@@ -444,7 +450,7 @@ export class EditMultiRunJobComponent implements DeactivatableComponent {
   }
 
   selectConfig(config: ConfigInfoDto) {
-    if (config.dangerous) {
+    if (config.dangerous && this.obSettings?.generalSettings.warnDangerousConfig !== false) {
       this.messageService.add({
         key: 'br',
         severity: 'warn',
@@ -573,7 +579,7 @@ export class EditMultiRunJobComponent implements DeactivatableComponent {
   addFileSystemHitOutput() {
     this.options!.hitOutputs.push({
       _polyTypeName: HitOutputType.FileSystem,
-      baseDir: '',
+      baseDir: 'UserData/Hits/<CONFIG>/<DATE>',
     });
     this.touched = true;
   }

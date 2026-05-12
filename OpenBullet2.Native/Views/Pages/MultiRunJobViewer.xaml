@@ -50,7 +50,12 @@
                     <Label FontWeight="Bold">Skip:</Label>
                     <Label Content="{Binding Job.Skip}" />
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0 -5">
+                <StackPanel Orientation="Horizontal"
+                            Margin="0 -5"
+                            Background="Transparent"
+                            Cursor="Hand"
+                            ToolTip="Change bots"
+                            MouseDown="ChangeBots">
                     <Label FontWeight="Bold">Bots:</Label>
                     <Label Content="{Binding Job.Bots}" />
                     <iconPacks:PackIconRemixIcon
@@ -58,7 +63,6 @@
                         Margin="0 10 0 0"
                         Height="10"
                         Width="10"
-                        MouseDown="ChangeBots"
                         Kind="Edit2Fill" />
                 </StackPanel>
             </StackPanel>

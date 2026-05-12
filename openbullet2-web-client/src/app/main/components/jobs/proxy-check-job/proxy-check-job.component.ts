@@ -164,6 +164,12 @@ export class ProxyCheckJobComponent implements OnInit, OnDestroy {
 
     this.errorSubscription = this.proxyCheckJobHubService.error$.subscribe((error) => {
       if (error !== null) {
+        this.writeLog({
+          timestamp: new Date(),
+          message: `Job error (${error.type}): ${error.message}`,
+          color: 'var(--fg-error)',
+        });
+
         this.messageService.add({
           severity: 'error',
           summary: `Error - ${error.type}`,

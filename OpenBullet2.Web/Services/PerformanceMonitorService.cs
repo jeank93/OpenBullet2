@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using OpenBullet2.Web.Dtos.Info;
 using OpenBullet2.Web.Extensions;
 using OpenBullet2.Web.SignalR;
@@ -29,20 +29,20 @@ public class PerformanceMonitorService : IHostedService
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        ReadMetricsLoopAsync().Forget(e =>
+        // Dispose the old cancellation token source and create a new one
+        _cts.Dispose();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        ReadMetricsLoopAsync(_cts.Token).Forget(e =>
         {
             // Don't log OperationCanceledException
             if (e is OperationCanceledException)
             {
                 return;
             }
-            
+
             _logger.LogError(new EventId(0), e, "Got an error while reading performance metrics");
         });
-
-        // Dispose the old cancellation token source and create a new one
-        _cts.Dispose();
-        _cts = new CancellationTokenSource();
 
         return Task.CompletedTask;
     }
@@ -89,17 +89,18 @@ public class PerformanceMonitorService : IHostedService
         }
     }
 
-    private async Task ReadMetricsLoopAsync()
+    private async Task ReadMetricsLoopAsync(CancellationToken cancellationToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
         do
         {
             var memory = Process.GetCurrentProcess().WorkingSet64;
-            var cpu = await ReadCpuUsageAsync(_cts.Token);
-            var (upload, download) = await ReadNetworkUsage();
+            var cpu = await ReadCpuUsageAsync(cancellationToken);
+            var (upload, download) = await ReadNetworkUsage(cancellationToken);
 
-            var metrics = new PerformanceMetrics {
+            var metrics = new PerformanceMetrics
+            {
                 MemoryUsage = memory,
                 CpuUsage = cpu,
                 NetworkDownload = download,
@@ -108,18 +109,18 @@ public class PerformanceMonitorService : IHostedService
             };
 
             // Send the metrics to all connected clients
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync(cancellationToken);
 
             try
             {
                 await _hub.Clients.Clients(_connections).SendAsync(
-                    SystemPerformanceMethods.NewMetrics, metrics);
+                    SystemPerformanceMethods.NewMetrics, metrics, cancellationToken);
             }
             finally
             {
                 _semaphore.Release();
             }
-        } while (await timer.WaitForNextTickAsync(_cts.Token));
+        } while (await timer.WaitForNextTickAsync(cancellationToken));
     }
 
     private static async Task<double> ReadCpuUsageAsync(CancellationToken cancellationToken)
@@ -140,7 +141,7 @@ public class PerformanceMonitorService : IHostedService
         return Math.Round(cpuUsageTotal * 100, 2);
     }
 
-    private static async Task<(long upload, long download)> ReadNetworkUsage()
+    private static async Task<(long upload, long download)> ReadNetworkUsage(CancellationToken cancellationToken)
     {
         try
         {
@@ -148,16 +149,16 @@ public class PerformanceMonitorService : IHostedService
             {
                 return (0, 0);
             }
-            
+
             var interfaces = NetworkInterface.GetAllNetworkInterfaces();
             var startUpload = GetCurrentNetUpload(interfaces);
             var startDownload = GetCurrentNetDownload(interfaces);
 
-            await Task.Delay(100);
+            await Task.Delay(100, cancellationToken);
 
             var netUpload = GetCurrentNetUpload(interfaces) - startUpload;
             var netDownload = GetCurrentNetDownload(interfaces) - startDownload;
-            return (netUpload * 10, netDownload * 10);    
+            return (netUpload * 10, netDownload * 10);
         }
         catch
         {

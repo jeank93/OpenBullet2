@@ -12,12 +12,24 @@ on:
       
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET 8
+    - name: Setup .NET 10
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Unit and integration tests
-      run: dotnet test
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path . -Recurse -Filter *.Tests.csproj |
+          Where-Object { $_.FullName -notlike '*OpenBullet2.Native.Tests*' } |
+          ForEach-Object {
+            dotnet test $_.FullName
+          }

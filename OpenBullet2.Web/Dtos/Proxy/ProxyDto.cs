@@ -1,4 +1,4 @@
-﻿using RuriLib.Models.Proxies;
+using RuriLib.Models.Proxies;
 
 namespace OpenBullet2.Web.Dtos.Proxy;
 
@@ -61,7 +61,7 @@ public class ProxyDto
     /// The id of the proxy group to which the proxy belongs to.
     /// </summary>
     public int GroupId { get; set; }
-    
+
     /// <summary>
     /// The name of the proxy group to which the proxy belongs to.
     /// </summary>

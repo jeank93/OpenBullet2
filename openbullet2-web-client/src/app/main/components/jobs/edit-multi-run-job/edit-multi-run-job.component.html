@@ -612,7 +612,7 @@
                     <span class="text-small font-weight-bold">File system</span>
                     <div class="d-flex flex-row mt-1 mb-2">
                         <span class="text-small mr-1 align-self-center">
-                            Folder
+                            Folder template
                         </span>
                         <app-input-text key="hitOutputBaseDir"
                             class="input-small w-100"
@@ -620,12 +620,15 @@
                             (touched)="touched = true" ngDefaultControl
                             (validityChange)="onValidityChange($event)"
                             [(ngModel)]="hitOutput.baseDir" regex="^.+$"
-                            placeholder="proxies.txt" />
+                            placeholder="UserData/Hits/&lt;CONFIG&gt;/&lt;DATE&gt;" />
                         <button class="button button-small button-transparent ml-2"
                             (click)="removeHitOutput(hitOutput)">
                             <fa-icon class="color-bad" [icon]="faX" [fixedWidth]="true"></fa-icon>
                         </button>
                     </div>
+                    <span class="text-small color-inactive d-block mb-2">
+                        Available placeholders: &lt;CONFIG&gt;, &lt;WORDLIST&gt;, &lt;DATE&gt;
+                    </span>
                 </div>
                 <div *ngIf="hitOutput._polyTypeName === HitOutputType.DiscordWebhook">
                     <span class="text-small font-weight-bold">Discord</span>

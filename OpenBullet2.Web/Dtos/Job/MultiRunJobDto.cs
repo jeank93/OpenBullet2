@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Web.Dtos.Job.MultiRun;
+using OpenBullet2.Web.Dtos.Job.MultiRun;
 using RuriLib.Models.Jobs;
 
 namespace OpenBullet2.Web.Dtos.Job;

@@ -1,9 +1,9 @@
-﻿using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
+using OpenBullet2.Core.Models.Data;
 using OpenBullet2.Core.Models.Hits;
 using OpenBullet2.Core.Models.Jobs;
 using OpenBullet2.Core.Models.Proxies;
@@ -17,8 +17,10 @@ using OpenBullet2.Web.Dtos.Job.MultiRun;
 using OpenBullet2.Web.Dtos.Job.ProxyCheck;
 using OpenBullet2.Web.Exceptions;
 using OpenBullet2.Web.Extensions;
+using OpenBullet2.Web.Interfaces;
 using OpenBullet2.Web.Models.Identity;
 using OpenBullet2.Web.Utils;
+using RuriLib.Extensions;
 using RuriLib.Models.Data.DataPools;
 using RuriLib.Models.Hits.HitOutputs;
 using RuriLib.Models.Jobs;
@@ -30,34 +32,23 @@ namespace OpenBullet2.Web.Controllers;
 /// <summary>
 /// Manage jobs.
 /// </summary>
+/// <remarks></remarks>
 [TypeFilter<GuestFilter>]
 [ApiVersion("1.0")]
-public class JobController : ApiController
+public class JobController(IJobRepository jobRepo, ILogger<JobController> logger,
+    IGuestRepository guestRepo, IObjectMapper mapper, JobManagerService jobManager,
+    JobFactoryService jobFactory, IProxyGroupRepository proxyGroupRepo,
+    IRecordRepository recordRepo) : ApiController
 {
-    private readonly IGuestRepository _guestRepo;
-    private readonly JobFactoryService _jobFactory;
-    private readonly JobManagerService _jobManager;
-    private readonly IJobRepository _jobRepo;
-    private readonly ILogger<JobController> _logger;
-    private readonly IMapper _mapper;
-    private readonly IProxyGroupRepository _proxyGroupRepo;
-    private readonly IRecordRepository _recordRepo;
-
-    /// <summary></summary>
-    public JobController(IJobRepository jobRepo, ILogger<JobController> logger,
-        IGuestRepository guestRepo, IMapper mapper, JobManagerService jobManager,
-        JobFactoryService jobFactory, IProxyGroupRepository proxyGroupRepo,
-        IRecordRepository recordRepo)
-    {
-        _jobRepo = jobRepo;
-        _logger = logger;
-        _guestRepo = guestRepo;
-        _mapper = mapper;
-        _jobManager = jobManager;
-        _jobFactory = jobFactory;
-        _proxyGroupRepo = proxyGroupRepo;
-        _recordRepo = recordRepo;
-    }
+    private readonly IGuestRepository _guestRepo = guestRepo;
+    private readonly JobFactoryService _jobFactory = jobFactory;
+    private readonly JobManagerService _jobManager = jobManager;
+    private readonly IJobRepository _jobRepo = jobRepo;
+    private readonly ILogger<JobController> _logger = logger;
+    private readonly IObjectMapper _mapper = mapper;
+    private readonly IProxyGroupRepository _proxyGroupRepo = proxyGroupRepo;
+    private readonly IRecordRepository _recordRepo = recordRepo;
+    private static readonly string[] ScriptExtensions = [".bat", ".ps1", ".sh"];
 
     /// <summary>
     /// Get overview information about all jobs.
@@ -73,13 +64,14 @@ public class JobController : ApiController
             .Where(j => CanSee(apiUser, j))
             .OrderBy(j => j.Id);
 
-        var mapped = jobs.Select(job => new JobOverviewDto {
-                Id = job.Id,
-                OwnerId = job.OwnerId,
-                Type = GetJobType(job),
-                Status = job.Status,
-                Name = job.Name
-            })
+        var mapped = jobs.Select(job => new JobOverviewDto
+        {
+            Id = job.Id,
+            OwnerId = job.OwnerId,
+            Type = GetJobType(job),
+            Status = job.Status,
+            Name = job.Name
+        })
             .ToList();
 
         return Ok(mapped);
@@ -105,7 +97,8 @@ public class JobController : ApiController
 
         foreach (var job in jobs)
         {
-            var dataPoolInfo = job.DataPool switch {
+            var dataPoolInfo = job.DataPool switch
+            {
                 WordlistDataPool w => $"{w.Wordlist?.Name} (Wordlist)",
                 CombinationsDataPool => "Combinations",
                 InfiniteDataPool => "Infinite",
@@ -114,7 +107,8 @@ public class JobController : ApiController
                 _ => throw new NotImplementedException()
             };
 
-            var dto = new MultiRunJobOverviewDto {
+            var dto = new MultiRunJobOverviewDto
+            {
                 Id = job.Id,
                 OwnerId = job.OwnerId,
                 Type = JobType.MultiRun,
@@ -166,10 +160,10 @@ public class JobController : ApiController
     /// </summary>
     [HttpGet("multi-run")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<MultiRunJobDto>> GetMultiRunJob(int id)
+    public async Task<ActionResult<MultiRunJobDto>> GetMultiRunJob(int id, CancellationToken cancellationToken)
     {
         var job = GetJob<MultiRunJob>(id);
-        return await MapMultiRunJobDto(job);
+        return await MapMultiRunJobDto(job, cancellationToken);
     }
 
     /// <summary>
@@ -177,10 +171,10 @@ public class JobController : ApiController
     /// </summary>
     [HttpGet("proxy-check")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<ProxyCheckJobDto>> GetProxyCheckJob(int id)
+    public async Task<ActionResult<ProxyCheckJobDto>> GetProxyCheckJob(int id, CancellationToken cancellationToken)
     {
         var job = GetJob<ProxyCheckJob>(id);
-        return await MapProxyCheckJobDto(job);
+        return await MapProxyCheckJobDto(job, cancellationToken);
     }
 
     /// <summary>
@@ -190,7 +184,7 @@ public class JobController : ApiController
     [HttpGet("multi-run/options")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<MultiRunJobOptionsDto>> GetMultiRunJobOptions(
-        int id = -1)
+        int id = -1, CancellationToken cancellationToken = default)
     {
         if (id == -1)
         {
@@ -200,19 +194,10 @@ public class JobController : ApiController
             return mapped;
         }
 
-        var entity = await GetEntityAsync(id);
+        var entity = await GetEntityAsync(id, cancellationToken);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not MultiRunJobOptions mrjJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -228,7 +213,7 @@ public class JobController : ApiController
     [HttpGet("proxy-check/options")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ProxyCheckJobOptionsDto>> GetProxyCheckJobOptions(
-        int id = -1)
+        int id = -1, CancellationToken cancellationToken = default)
     {
         if (id == -1)
         {
@@ -238,19 +223,10 @@ public class JobController : ApiController
             return mapped;
         }
 
-        var entity = await GetEntityAsync(id);
+        var entity = await GetEntityAsync(id, cancellationToken);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not ProxyCheckJobOptions pcJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -265,24 +241,27 @@ public class JobController : ApiController
     [HttpPost("multi-run")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<MultiRunJobDto>> CreateMultiRunJob(
-        CreateMultiRunJobDto dto)
+        CreateMultiRunJobDto dto, CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
         var jobOptions = _mapper.Map<MultiRunJobOptions>(dto);
+
+        ValidateGuestLocalFileUsage(apiUser, jobOptions);
 
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
 
-        var entity = new JobEntity {
-            Owner = await _guestRepo.GetAsync(apiUser.Id),
+        var entity = new JobEntity
+        {
+            Owner = await _guestRepo.GetAsync(apiUser.Id, cancellationToken),
             CreationDate = DateTime.UtcNow,
             JobType = JobType.MultiRun,
             JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings)
         };
 
-        await _jobRepo.AddAsync(entity);
-        
+        await _jobRepo.AddAsync(entity, cancellationToken);
+
         _logger.LogInformation("Created a new multi run job with id {Id}", entity.Id);
 
         // This might fail and we would have inconsistencies!
@@ -292,11 +271,11 @@ public class JobController : ApiController
             var job = _jobFactory.FromOptions(entity.Id, apiUser.Id, jobOptions);
             _jobManager.AddJob(job);
 
-            return await MapMultiRunJobDto((MultiRunJob)job);
+            return await MapMultiRunJobDto((MultiRunJob)job, cancellationToken);
         }
         catch
         {
-            await _jobRepo.DeleteAsync(entity);
+            await _jobRepo.DeleteAsync(entity, cancellationToken);
             throw;
         }
     }
@@ -307,7 +286,7 @@ public class JobController : ApiController
     [HttpPost("proxy-check")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ProxyCheckJobDto>> CreateProxyCheckJob(
-        CreateProxyCheckJobDto dto)
+        CreateProxyCheckJobDto dto, CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
         var jobOptions = _mapper.Map<ProxyCheckJobOptions>(dto);
@@ -316,15 +295,16 @@ public class JobController : ApiController
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
 
-        var entity = new JobEntity {
-            Owner = await _guestRepo.GetAsync(apiUser.Id),
+        var entity = new JobEntity
+        {
+            Owner = await _guestRepo.GetAsync(apiUser.Id, cancellationToken),
             CreationDate = DateTime.UtcNow,
             JobType = JobType.ProxyCheck,
             JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings)
         };
 
-        await _jobRepo.AddAsync(entity);
-        
+        await _jobRepo.AddAsync(entity, cancellationToken);
+
         _logger.LogInformation("Created a new proxy check job with id {Id}", entity.Id);
 
         // This might fail and we would have inconsistencies!
@@ -334,11 +314,11 @@ public class JobController : ApiController
             var job = _jobFactory.FromOptions(entity.Id, apiUser.Id, jobOptions);
             _jobManager.AddJob(job);
 
-            return await MapProxyCheckJobDto((ProxyCheckJob)job);
+            return await MapProxyCheckJobDto((ProxyCheckJob)job, cancellationToken);
         }
         catch
         {
-            await _jobRepo.DeleteAsync(entity);
+            await _jobRepo.DeleteAsync(entity, cancellationToken);
             throw;
         }
     }
@@ -349,10 +329,11 @@ public class JobController : ApiController
     [HttpPut("multi-run")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<MultiRunJobDto>> UpdateMultiRunJob(
-        UpdateMultiRunJobDto dto, [FromServices] IValidator<UpdateMultiRunJobDto> validator)
+        UpdateMultiRunJobDto dto, [FromServices] IValidator<UpdateMultiRunJobDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
-        
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
+
         // Make sure job is idle
         var job = GetJob<MultiRunJob>(dto.Id);
 
@@ -362,29 +343,32 @@ public class JobController : ApiController
                 $"Job {dto.Id} is not idle");
         }
 
-        var entity = await GetEntityAsync(dto.Id);
+        var entity = await GetEntityAsync(dto.Id, cancellationToken);
         EnsureOwnership(entity);
 
         var jobOptions = _mapper.Map<MultiRunJobOptions>(dto);
+
+        ValidateGuestLocalFileUsage(HttpContext.GetApiUser(), jobOptions);
 
         var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
 
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
         entity.JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings);
 
-        await _jobRepo.UpdateAsync(entity);
+        await _jobRepo.UpdateAsync(entity, cancellationToken);
 
-        var oldJob = _jobManager.Jobs.First(j => j.Id == dto.Id);
+        var oldJob = _jobManager.Jobs.OfType<MultiRunJob>().First(j => j.Id == dto.Id);
 
-        var newJob = _jobFactory.FromOptions(
+        var newJob = (MultiRunJob)_jobFactory.FromOptions(
             dto.Id, entity.Owner?.Id ?? 0, jobOptions);
+        CopyCustomInputsAnswers(oldJob, newJob);
 
         _jobManager.RemoveJob(oldJob);
         _jobManager.AddJob(newJob);
-        
+
         _logger.LogInformation("Updated the multi run job with id {Id}", dto.Id);
 
-        return await MapMultiRunJobDto((MultiRunJob)newJob);
+        return await MapMultiRunJobDto(newJob, cancellationToken);
     }
 
     /// <summary>
@@ -393,10 +377,11 @@ public class JobController : ApiController
     [HttpPut("proxy-check")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult<ProxyCheckJobDto>> UpdateProxyCheckJob(
-        UpdateProxyCheckJobDto dto, [FromServices] IValidator<UpdateProxyCheckJobDto> validator)
+        UpdateProxyCheckJobDto dto, [FromServices] IValidator<UpdateProxyCheckJobDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
-        
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
+
         // Make sure job is idle
         var job = GetJob<ProxyCheckJob>(dto.Id);
 
@@ -406,7 +391,7 @@ public class JobController : ApiController
                 $"Job {dto.Id} is not idle");
         }
 
-        var entity = await GetEntityAsync(dto.Id);
+        var entity = await GetEntityAsync(dto.Id, cancellationToken);
         EnsureOwnership(entity);
 
         var jobOptions = _mapper.Map<ProxyCheckJobOptions>(dto);
@@ -416,7 +401,7 @@ public class JobController : ApiController
         var wrapper = new JobOptionsWrapper { Options = jobOptions };
         entity.JobOptions = JsonConvert.SerializeObject(wrapper, jsonSettings);
 
-        await _jobRepo.UpdateAsync(entity);
+        await _jobRepo.UpdateAsync(entity, cancellationToken);
 
         var oldJob = _jobManager.Jobs.First(j => j.Id == dto.Id);
 
@@ -425,10 +410,10 @@ public class JobController : ApiController
 
         _jobManager.RemoveJob(oldJob);
         _jobManager.AddJob(newJob);
-        
+
         _logger.LogInformation("Updated the proxy check job with id {Id}", dto.Id);
 
-        return await MapProxyCheckJobDto((ProxyCheckJob)newJob);
+        return await MapProxyCheckJobDto((ProxyCheckJob)newJob, cancellationToken);
     }
 
     /// <summary>
@@ -449,7 +434,8 @@ public class JobController : ApiController
         }
 
         return Ok(job.Config.Settings.InputSettings.CustomInputs.Select(i =>
-            new CustomInputQuestionDto {
+            new CustomInputQuestionDto
+            {
                 Description = i.Description, DefaultAnswer = i.DefaultAnswer, VariableName = i.VariableName,
                 CurrentAnswer = job.CustomInputsAnswers.TryGetValue(i.VariableName, out var answer) ? answer : null
             }));
@@ -469,7 +455,7 @@ public class JobController : ApiController
         {
             job.CustomInputsAnswers[input.VariableName] = input.Answer;
         }
-        
+
         _logger.LogInformation("Set custom inputs for job {Id}", dto.JobId);
 
         return Ok();
@@ -480,18 +466,24 @@ public class JobController : ApiController
     /// </summary>
     [HttpDelete]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult> Delete(int id)
+    public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         // Double check just to be sure
-        var entity = await GetEntityAsync(id);
+        var entity = await GetEntityAsync(id, cancellationToken);
         var job = GetJob(id);
 
         EnsureOwnership(entity);
         EnsureOwnership(job);
 
-        await _jobRepo.DeleteAsync(entity);
+        if (job.Status is not JobStatus.Idle)
+        {
+            throw new ResourceInUseException(ErrorCode.JobNotIdle,
+                $"Job {id} is not idle");
+        }
+
+        await _jobRepo.DeleteAsync(entity, cancellationToken);
         _jobManager.RemoveJob(job);
-        
+
         _logger.LogInformation("Deleted job with id {Id}", id);
 
         return Ok();
@@ -502,7 +494,7 @@ public class JobController : ApiController
     /// </summary>
     [HttpDelete("all")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<AffectedEntriesDto>> DeleteAll()
+    public async Task<ActionResult<AffectedEntriesDto>> DeleteAll(CancellationToken cancellationToken)
     {
         var apiUser = HttpContext.GetApiUser();
         int deletedCount;
@@ -520,7 +512,7 @@ public class JobController : ApiController
         // If admin, just purge all
         if (apiUser.Role is UserRole.Admin)
         {
-            deletedCount = await _jobRepo.GetAll().CountAsync();
+            deletedCount = await _jobRepo.GetAll().CountAsync(cancellationToken);
 
             _jobRepo.Purge();
             _jobManager.Clear();
@@ -529,19 +521,19 @@ public class JobController : ApiController
         {
             var entities = await _jobRepo.GetAll()
                 .Include(j => j.Owner)
-                .Where(j => j.Owner.Id == apiUser.Id)
-                .ToListAsync();
+                .Where(j => j.Owner != null && j.Owner.Id == apiUser.Id)
+                .ToListAsync(cancellationToken);
 
             deletedCount = entities.Count;
 
-            await _jobRepo.DeleteAsync(entities);
+            await _jobRepo.DeleteAsync(entities, cancellationToken);
 
             foreach (var job in _jobManager.Jobs.Where(j => j.OwnerId == apiUser.Id).ToList())
             {
                 _jobManager.RemoveJob(job);
             }
         }
-        
+
         _logger.LogInformation("Deleted {DeletedCount} jobs", deletedCount);
 
         return new AffectedEntriesDto { Count = deletedCount };
@@ -566,14 +558,8 @@ public class JobController : ApiController
                 $"The job with id {jobId} is not a multi run job");
         }
 
-        var hit = mrJob.Hits.Find(h => h.Id == hitId);
-
-        if (hit is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.HitNotFound,
+        var hit = mrJob.FindHit(hitId) ?? throw new EntryNotFoundException(ErrorCode.HitNotFound,
                 hitId, nameof(MultiRunJob.Hits));
-        }
-
         return new MrjHitLogDto { Log = hit.BotLogger?.Entries.ToList() };
     }
 
@@ -597,7 +583,7 @@ public class JobController : ApiController
                 e => _logger.LogError(
                     "Error while starting job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Started job {JobId}", dto.JobId);
 
         return Ok();
@@ -623,7 +609,7 @@ public class JobController : ApiController
                 e => _logger.LogError(
                     "Error while stopping job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Stopped job {JobId}", dto.JobId);
 
         return Ok();
@@ -649,7 +635,7 @@ public class JobController : ApiController
                 e => _logger.LogError(
                     "Error while pausing job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Paused job {JobId}", dto.JobId);
 
         return Ok();
@@ -675,7 +661,7 @@ public class JobController : ApiController
                 e => _logger.LogError(
                     "Error while resuming job {JobId}: {Message}", dto.JobId, e.Message));
         }
-        
+
         _logger.LogInformation("Resumed job {JobId}", dto.JobId);
 
         return Ok();
@@ -703,7 +689,7 @@ public class JobController : ApiController
         }
 
         _logger.LogInformation("Aborted job {JobId}", dto.JobId);
-        
+
         return Ok();
     }
 
@@ -728,10 +714,11 @@ public class JobController : ApiController
     [HttpPost("change-bots")]
     [MapToApiVersion("1.0")]
     public async Task<ActionResult> ChangeBots(ChangeBotsDto dto,
-        [FromServices] IValidator<ChangeBotsDto> validator)
+        [FromServices] IValidator<ChangeBotsDto> validator,
+        CancellationToken cancellationToken)
     {
-        await validator.ValidateAndThrowAsync(dto);
-        
+        await validator.ValidateAndThrowAsync(dto, cancellationToken);
+
         var job = GetJob(dto.JobId);
         EnsureOwnership(job);
 
@@ -748,13 +735,13 @@ public class JobController : ApiController
             default:
                 throw new NotSupportedException();
         }
-        
+
         _logger.LogInformation(
             "Changed the number of bots for job {JobId} to {Bots}", dto.JobId, dto.Bots);
 
         return Ok();
     }
-    
+
     /// <summary>
     /// Get the details of all bots in a multi run job.
     /// </summary>
@@ -763,7 +750,7 @@ public class JobController : ApiController
     public ActionResult<IEnumerable<BotDetailsDto>> GetBotDetails(int jobId)
     {
         var job = GetJob<MultiRunJob>(jobId);
-        
+
         return job.CurrentBotDatas
             .Take(job.Bots)
             .Where(d => d is not null)
@@ -775,17 +762,17 @@ public class JobController : ApiController
                 Info = d.ExecutionInfo
             }).ToList();
     }
-    
+
     /// <summary>
     /// Get the record of a config and wordlist combination. If no record
     /// exists, a fake one with checkpoint 0 will be returned.
     /// </summary>
     [HttpGet("multi-run/record")]
     [MapToApiVersion("1.0")]
-    public async Task<ActionResult<RecordDto>> GetRecord(string configId, int wordlistId)
+    public async Task<ActionResult<RecordDto>> GetRecord(string configId, int wordlistId, CancellationToken cancellationToken)
     {
         var record = await _recordRepo.GetAll()
-            .FirstOrDefaultAsync(r => r.ConfigId == configId && r.WordlistId == wordlistId);
+            .FirstOrDefaultAsync(r => r.ConfigId == configId && r.WordlistId == wordlistId, cancellationToken);
 
         if (record is null)
         {
@@ -796,20 +783,14 @@ public class JobController : ApiController
                 Checkpoint = 0
             };
         }
-        
+
         return _mapper.Map<RecordDto>(record);
     }
 
     private Job GetJob(int id)
     {
-        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == id);
-
-        if (job is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.JobNotFound,
+        var job = _jobManager.Jobs.FirstOrDefault(j => j.Id == id) ?? throw new EntryNotFoundException(ErrorCode.JobNotFound,
                 id, nameof(JobManagerService));
-        }
-
         return job;
     }
 
@@ -828,20 +809,14 @@ public class JobController : ApiController
         return typedJob;
     }
 
-    private async Task<JobEntity> GetEntityAsync(int id)
+    private async Task<JobEntity> GetEntityAsync(int id, CancellationToken cancellationToken)
     {
-        var entity = await _jobRepo.GetAsync(id);
-
-        if (entity is null)
-        {
-            throw new EntryNotFoundException(ErrorCode.JobNotFound,
+        var entity = await _jobRepo.GetAsync(id, cancellationToken) ?? throw new EntryNotFoundException(ErrorCode.JobNotFound,
                 id, nameof(IJobRepository));
-        }
-
         return entity;
     }
 
-    private bool CanSee(ApiUser apiUser, Job job)
+    private static bool CanSee(ApiUser apiUser, Job job)
         => apiUser.Role is UserRole.Admin || job.OwnerId == apiUser.Id;
 
     private void EnsureOwnership(Job job)
@@ -876,38 +851,33 @@ public class JobController : ApiController
         }
     }
 
-    private async Task<ProxyCheckJobDto> MapProxyCheckJobDto(ProxyCheckJob job)
+    private async Task<ProxyCheckJobDto> MapProxyCheckJobDto(ProxyCheckJob job, CancellationToken cancellationToken)
     {
-        var checkOutput = job.ProxyOutput switch {
+        var checkOutput = job.ProxyOutput switch
+        {
             DatabaseProxyCheckOutput => "database",
             _ => throw new NotImplementedException()
         };
 
-        TimeStartConditionDto startCondition = job.StartCondition switch {
-            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto {
+        TimeStartConditionDto startCondition = job.StartCondition switch
+        {
+            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<RelativeTimeStartConditionDto>()!,
                 StartAfter = r.StartAfter
             },
-            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto {
+            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<AbsoluteTimeStartConditionDto>()!,
                 StartAt = a.StartAt
             },
             _ => throw new NotImplementedException()
         };
 
-        var entity = await GetEntityAsync(job.Id);
+        var entity = await GetEntityAsync(job.Id, cancellationToken);
         EnsureOwnership(entity);
 
-        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
-
-        var jobOptions = JsonConvert.DeserializeObject<JobOptionsWrapper>(
-            entity.JobOptions, jsonSettings)?.Options;
-
-        if (jobOptions is null)
-        {
-            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
-        }
-
+        var jobOptions = DeserializeJobOptions(entity).Options ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
         if (jobOptions is not ProxyCheckJobOptions pcjJobOptions)
         {
             throw new ApiException(ErrorCode.InvalidJobType, "Invalid job options type");
@@ -917,15 +887,16 @@ public class JobController : ApiController
 
         if (pcjJobOptions.GroupId != -1)
         {
-            var proxyGroup = await _proxyGroupRepo.GetAsync(pcjJobOptions.GroupId);
+            var proxyGroup = await _proxyGroupRepo.GetAsync(pcjJobOptions.GroupId, cancellationToken);
 
             if (proxyGroup is not null)
             {
-                groupName = proxyGroup.Name;
+                groupName = proxyGroup.Name ?? "Invalid";
             }
         }
 
-        return new ProxyCheckJobDto {
+        return new ProxyCheckJobDto
+        {
             Id = job.Id,
             Name = job.Name,
             StartCondition = startCondition,
@@ -937,7 +908,11 @@ public class JobController : ApiController
             GroupId = pcjJobOptions.GroupId,
             GroupName = groupName,
             CheckOnlyUntested = job.CheckOnlyUntested,
-            Target = new ProxyCheckTargetDto { Url = job.Url, SuccessKey = job.SuccessKey },
+            Target = new ProxyCheckTargetDto
+            {
+                Url = job.Url ?? string.Empty,
+                SuccessKey = job.SuccessKey ?? string.Empty
+            },
             CheckOutput = checkOutput,
             Tested = job.Tested,
             Working = job.Working,
@@ -951,9 +926,10 @@ public class JobController : ApiController
         };
     }
 
-    private async Task<MultiRunJobDto> MapMultiRunJobDto(MultiRunJob job)
+    private async Task<MultiRunJobDto> MapMultiRunJobDto(MultiRunJob job, CancellationToken cancellationToken)
     {
-        var dataPoolInfo = job.DataPool switch {
+        var dataPoolInfo = job.DataPool switch
+        {
             WordlistDataPool w => $"{w.Wordlist?.Name} (Wordlist)",
             CombinationsDataPool c => $"Combinations of {c.CharSet} with length {c.Length}",
             RangeDataPool r => $"Range from {r.Start} with amount {r.Amount} and step {r.Step} (padding {r.Pad})",
@@ -962,14 +938,27 @@ public class JobController : ApiController
             _ => throw new NotImplementedException()
         };
 
-        var proxySources = await Task.WhenAll(job.ProxySources.Select(async s => s switch {
-            GroupProxySource g => $"{await GetProxyGroupName(g.GroupId)} (Group)",
+        var groupIds = job.ProxySources
+            .OfType<GroupProxySource>()
+            .Select(s => s.GroupId)
+            .Where(id => id != -1)
+            .Distinct()
+            .ToList();
+
+        var groupNames = await _proxyGroupRepo.GetAll()
+            .Where(g => groupIds.Contains(g.Id))
+            .ToDictionaryAsync(g => g.Id, g => g.Name ?? "Invalid", cancellationToken);
+
+        var proxySources = job.ProxySources.Select(s => s switch
+        {
+            GroupProxySource g => $"{GetProxyGroupName(g.GroupId, groupNames)} (Group)",
             FileProxySource f => $"{f.FileName} (File)",
             RemoteProxySource r => $"{r.Url} (Remote)",
             _ => throw new NotImplementedException()
-        }));
+        }).ToArray();
 
-        var hitOutputs = job.HitOutputs.Select(o => o switch {
+        var hitOutputs = job.HitOutputs.Select(o => o switch
+        {
             DatabaseHitOutput => "Database",
             FileSystemHitOutput f => $"{f.BaseDir} (File System)",
             DiscordWebhookHitOutput => "Discord Webhook",
@@ -978,19 +967,25 @@ public class JobController : ApiController
             _ => throw new NotImplementedException()
         }).ToList();
 
-        TimeStartConditionDto startCondition = job.StartCondition switch {
-            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto {
+        TimeStartConditionDto startCondition = job.StartCondition switch
+        {
+            RelativeTimeStartCondition r => new RelativeTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<RelativeTimeStartConditionDto>()!,
                 StartAfter = r.StartAfter
             },
-            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto {
+            AbsoluteTimeStartCondition a => new AbsoluteTimeStartConditionDto
+            {
                 PolyTypeName = PolyDtoCache.GetPolyTypeNameFromType<AbsoluteTimeStartConditionDto>()!,
                 StartAt = a.StartAt
             },
             _ => throw new NotImplementedException()
         };
 
-        return new MultiRunJobDto {
+        var hits = job.GetHitsSnapshot();
+
+        return new MultiRunJobDto
+        {
             Id = job.Id,
             Name = job.Name,
             StartCondition = startCondition,
@@ -1000,7 +995,8 @@ public class JobController : ApiController
             Status = job.Status,
             Config =
                 job.Config is not null
-                    ? new JobConfigDto {
+                    ? new JobConfigDto
+                    {
                         Id = job.Config.Id,
                         Name = job.Config.Metadata.Name,
                         Author = job.Config.Metadata.Author,
@@ -1012,10 +1008,11 @@ public class JobController : ApiController
             Bots = job.Bots,
             Skip = job.Skip,
             ProxyMode = job.ProxyMode,
-            ProxySources = proxySources.ToList(),
+            ProxySources = [.. proxySources],
             HitOutputs = hitOutputs,
             DataStats =
-                new MrjDataStatsDto {
+                new MrjDataStatsDto
+                {
                     Hits = job.DataHits,
                     Custom = job.DataCustom,
                     Fails = job.DataFails,
@@ -1028,7 +1025,8 @@ public class JobController : ApiController
                     Tested = job.DataTested
                 },
             ProxyStats =
-                new MrjProxyStatsDto {
+                new MrjProxyStatsDto
+                {
                     Total = job.ProxiesTotal, Alive = job.ProxiesAlive, Bad = job.ProxiesBad, Banned = job.ProxiesBanned
                 },
             CPM = job.CPM,
@@ -1036,12 +1034,13 @@ public class JobController : ApiController
             Elapsed = job.Elapsed,
             Remaining = job.Remaining,
             Progress = job.Progress < 0 ? 0 : job.Progress,
-            Hits = job.Hits.Select(h => new MrjHitDto {
+            Hits = hits.Select(h => new MrjHitDto
+            {
                 Id = h.Id,
                 Date = h.Date,
                 Type = h.Type,
                 Data = h.DataString,
-                Proxy = h.Proxy is not null 
+                Proxy = h.Proxy is not null
                     ? new MrjProxy
                     {
                         Type = h.Proxy.Type,
@@ -1056,21 +1055,68 @@ public class JobController : ApiController
         };
     }
 
-    private async Task<string> GetProxyGroupName(int id)
+    private static string GetProxyGroupName(int id, IReadOnlyDictionary<int, string> groupNames)
     {
         if (id == -1)
         {
             return "All";
         }
 
-        var proxyGroup = await _proxyGroupRepo.GetAsync(id);
-        return proxyGroup is null ? "Invalid" : proxyGroup.Name;
+        return groupNames.GetValueOrDefault(id, "Invalid");
+    }
+
+    private static void CopyCustomInputsAnswers(MultiRunJob oldJob, MultiRunJob newJob)
+    {
+        if (oldJob.CustomInputsAnswers.Count == 0)
+        {
+            return;
+        }
+
+        newJob.CustomInputsAnswers = oldJob.CustomInputsAnswers.ToDictionary();
+    }
+
+    private static JobOptionsWrapper DeserializeJobOptions(JobEntity entity)
+    {
+        if (string.IsNullOrWhiteSpace(entity.JobOptions))
+        {
+            throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
+        }
+
+        var jsonSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
+
+        return JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings)
+            ?? throw new ApiException(ErrorCode.InvalidJobConfiguration, "The job options are null");
     }
 
     private static JobType GetJobType(Job job) =>
-        job switch {
+        job switch
+        {
             MultiRunJob => JobType.MultiRun,
             ProxyCheckJob => JobType.ProxyCheck,
             _ => throw new NotImplementedException()
         };
+
+    private static void ValidateGuestLocalFileUsage(ApiUser apiUser, MultiRunJobOptions jobOptions)
+    {
+        if (apiUser.Role is not UserRole.Guest)
+        {
+            return;
+        }
+
+        if (jobOptions.DataPool is FileDataPoolOptions fileDataPool
+            && !fileDataPool.FileName.IsSubPathOf(Globals.UserDataFolder))
+        {
+            throw new ForbiddenException(
+                ErrorCode.FileOutsideAllowedPath,
+                $"Guest users cannot access files outside of the {Globals.UserDataFolder} folder");
+        }
+
+        if (jobOptions.ProxySources.OfType<FileProxySourceOptions>().Any(ps =>
+                ScriptExtensions.Contains(Path.GetExtension(ps.FileName), StringComparer.OrdinalIgnoreCase)))
+        {
+            throw new ForbiddenException(
+                ErrorCode.ScriptFileNotAllowed,
+                "Guest users cannot use script-based proxy sources");
+        }
+    }
 }

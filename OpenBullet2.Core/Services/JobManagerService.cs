@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OpenBullet2.Core.Entities;
@@ -24,7 +24,7 @@ public class JobManagerService : IDisposable
     /// The list of all created jobs.
     /// </summary>
     public IEnumerable<Job> Jobs => _jobs;
-    private readonly List<Job> _jobs = new();
+    private readonly List<Job> _jobs = [];
 
     private readonly SemaphoreSlim _jobSemaphore = new(1, 1);
     private readonly SemaphoreSlim _recordSemaphore = new(1, 1);
@@ -41,19 +41,37 @@ public class JobManagerService : IDisposable
 
         foreach (var entity in entities)
         {
-            // Convert old namespaces to support old databases
-            if (entity.JobOptions.Contains("OpenBullet2.Models") || entity.JobOptions.Contains(", OpenBullet2\""))
+            if (string.IsNullOrEmpty(entity.JobOptions))
             {
-                entity.JobOptions = entity.JobOptions
-                    .Replace("OpenBullet2.Models", "OpenBullet2.Core.Models")
-                    .Replace(", OpenBullet2\"", ", OpenBullet2.Core\"");
-
-                jobRepo.UpdateAsync(entity).Wait();
+                continue;
             }
 
-            var options = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings).Options;
-            var job = jobFactory.FromOptions(entity.Id, entity.Owner == null ? 0 : entity.Owner.Id, options);
-            AddJob(job);
+            try
+            {
+                // Convert old namespaces to support old databases
+                if (entity.JobOptions.Contains("OpenBullet2.Models") || entity.JobOptions.Contains(", OpenBullet2\""))
+                {
+                    entity.JobOptions = entity.JobOptions
+                        .Replace("OpenBullet2.Models", "OpenBullet2.Core.Models")
+                        .Replace(", OpenBullet2\"", ", OpenBullet2.Core\"");
+
+                    jobRepo.UpdateAsync(entity).Wait();
+                }
+
+                var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, jsonSettings);
+                if (wrapper?.Options is null)
+                {
+                    continue;
+                }
+
+                var options = wrapper.Options;
+                var job = jobFactory.FromOptions(entity.Id, entity.Owner == null ? 0 : entity.Owner.Id, options);
+                AddJob(job);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Skipped restoring job {entity.Id}: {ex.Message}");
+            }
         }
 
         _scopeFactory = scopeFactory;
@@ -76,37 +94,44 @@ public class JobManagerService : IDisposable
     public void RemoveJob(Job job)
     {
         _jobs.Remove(job);
+        UnbindEvents(job);
 
-        if (job is MultiRunJob mrj)
+        try
         {
-            try
-            {
-                mrj.OnCompleted -= SaveRecord;
-                mrj.OnTimerTick -= SaveRecord;
-                mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
-                mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
-                mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
-            }
-            catch
-            {
-
-            }
+            job.Dispose();
+        }
+        catch
+        {
+            // ignored
         }
     }
 
     public void Clear()
     {
-        UnbindAllEvents();
+        foreach (var job in _jobs.ToList())
+        {
+            UnbindEvents(job);
+
+            try
+            {
+                job.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
         _jobs.Clear();
     }
 
     // Saves the record for a MultiRunJob in the IRecordRepository. Thread safe.
-    private async void SaveRecord(object sender, EventArgs e)
+    private async void SaveRecord(object? sender, EventArgs e)
     {
         using var scope = _scopeFactory.CreateScope();
         var recordRepo = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
 
-        if (sender is not MultiRunJob job || job.DataPool is not WordlistDataPool pool)
+        if (sender is not MultiRunJob job || job.DataPool is not WordlistDataPool pool || job.Config is null)
         {
             return;
         }
@@ -119,7 +144,7 @@ public class JobManagerService : IDisposable
                     .FirstOrDefaultAsync(r => r.ConfigId == job.Config.Id && r.WordlistId == pool.Wordlist.Id);
 
             var checkpoint = job.Status == JobStatus.Idle
-                ? job.Skip
+                ? MultiRunJobCheckpoint.GetNextSkip(job.Skip, job.DataTested, pool.Size)
                 : job.Skip + job.DataTested;
 
             if (record == null)
@@ -147,7 +172,7 @@ public class JobManagerService : IDisposable
         }
     }
 
-    private async void SaveMultiRunJobOptionsAsync(object sender, EventArgs e)
+    private async void SaveMultiRunJobOptionsAsync(object? sender, EventArgs e)
     {
         if (sender is not MultiRunJob job)
         {
@@ -178,7 +203,11 @@ public class JobManagerService : IDisposable
             // Deserialize and unwrap the job options
             var settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };
             var wrapper = JsonConvert.DeserializeObject<JobOptionsWrapper>(entity.JobOptions, settings);
-            var options = (MultiRunJobOptions)wrapper.Options;
+            if (wrapper?.Options is not MultiRunJobOptions options)
+            {
+                Console.WriteLine("Skipped job options save because deserialization failed");
+                return;
+            }
 
             // Check if it's valid
             if (string.IsNullOrEmpty(options.ConfigId))
@@ -195,7 +224,7 @@ public class JobManagerService : IDisposable
 
             // Update the skip (if not idle, also add the currently tested ones) and the bots
             options.Skip = job.Status == JobStatus.Idle
-                ? job.Skip
+                ? MultiRunJobCheckpoint.GetNextSkip(job.Skip, job.DataTested, job.DataPool?.Size ?? 0)
                 : job.Skip + job.DataTested;
 
             options.Bots = job.Bots;
@@ -217,27 +246,29 @@ public class JobManagerService : IDisposable
         }
     }
 
-    private void UnbindAllEvents()
+    private void UnbindEvents(Job job)
     {
-        foreach (var job in _jobs)
+        if (job is MultiRunJob mrj)
         {
-            if (job is MultiRunJob mrj)
+            try
             {
-                try
-                {
-                    mrj.OnCompleted -= SaveRecord;
-                    mrj.OnTimerTick -= SaveRecord;
-                    mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
-                    mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
-                    mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
-                }
-                catch
-                {
-
-                }
+                mrj.OnCompleted -= SaveRecord;
+                mrj.OnTimerTick -= SaveRecord;
+                mrj.OnCompleted -= SaveMultiRunJobOptionsAsync;
+                mrj.OnTimerTick -= SaveMultiRunJobOptionsAsync;
+                mrj.OnBotsChanged -= SaveMultiRunJobOptionsAsync;
+            }
+            catch
+            {
+                // ignored
             }
         }
     }
 
-    public void Dispose() => UnbindAllEvents();
+    public void Dispose()
+    {
+        Clear();
+        _jobSemaphore.Dispose();
+        _recordSemaphore.Dispose();
+    }
 }

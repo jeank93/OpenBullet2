@@ -7,21 +7,95 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     # Only run if the commit message contains the string [build]
     if: contains(github.event.head_commit.message, '[build]')
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET 8
+    - name: Setup .NET 10
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Unit and integration tests
-      run: dotnet test
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path . -Recurse -Filter *.Tests.csproj |
+          Where-Object { $_.FullName -notlike '*OpenBullet2.Native.Tests*' } |
+          ForEach-Object {
+            dotnet test $_.FullName
+          }
+
+  build-updaters:
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: OpenBullet2.Web.Updater/OpenBullet2.Web.Updater.csproj
+            runtime: win-x64
+            executable: OpenBullet2.Web.Updater.exe
+            release_name: ob2-web-updater-win-x64.exe
+          - project: OpenBullet2.Web.Updater/OpenBullet2.Web.Updater.csproj
+            runtime: win-x86
+            executable: OpenBullet2.Web.Updater.exe
+            release_name: ob2-web-updater-win-x86.exe
+          - project: OpenBullet2.Web.Updater/OpenBullet2.Web.Updater.csproj
+            runtime: win-arm64
+            executable: OpenBullet2.Web.Updater.exe
+            release_name: ob2-web-updater-win-arm64.exe
+          - project: OpenBullet2.Web.Updater/OpenBullet2.Web.Updater.csproj
+            runtime: linux-x64
+            executable: OpenBullet2.Web.Updater
+            release_name: ob2-web-updater-linux-x64
+          - project: OpenBullet2.Web.Updater/OpenBullet2.Web.Updater.csproj
+            runtime: linux-arm64
+            executable: OpenBullet2.Web.Updater
+            release_name: ob2-web-updater-linux-arm64
+          - project: OpenBullet2.Native.Updater/OpenBullet2.Native.Updater.csproj
+            runtime: win-x64
+            executable: OpenBullet2.Native.Updater.exe
+            release_name: ob2-native-updater-win-x64.exe
+          - project: OpenBullet2.Native.Updater/OpenBullet2.Native.Updater.csproj
+            runtime: win-x86
+            executable: OpenBullet2.Native.Updater.exe
+            release_name: ob2-native-updater-win-x86.exe
+          - project: OpenBullet2.Native.Updater/OpenBullet2.Native.Updater.csproj
+            runtime: win-arm64
+            executable: OpenBullet2.Native.Updater.exe
+            release_name: ob2-native-updater-win-arm64.exe
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+    - name: Publish updater
+      run: dotnet publish "${{ matrix.project }}" -c Release -r ${{ matrix.runtime }} -o "./publish/${{ matrix.release_name }}"
+    - name: Prepare release artifact
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path .release | Out-Null
+        Move-Item "./publish/${{ matrix.release_name }}/${{ matrix.executable }}" "./.release/${{ matrix.release_name }}"
+    - name: Upload updater artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: updater-${{ matrix.release_name }}
+        path: ./.release/${{ matrix.release_name }}
+        if-no-files-found: error
+        retention-days: 1
 
   build:
     runs-on: ubuntu-latest
-    needs: test
+    needs:
+    - test
+    - build-updaters
     steps:
 
     # Checkout the repository
@@ -67,7 +141,6 @@ jobs:
         docker run --name openbullet2-extract openbullet2-build echo "Extracting files"
         docker cp openbullet2-extract:/app/web .web
         docker cp openbullet2-extract:/app/native .native
-        docker cp openbullet2-extract:/app/updater .updater
         docker rm openbullet2-extract
         mkdir .release
         cd .web
@@ -75,14 +148,13 @@ jobs:
         cd ../.native
         zip -r ../.release/OpenBullet2.Native.zip ./*
         cd ..
-        mv .updater/web/win-x64/OpenBullet2.Web.Updater.exe .release/ob2-web-updater-win-x64.exe
-        mv .updater/web/win-x86/OpenBullet2.Web.Updater.exe .release/ob2-web-updater-win-x86.exe
-        mv .updater/web/win-arm64/OpenBullet2.Web.Updater.exe .release/ob2-web-updater-win-arm64.exe
-        mv .updater/web/linux-x64/OpenBullet2.Web.Updater .release/ob2-web-updater-linux-x64
-        mv .updater/web/linux-arm64/OpenBullet2.Web.Updater .release/ob2-web-updater-linux-arm64
-        mv .updater/native/win-x64/OpenBullet2.Native.Updater.exe .release/ob2-native-updater-win-x64.exe
-        mv .updater/native/win-x86/OpenBullet2.Native.Updater.exe .release/ob2-native-updater-win-x86.exe
-        mv .updater/native/win-arm64/OpenBullet2.Native.Updater.exe .release/ob2-native-updater-win-arm64.exe
+
+    - name: Download updater artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: updater-*
+        path: .release
+        merge-multiple: true
 
     # Upload the files to the release
     - name: Upload OpenBullet2 release

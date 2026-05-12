@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Web.Dtos.Config.Settings;
+using OpenBullet2.Web.Dtos.Config.Settings;
 using System.ComponentModel.DataAnnotations;
 
 namespace OpenBullet2.Web.Dtos.Config;

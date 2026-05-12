@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using OpenBullet2.Core.Entities;
 using System;
 using System.IO;
@@ -60,9 +60,9 @@ public class HybridWordlistRepository : IWordlistRepository
     /// <inheritdoc/>
     public async Task<WordlistEntity> GetAsync(
         int id, CancellationToken cancellationToken = default)
-        => await GetAll().Include(w => w.Owner)
+        => (await GetAll().Include(w => w.Owner)
         .FirstOrDefaultAsync(e => e.Id == id, cancellationToken: cancellationToken)
-        .ConfigureAwait(false);
+        .ConfigureAwait(false))!;
 
     /// <inheritdoc/>
     public async Task UpdateAsync(WordlistEntity entity, CancellationToken cancellationToken = default)
@@ -77,7 +77,9 @@ public class HybridWordlistRepository : IWordlistRepository
         CancellationToken cancellationToken = default)
     {
         if (deleteFile && File.Exists(entity.FileName))
+        {
             File.Delete(entity.FileName);
+        }
 
         context.Remove(entity);
         await context.SaveChangesAsync(cancellationToken);

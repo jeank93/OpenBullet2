@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Proxies;
+using OpenBullet2.Core.Models.Proxies;
 using OpenBullet2.Core.Models.Settings;
 using RuriLib.Models.Jobs;
 
@@ -27,7 +27,7 @@ public class ProxyCheckJobOptions : JobOptions
     /// <summary>
     /// The target site against which proxies should be checked.
     /// </summary>
-    public ProxyCheckTarget Target { get; set; } = null;
+    public ProxyCheckTarget Target { get; set; } = new();
 
     /// <summary>
     /// The maximum timeout that a valid proxy should have, in milliseconds.
@@ -37,5 +37,5 @@ public class ProxyCheckJobOptions : JobOptions
     /// <summary>
     /// The options for the output of a proxy check.
     /// </summary>
-    public ProxyCheckOutputOptions CheckOutput { get; set; }
+    public ProxyCheckOutputOptions CheckOutput { get; set; } = new DatabaseProxyCheckOutputOptions();
 }

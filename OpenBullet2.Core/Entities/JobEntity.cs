@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Jobs;
+using OpenBullet2.Core.Models.Jobs;
 using System;
 
 namespace OpenBullet2.Core.Entities;
@@ -21,10 +21,10 @@ public class JobEntity : Entity
     /// <summary>
     /// The job options as a json string.
     /// </summary>
-    public string JobOptions { get; set; }
+    public string? JobOptions { get; set; }
 
     /// <summary>
     /// The owner of this job. Null if admin.
     /// </summary>
-    public GuestEntity Owner { get; set; }
+    public GuestEntity? Owner { get; set; }
 }

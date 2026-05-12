@@ -1,4 +1,4 @@
-﻿using OpenBullet2.Core.Models.Jobs;
+using OpenBullet2.Core.Models.Jobs;
 using RuriLib.Models.Jobs;
 using System.Text.Json.Serialization;
 

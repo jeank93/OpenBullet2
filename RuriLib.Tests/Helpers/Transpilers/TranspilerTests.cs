@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using RuriLib.Helpers.Transpilers;
 using Xunit;
 
